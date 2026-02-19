@@ -5,7 +5,7 @@ server:
 
 spring:
   datasource:
-    url: ${SUPABASE_DB_URL}
+    url: jdbc:postgresql://db.qphhpfolrbsyiyoevaoe.supabase.co:5432/postgres
     username: ${SUPABASE_DB_USERNAME}
     password: ${SUPABASE_DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
