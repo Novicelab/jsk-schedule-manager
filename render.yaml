@@ -24,9 +24,11 @@ services:
       - key: KAKAO_CLIENT_SECRET
         value: fM5Kp8NQXdIfo9mQprYpxeyIIqIu83JG
       - key: KAKAO_REDIRECT_URI
-        value: http://localhost:3000/auth/callback
+        value: https://jsk-schedule-frontend.onrender.com/auth/callback
       - key: APP_CORS_ALLOWED_ORIGINS
-        value: http://localhost:3000
+        value: https://jsk-schedule-frontend.onrender.com
+      - key: KAKAO_ALIMTALK_SENDER_KEY
+        value: ${KAKAO_ALIMTALK_SENDER_KEY}
 
   # ========== Frontend Service ==========
   - type: web
@@ -36,7 +38,7 @@ services:
     region: singapore
 
     buildCommand: cd frontend && npm install && npm run build
-    startCommand: cd frontend && npm run preview
+    startCommand: cd frontend && npm install -g serve && serve -s dist -l 3000
 
     publishPath: frontend/dist
 
@@ -45,6 +47,6 @@ services:
       - key: VITE_KAKAO_CLIENT_ID
         value: "1389155"
       - key: VITE_KAKAO_REDIRECT_URI
-        value: http://localhost:3000/auth/callback
+        value: https://jsk-schedule-frontend.onrender.com/auth/callback
       - key: VITE_API_BASE_URL
-        value: http://localhost:5000
+        value: https://jsk-schedule-backend.onrender.com
