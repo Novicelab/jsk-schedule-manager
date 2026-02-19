@@ -31,15 +31,12 @@ services:
         value: ${KAKAO_ALIMTALK_SENDER_KEY}
 
   # ========== Frontend Service ==========
-  - type: web
+  - type: static_site
     name: jsk-schedule-frontend
-    env: node
     plan: free
     region: singapore
 
     buildCommand: cd frontend && npm install && npm run build
-    startCommand: cd frontend && npm install -g serve && serve -s dist -l 3000
-
     publishPath: frontend/dist
 
     # Environment variables
