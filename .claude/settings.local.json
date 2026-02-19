@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir:*)",
+      "Bash(echo:*)",
+      "Bash(claude:*)",
+      "Bash(CLAUDECODE= claude plugin --help)",
+      "Bash(CLAUDECODE= claude plugin marketplace --help)",
+      "Bash(CLAUDECODE= claude plugin list)",
+      "Bash(CLAUDECODE= claude plugin marketplace list:*)",
+      "Bash(CLAUDECODE= claude plugin marketplace add claude-plugin-directory)",
+      "Bash(CLAUDECODE= claude plugin install frontend-design@claude-plugin-directory)",
+      "Bash(CLAUDECODE= claude plugin install:*)",
+      "Bash(CLAUDECODE= claude plugin marketplace add anthropics/claude-code-plugin-directory)",
+      "Bash(script -q -c \"CLAUDECODE= claude plugin marketplace add anthropics/claude-code-plugin-directory\" /dev/null)",
+      "Bash(NO_COLOR=1 CLAUDECODE= claude plugin marketplace add:*)",
+      "Bash(NO_COLOR=1 FORCE_COLOR=0 CLAUDECODE= claude:*)",
+      "WebFetch(domain:docs.anthropic.com)",
+      "WebSearch",
+      "Bash(gradle test:*)",
+      "Bash(tee:*)",
+      "Bash(java:*)",
+      "Bash(git --version:*)",
+      "Bash(gh:*)",
+      "Bash(git config:*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
+    ]
+  }
+}

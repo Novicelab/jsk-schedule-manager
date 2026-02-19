@@ -1,0 +1,814 @@
+/* ============================================
+   Reset & Base
+   ============================================ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR',
+    sans-serif;
+  font-size: 14px;
+  color: #222;
+  background-color: #f5f6fa;
+  line-height: 1.5;
+}
+
+#root {
+  height: 100%;
+}
+
+ul {
+  list-style: none;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  cursor: pointer;
+  font-family: inherit;
+}
+
+input,
+textarea,
+select {
+  font-family: inherit;
+}
+
+/* ============================================
+   Layout
+   ============================================ */
+.page-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ============================================
+   Navbar
+   ============================================ */
+.navbar {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 0 24px;
+  height: 56px;
+  background-color: #2c3e50;
+  color: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.navbar-brand {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  margin-right: 8px;
+}
+
+.navbar-menu {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+}
+
+.nav-link {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.75);
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.nav-link:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.nav-link-active {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-weight: 600;
+}
+
+.btn-logout {
+  margin-left: auto;
+  padding: 6px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 6px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 13px;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.btn-logout:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+/* ============================================
+   Buttons
+   ============================================ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 18px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  transition: background-color 0.15s, opacity 0.15s;
+  line-height: 1.4;
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background-color: #2980b9;
+  color: #fff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #2471a3;
+}
+
+.btn-secondary {
+  background-color: #ecf0f1;
+  color: #555;
+  border: 1px solid #d5d8dc;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: #dce0e3;
+}
+
+.btn-danger {
+  background-color: #e74c3c;
+  color: #fff;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: #c0392b;
+}
+
+/* ============================================
+   Login Page
+   ============================================ */
+.login-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+}
+
+.login-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 48px 40px;
+  width: 360px;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+}
+
+.login-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 8px;
+}
+
+.login-subtitle {
+  font-size: 13px;
+  color: #7f8c8d;
+  margin-bottom: 36px;
+}
+
+.btn-kakao {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  background-color: #fee500;
+  color: #3c1e1e;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.btn-kakao:hover {
+  background-color: #f5da00;
+}
+
+/* ============================================
+   Callback Page
+   ============================================ */
+.callback-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.callback-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 40px 48px;
+  text-align: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.callback-loading {
+  font-size: 16px;
+  color: #555;
+}
+
+.callback-sub {
+  font-size: 13px;
+  color: #999;
+  margin-top: 10px;
+}
+
+/* ============================================
+   Calendar Page
+   ============================================ */
+.calendar-main {
+  flex: 1;
+  padding: 24px;
+}
+
+.calendar-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 16px;
+}
+
+.team-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.team-selector-label {
+  font-weight: 600;
+  font-size: 13px;
+  color: #555;
+}
+
+.team-select {
+  padding: 7px 12px;
+  border: 1px solid #ced6e0;
+  border-radius: 6px;
+  font-size: 14px;
+  background: #fff;
+  color: #333;
+  min-width: 160px;
+  cursor: pointer;
+}
+
+.team-select:focus {
+  outline: none;
+  border-color: #2980b9;
+  box-shadow: 0 0 0 2px rgba(41, 128, 185, 0.18);
+}
+
+.color-legend {
+  display: flex;
+  gap: 16px;
+  font-size: 13px;
+  color: #555;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.calendar-container {
+  background: #fff;
+  border-radius: 10px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  height: 700px;
+}
+
+/* FullCalendar 커스텀 */
+.calendar-container .fc {
+  height: 100%;
+}
+
+.calendar-container .fc-event {
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 12px;
+  padding: 1px 4px;
+}
+
+.calendar-container .fc-daygrid-event {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ============================================
+   Team Page
+   ============================================ */
+.team-main {
+  flex: 1;
+  padding: 24px;
+}
+
+.team-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.page-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+.team-content {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #34495e;
+  margin-bottom: 12px;
+}
+
+/* Team Card List */
+.team-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.team-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 14px 16px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.07);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.team-card:hover {
+  border-color: #aed6f1;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.team-card-selected {
+  border-color: #2980b9;
+  background-color: #eaf4fb;
+}
+
+.team-card-name {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 4px;
+  color: #2c3e50;
+}
+
+.team-card-desc {
+  font-size: 12px;
+  color: #7f8c8d;
+  margin-bottom: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Member Section */
+.member-section {
+  background: #fff;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.member-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.member-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.member-table th {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 2px solid #eaedf0;
+  font-weight: 600;
+  color: #555;
+  font-size: 13px;
+}
+
+.member-table td {
+  padding: 12px 12px;
+  border-bottom: 1px solid #f0f2f5;
+  color: #333;
+}
+
+.member-table tr:last-child td {
+  border-bottom: none;
+}
+
+.member-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.member-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* Role Badge */
+.role-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.role-admin {
+  background-color: #fdebd0;
+  color: #c0392b;
+}
+
+.role-member {
+  background-color: #eaf4fb;
+  color: #2980b9;
+}
+
+/* ============================================
+   Modal
+   ============================================ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 16px;
+}
+
+.modal-content {
+  background: #fff;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #eaecee;
+}
+
+.modal-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+.modal-close-btn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #aaa;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  line-height: 1;
+  transition: color 0.15s, background-color 0.15s;
+}
+
+.modal-close-btn:hover {
+  color: #555;
+  background-color: #f0f2f5;
+}
+
+.modal-form {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 24px;
+  border-top: 1px solid #eaecee;
+}
+
+/* ============================================
+   Form Elements
+   ============================================ */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #555;
+}
+
+.form-input {
+  padding: 9px 12px;
+  border: 1px solid #ced6e0;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #333;
+  background: #fff;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  width: 100%;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #2980b9;
+  box-shadow: 0 0 0 3px rgba(41, 128, 185, 0.15);
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.input-error {
+  border-color: #e74c3c;
+}
+
+.input-error:focus {
+  border-color: #e74c3c;
+  box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.15);
+}
+
+.field-error {
+  font-size: 12px;
+  color: #e74c3c;
+}
+
+.form-hint {
+  font-size: 12px;
+  color: #999;
+  margin-top: 2px;
+}
+
+.required {
+  color: #e74c3c;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.form-checkbox-group {
+  flex-direction: row;
+  align-items: center;
+}
+
+.form-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+/* ============================================
+   Schedule Detail
+   ============================================ */
+.detail-body {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.detail-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.detail-row-column {
+  flex-direction: column;
+}
+
+.detail-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #7f8c8d;
+  min-width: 60px;
+  padding-top: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.detail-value {
+  font-size: 14px;
+  color: #2c3e50;
+  flex: 1;
+}
+
+.detail-title {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.detail-description {
+  font-size: 14px;
+  color: #444;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  margin-top: 4px;
+}
+
+.type-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.type-vacation {
+  background-color: #d5f5e3;
+  color: #1e8449;
+}
+
+.type-team {
+  background-color: #d6eaf8;
+  color: #1a5276;
+}
+
+.all-day-badge {
+  font-size: 12px;
+  color: #7f8c8d;
+}
+
+/* ============================================
+   Invite Result
+   ============================================ */
+.invite-result {
+  padding: 20px 24px;
+}
+
+.invite-success-msg {
+  color: #27ae60;
+  font-weight: 600;
+  margin-bottom: 16px;
+  font-size: 15px;
+}
+
+.invite-detail {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.invite-token {
+  font-family: monospace;
+  font-size: 12px;
+  word-break: break-all;
+  color: #555;
+}
+
+/* ============================================
+   Not Found Page
+   ============================================ */
+.not-found-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.not-found-card {
+  text-align: center;
+}
+
+.not-found-code {
+  font-size: 80px;
+  font-weight: 900;
+  color: #bdc3c7;
+  line-height: 1;
+  margin-bottom: 12px;
+}
+
+.not-found-message {
+  font-size: 16px;
+  color: #7f8c8d;
+  margin-bottom: 28px;
+}
+
+/* ============================================
+   Error & Status
+   ============================================ */
+.error-banner {
+  background-color: #fdf2f2;
+  border: 1px solid #f5c6c6;
+  border-radius: 6px;
+  color: #c0392b;
+  padding: 10px 14px;
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+
+.error-text {
+  color: #e74c3c;
+  font-size: 13px;
+}
+
+.loading-text {
+  color: #7f8c8d;
+  font-size: 14px;
+  padding: 24px 0;
+  text-align: center;
+}
+
+.empty-text {
+  color: #aab7c4;
+  font-size: 14px;
+  padding: 20px 0;
+  text-align: center;
+}
+
+/* ============================================
+   Team List Section
+   ============================================ */
+.team-list-section {
+  background: #fff;
+  border-radius: 10px;
+  padding: 18px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
