@@ -5,10 +5,16 @@ server:
 
 spring:
   datasource:
-    url: jdbc:postgresql://db.qphhpfolrbsyiyoevaoe.supabase.co:5432/postgres
+    url: jdbc:postgresql://db.qphhpfolrbsyiyoevaoe.supabase.co:5432/postgres?sslmode=require&connectTimeout=10
     username: ${SUPABASE_DB_USERNAME}
     password: ${SUPABASE_DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 2
+      connection-timeout: 20000
+      idle-timeout: 600000
+      max-lifetime: 1800000
 
   jpa:
     hibernate:
