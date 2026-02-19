@@ -25,7 +25,17 @@
       "Bash(git config:*)",
       "Bash(git init:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git remote add:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(curl:*)",
+      "Bash(npm install:*)",
+      "Bash(/tmp/verify_steps.md:*)",
+      "Bash(/tmp/generate_credentials.sh:*)",
+      "Bash(__NEW_LINE_cb6bde16bc1bfacd__ bash /tmp/generate_credentials.sh)",
+      "Bash(/tmp/render_update.sh:*)",
+      "Bash(__NEW_LINE_94d3315c478ccdcf__ bash /tmp/render_update.sh)"
     ]
   }
 }

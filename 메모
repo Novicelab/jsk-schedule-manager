@@ -60,7 +60,8 @@
 
 
 
-system-design.md
-❯ DB = supabase / 빌드 도구 = render, github
 
-● 내용을 파악하고 업데이트하겠습니다. Supabase는 PostgreSQL 기반 BaaS이고, Render는 배포 플랫폼, GitHub는 소스관리/CI·CD입니다. 빌드 도구(Gradle)는 그대로 유지됩니다.
+
+ 배포가 완료되면:
+  - 백엔드 URL 예: https://jsk-schedule-backend.onrender.com
+  - 이 URL을 기록해두세요 (프론트엔드에서 사용)
