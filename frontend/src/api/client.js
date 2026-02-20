@@ -60,7 +60,10 @@ apiClient.interceptors.response.use(
         localStorage.removeItem('accessToken')
         localStorage.removeItem('refreshToken')
         localStorage.removeItem('user')
-        window.location.href = '/login'
+        // 로그인 페이지가 아닐 때만 리다이렉트
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login'
+        }
       }
       return Promise.reject(error)
     }
@@ -87,7 +90,9 @@ apiClient.interceptors.response.use(
       localStorage.removeItem('accessToken')
       localStorage.removeItem('refreshToken')
       localStorage.removeItem('user')
-      window.location.href = '/login'
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login'
+      }
       return Promise.reject(error)
     }
 
@@ -110,7 +115,9 @@ apiClient.interceptors.response.use(
       localStorage.removeItem('accessToken')
       localStorage.removeItem('refreshToken')
       localStorage.removeItem('user')
-      window.location.href = '/login'
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login'
+      }
       return Promise.reject(reissueError)
     } finally {
       isRefreshing = false
