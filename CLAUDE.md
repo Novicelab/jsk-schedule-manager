@@ -165,7 +165,25 @@ npm run dev
 
 ### 환경 변수 설정
 
-**프론트엔드 (.env 파일 생성)**
+**백엔드 (.env 파일)**
+```env
+# Supabase 데이터베이스
+SUPABASE_DB_USERNAME=postgres
+SUPABASE_DB_PASSWORD=[Supabase 비밀번호]
+
+# Supabase CLI/Management API
+SUPABASE_ACCESS_TOKEN=sbp_bfa8be4b663f543b79aa2581ff6c0fd32ad1af48
+
+# JWT 인증
+JWT_SECRET=kT9mQ2vN7xL5pR8yJ3wH6bD0cF4eG1sA
+
+# 카카오 OAuth
+KAKAO_CLIENT_ID=1389155
+KAKAO_CLIENT_SECRET=[카카오 시크릿]
+KAKAO_REDIRECT_URI=http://localhost:3000/auth/callback
+```
+
+**프론트엔드 (frontend/.env 파일)**
 ```env
 VITE_KAKAO_CLIENT_ID=1389155
 VITE_KAKAO_REDIRECT_URI=http://localhost:5173/auth/callback
