@@ -11,6 +11,8 @@ services:
 
     # Environment variables
     envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
       - key: SUPABASE_DB_USERNAME
         value: postgres
       # SECURITY: Do NOT hardcode SUPABASE_DB_PASSWORD here. Set in Render Dashboard.
