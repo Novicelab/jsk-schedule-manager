@@ -99,10 +99,14 @@ function CalendarPage() {
 
   // 날짜 클릭 → 새 일정 생성 모달
   const handleDateClick = useCallback((info) => {
+    if (!selectedTeamId) {
+      setSchedulesError('먼저 팀을 선택해주세요.')
+      return
+    }
     setSelectedDate(info.dateStr)
     setEditingSchedule(null)
     setShowScheduleModal(true)
-  }, [])
+  }, [selectedTeamId])
 
   // 이벤트 클릭 → 일정 상세 모달
   const handleEventClick = useCallback(
@@ -228,7 +232,7 @@ function CalendarPage() {
         </div>
       </main>
 
-      {showScheduleModal && (
+      {showScheduleModal && selectedTeamId && (
         <ScheduleModal
           teamId={selectedTeamId}
           defaultDate={selectedDate}

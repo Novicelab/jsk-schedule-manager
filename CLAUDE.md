@@ -49,7 +49,8 @@
 |------|------|------|
 | 언어 | Java | |
 | 백엔드 | Spring Boot | Spring Data JPA, Spring Security |
-| 프론트엔드 | React + Vite | FullCalendar, Tailwind CSS |
+| 프론트엔드 | React + Vite | FullCalendar, Tailwind CSS, react-datepicker |
+| 날짜 처리 | dayjs | ISO 8601 형식, 타임존 안전성 |
 | 스타일링 | Tailwind CSS | 유틸리티 기반 CSS, 빠른 프로토타이핑 |
 | 데이터베이스 | Supabase (PostgreSQL) | 프로덕션: BaaS, 클라우드 관리형 DB, PgBouncer 커넥션 풀링 |
 | 로컬 개발 DB | H2 In-Memory Database | 로컬 개발/테스트 환경용, Gradle 의존성 추가 |
@@ -97,6 +98,11 @@
   - 프론트엔드: React Static Site → https://jsk-schedule-frontend.onrender.com
   - 데이터베이스: Supabase PostgreSQL (PgBouncer 커넥션 풀링)
   - 배포 상태: ✅ Live and Operational
+- [x] 유지보수 & 개선: 일정 생성 UI/UX 개선 및 버그 수정 (2026-02-20)
+  - ✅ 날짜 오프셋 버그 해결 (toISOString 제거, 타임존 안전 포맷 사용)
+  - ✅ 일정 생성 모달 개선: 스카이스캐너 방식의 날짜 범위 선택 (react-datepicker)
+  - ✅ 유형별 UI 분기: 팀 일정(시간 포함) vs 휴가(날짜만)
+  - ✅ CalendarPage 보안 강화: teamId null 체크 추가
 
 ---
 
