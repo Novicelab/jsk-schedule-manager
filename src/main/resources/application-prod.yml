@@ -36,6 +36,10 @@ kakao:
   client-secret: ${KAKAO_CLIENT_SECRET}
   redirect-uri: ${KAKAO_REDIRECT_URI}
 
+app:
+  cors:
+    allowed-origins: https://jsk-schedule-frontend.onrender.com
+
 logging:
   level:
     com.jsk.schedule: INFO
