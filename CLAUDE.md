@@ -49,7 +49,8 @@
 |------|------|------|
 | 언어 | Java | |
 | 백엔드 | Spring Boot | Spring Data JPA, Spring Security |
-| 프론트엔드 | React + Vite | FullCalendar 라이브러리 활용 |
+| 프론트엔드 | React + Vite | FullCalendar, Tailwind CSS |
+| 스타일링 | Tailwind CSS | 유틸리티 기반 CSS, 빠른 프로토타이핑 |
 | 데이터베이스 | Supabase (PostgreSQL) | BaaS, 클라우드 관리형 DB, PgBouncer 커넥션 풀링 |
 | 빌드 도구 | Gradle | |
 | 배포 플랫폼 | Render | 클라우드 앱 호스팅 플랫폼 (Singapore 리전) |
