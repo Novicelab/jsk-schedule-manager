@@ -51,7 +51,8 @@
 | 백엔드 | Spring Boot | Spring Data JPA, Spring Security |
 | 프론트엔드 | React + Vite | FullCalendar, Tailwind CSS |
 | 스타일링 | Tailwind CSS | 유틸리티 기반 CSS, 빠른 프로토타이핑 |
-| 데이터베이스 | Supabase (PostgreSQL) | BaaS, 클라우드 관리형 DB, PgBouncer 커넥션 풀링 |
+| 데이터베이스 | Supabase (PostgreSQL) | 프로덕션: BaaS, 클라우드 관리형 DB, PgBouncer 커넥션 풀링 |
+| 로컬 개발 DB | H2 In-Memory Database | 로컬 개발/테스트 환경용, Gradle 의존성 추가 |
 | 빌드 도구 | Gradle | |
 | 배포 플랫폼 | Render | 클라우드 앱 호스팅 플랫폼 (Singapore 리전) |
 | 배포 구성 | Docker (Backend) + Static Site (Frontend) | 자동 배포 (GitHub 연동) |
@@ -121,6 +122,76 @@
 | `developer` | sonnet | 구현, 코드 작성, 개발, 버그 수정, 리팩토링 |
 | `qa` | sonnet | 테스트, QA, 버그, 테스트 케이스, 품질 검토 |
 
+---
+
+## 로컬 개발 환경 설정
+
+### 백엔드 실행
+
+```bash
+cd "C:\AI Project\JSK_schedule manager"
+SPRING_PROFILES_ACTIVE=local java -jar build/libs/jsk-schedule-manager-0.0.1-SNAPSHOT.jar
+```
+
+또는 Gradle 빌드 후 실행:
+```bash
+./gradlew bootRun -Pargs='--spring.profiles.active=local'
+```
+
+**특징:**
+- 포트: 8081
+- 데이터베이스: H2 In-Memory (자동 생성)
+- 프로파일 설정: `application-local.yml`
+- H2 콘솔: http://localhost:8081/h2-console
+
+### 프론트엔드 실행
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+**특징:**
+- 포트: 3001 (또는 사용 가능한 포트)
+- 자동 핫 리로드 (Vite)
+- API Base URL: http://localhost:8081
+
+### 환경 변수 설정
+
+**프론트엔드 (.env 파일 생성)**
+```env
+VITE_KAKAO_CLIENT_ID=1389155
+VITE_KAKAO_REDIRECT_URI=http://localhost:5173/auth/callback
+VITE_API_BASE_URL=http://localhost:8081
+```
+
+템플릿: `frontend/.env.example` 참고
+
+### 서비스 상태 확인
+
+```bash
+./test_api.sh
+```
+
+**출력 예시:**
+```
+============================================
+🔍 로컬 개발환경 테스트
+============================================
+
+1️⃣ 백엔드 (포트 8081)
+─────────────────────────
+상태: ✅ 정상 (Running)
+
+2️⃣ 프론트엔드 (포트 3001)
+─────────────────────────
+상태: ✅ 정상 (Running)
+
+============================================
+```
+
+---
 
 # 개발 프로세스
 
