@@ -264,7 +264,7 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
           {/* 날짜 범위 선택 */}
           <div className="form-group">
             <label className="form-label">
-              {form.type === 'TEAM' ? '일정 날짜' : '휴가 기간'} <span className="required">*</span>
+              {form.type === 'WORK' ? '일정 날짜' : '휴가 기간'} <span className="required">*</span>
             </label>
             <div className="date-range-container">
               <div className="date-picker-wrapper">
@@ -295,8 +295,8 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
             )}
           </div>
 
-          {/* 시간 선택 (팀 일정에서만) */}
-          {form.type === 'TEAM' && (
+          {/* 시간 선택 (업무 일정에서만) */}
+          {form.type === 'WORK' && (
             <div className="form-row">
               <div className="form-group">
                 <label htmlFor="startTime" className="form-label">
