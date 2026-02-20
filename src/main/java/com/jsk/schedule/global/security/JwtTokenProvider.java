@@ -116,7 +116,7 @@ public class JwtTokenProvider {
     public Role getRole(String token) {
         Claims claims = parseClaims(token);
         String roleStr = claims.get("role", String.class);
-        return roleStr != null ? Role.valueOf(roleStr) : Role.MEMBER;
+        return roleStr != null ? Role.valueOf(roleStr) : Role.USER;
     }
 
     /**
