@@ -17,13 +17,13 @@ fi
 echo ""
 
 # 프론트엔드 테스트
-echo "2️⃣ 프론트엔드 (포트 5173)"
+echo "2️⃣ 프론트엔드 (포트 3001)"
 echo "─────────────────────────"
 echo -n "상태: "
-if timeout 2 curl -s http://localhost:5173/ > /dev/null 2>&1; then
+if timeout 2 curl -s http://localhost:3001/ > /dev/null 2>&1; then
     echo "✅ 정상 (Running)"
 else
-    echo "❌ 응답 없음 (시작 중)"
+    echo "❌ 응답 없음"
 fi
 echo ""
 
