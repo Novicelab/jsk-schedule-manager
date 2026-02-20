@@ -1,7 +1,17 @@
 import axios from 'axios'
 
+// 환경에 따라 백엔드 URL 결정
+const getBackendUrl = () => {
+  // 프로덕션 환경 (Render)
+  if (import.meta.env.PROD) {
+    return 'https://jsk-schedule-backend.onrender.com/api'
+  }
+  // 로컬 개발 환경
+  return import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/api'
+}
+
 const apiClient = axios.create({
-  baseURL: '/api',
+  baseURL: getBackendUrl(),
   headers: {
     'Content-Type': 'application/json',
   },
@@ -82,7 +92,7 @@ apiClient.interceptors.response.use(
     }
 
     try {
-      const response = await axios.post('/api/auth/reissue', { refreshToken })
+      const response = await axios.post(`${getBackendUrl()}/auth/reissue`, { refreshToken })
       const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
         response.data.data
 
