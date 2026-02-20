@@ -32,4 +32,14 @@ bin/
 ### Environment Variables ###
 .env
 .env.local
-.env.*.local
+.env.*.local# Gradle
+.gradle/
+gradle-8.5/
+gradle.zip
+build/
+
+# Playwright
+.playwright-mcp/
+
+# Node
+frontend/package-lock.json
