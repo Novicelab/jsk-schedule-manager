@@ -40,6 +40,7 @@ services:
     plan: free
     region: singapore
     branch: main
+    autoDeployTrigger: commit
 
     buildCommand: cd frontend && npm install && npm run build
     publishPath: frontend/dist
