@@ -39,7 +39,7 @@ function LoginPage() {
         password,
       })
 
-      const { accessToken, refreshToken, user } = response.data
+      const { accessToken, refreshToken, user } = response.data.data
 
       // 토큰과 사용자 정보 저장
       localStorage.setItem('accessToken', accessToken)
