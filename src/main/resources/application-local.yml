@@ -10,12 +10,18 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: create
     properties:
       hibernate:
         dialect: org.hibernate.dialect.H2Dialect
         format_sql: true
     show-sql: true
+    defer-datasource-initialization: true
+
+  sql:
+    init:
+      mode: never
+      data-locations: classpath:data-local.sql
 
   h2:
     console:
@@ -40,4 +46,4 @@ logging:
     org.hibernate.orm.jdbc.bind: TRACE
 
 server:
-  port: 8081
+  port: 6666
