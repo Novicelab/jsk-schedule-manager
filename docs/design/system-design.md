@@ -79,11 +79,14 @@
 
 | 항목 | 선택 | 선택 이유 |
 |------|------|-----------|
-| DB | **Supabase (PostgreSQL)** | BaaS, PostgreSQL 기반 클라우드 관리형 DB, 별도 DB 서버 운영 불필요 |
+| DB | **Supabase (PostgreSQL)** | BaaS, PostgreSQL 기반 클라우드 관리형 DB, 별도 DB 서버 운영 불필요, PgBouncer 커넥션 풀링 |
 | 빌드 도구 | **Gradle** | Spring Boot 기본 권장, 빌드 속도 우수 |
-| 프론트엔드 | **React** | 캘린더 SPA UX, FullCalendar React 래퍼, JWT 인증 친화적 |
-| 배포 | **Render** | 클라우드 앱 호스팅 플랫폼, GitHub 연동 자동 배포 |
-| 소스관리/CI·CD | **GitHub** | 코드 버전관리 및 Render 자동 배포 트리거 |
+| 프론트엔드 | **React + Vite** | 캘린더 SPA UX, FullCalendar React 래퍼, JWT 인증 친화적, 빠른 빌드 |
+| 배포 | **Render** | 클라우드 앱 호스팅 플랫폼, GitHub 연동 자동 배포, 무료 Tier 지원 |
+| 배포 구성 | **Docker (Backend) + Static Site (Frontend)** | Backend: Spring Boot Docker, Frontend: Vite 빌드 정적 파일 |
+| 배포 지역 | **Singapore** | 아시아 지역 최적 성능, 낮은 레이턴시 |
+| 소스관리/CI·CD | **GitHub** | 코드 버전관리 및 Render 자동 배포 트리거 (push 시 자동 배포) |
+| 배포 URL (Live) | **Backend**: https://jsk-schedule-backend.onrender.com<br/>**Frontend**: https://jsk-schedule-frontend.onrender.com | 프로덕션 배포 완료 ✅ |
 
 ### 1.2 레이어드 아키텍처 상세
 

@@ -48,11 +48,13 @@
 | 구분 | 항목 | 비고 |
 |------|------|------|
 | 언어 | Java | |
-| 백엔드 | Spring Boot | |
-| 프론트엔드 | React | FullCalendar 라이브러리 활용 |
-| 데이터베이스 | Supabase (PostgreSQL) | BaaS, 클라우드 관리형 DB |
+| 백엔드 | Spring Boot | Spring Data JPA, Spring Security |
+| 프론트엔드 | React + Vite | FullCalendar 라이브러리 활용 |
+| 데이터베이스 | Supabase (PostgreSQL) | BaaS, 클라우드 관리형 DB, PgBouncer 커넥션 풀링 |
 | 빌드 도구 | Gradle | |
-| 배포 | Render | 클라우드 앱 호스팅 플랫폼 |
+| 배포 플랫폼 | Render | 클라우드 앱 호스팅 플랫폼 (Singapore 리전) |
+| 배포 구성 | Docker (Backend) + Static Site (Frontend) | 자동 배포 (GitHub 연동) |
+| 배포 URL | Backend: https://jsk-schedule-backend.onrender.com<br/>Frontend: https://jsk-schedule-frontend.onrender.com | Live |
 | 소스관리/CI·CD | GitHub | 코드 버전관리 및 자동 배포 연동 |
 | 인증 | 카카오톡 OAuth 2.0 + JWT | Access Token + Refresh Token (30일) |
 | 알림 | 카카오톡 알림톡 API | 비동기 처리 (@Async) |
@@ -88,7 +90,11 @@
   - QA 종합 검토: 7개 버그 발견 및 전체 수정 완료
   - JUnit 5 테스트 코드: 47개 테스트 케이스 작성 및 저장 완료
   - 정합성 검증: 100% 통과 (모든 테스트 구현 코드와 일치)
-- [ ] 배포: 서비스 배포
+- [x] 배포: 서비스 배포 (Render 완료)
+  - 백엔드: Spring Boot Docker (prod 프로파일) → https://jsk-schedule-backend.onrender.com
+  - 프론트엔드: React Static Site → https://jsk-schedule-frontend.onrender.com
+  - 데이터베이스: Supabase PostgreSQL (PgBouncer 커넥션 풀링)
+  - 배포 상태: ✅ Live and Operational
 
 ---
 
