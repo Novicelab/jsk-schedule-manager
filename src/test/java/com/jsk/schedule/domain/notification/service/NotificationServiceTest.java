@@ -7,11 +7,8 @@ import com.jsk.schedule.domain.notification.entity.NotificationType;
 import com.jsk.schedule.domain.notification.repository.NotificationRepository;
 import com.jsk.schedule.domain.schedule.entity.Schedule;
 import com.jsk.schedule.domain.schedule.entity.ScheduleType;
-import com.jsk.schedule.domain.team.entity.Team;
-import com.jsk.schedule.domain.team.entity.TeamMember;
-import com.jsk.schedule.domain.team.entity.TeamRole;
-import com.jsk.schedule.domain.team.repository.TeamMemberRepository;
 import com.jsk.schedule.domain.user.entity.User;
+import com.jsk.schedule.domain.user.repository.UserRepository;
 import com.jsk.schedule.infra.kakao.KakaoApiClient;
 import com.jsk.schedule.infra.kakao.dto.KakaoAlimtalkResponse;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,16 +43,13 @@ class NotificationServiceTest {
     private NotificationRepository notificationRepository;
 
     @Mock
-    private TeamMemberRepository teamMemberRepository;
+    private UserRepository userRepository;
 
     @Mock
     private KakaoApiClient kakaoApiClient;
 
     private User user1;
     private User user2;
-    private Team team;
-    private TeamMember teamMember1;
-    private TeamMember teamMember2;
     private Schedule schedule;
 
     @BeforeEach
@@ -66,20 +60,11 @@ class NotificationServiceTest {
         user2 = User.of(1002L, "user2@test.com", "User2", null, "kakaoToken2");
         ReflectionTestUtils.setField(user2, "id", 2L);
 
-        team = Team.create("테스트팀", "설명", user1);
-        ReflectionTestUtils.setField(team, "id", 10L);
-
-        teamMember1 = TeamMember.of(team, user1, TeamRole.ADMIN);
-        ReflectionTestUtils.setField(teamMember1, "id", 100L);
-
-        teamMember2 = TeamMember.of(team, user2, TeamRole.MEMBER);
-        ReflectionTestUtils.setField(teamMember2, "id", 101L);
-
         schedule = Schedule.create(
-                "테스트 일정", "설명", ScheduleType.TEAM,
+                "테스트 일정", "설명", ScheduleType.WORK,
                 LocalDateTime.of(2026, 3, 1, 10, 0),
                 LocalDateTime.of(2026, 3, 1, 12, 0),
-                false, team, user1
+                false, user1
         );
         ReflectionTestUtils.setField(schedule, "id", 200L);
     }
@@ -87,12 +72,12 @@ class NotificationServiceTest {
     // ========== sendScheduleNotification 테스트 ==========
 
     @Test
-    @DisplayName("sendScheduleNotification: 팀 멤버 수만큼 알림 이력이 저장되고 카카오 API가 호출된다")
-    void sendScheduleNotification_shouldSaveNotificationForEachMember() {
+    @DisplayName("sendScheduleNotification: 카카오 토큰이 있는 모든 사용자에게 알림을 발송한다")
+    void sendScheduleNotification_shouldSaveNotificationForAllUsers() {
         // Arrange
         KakaoAlimtalkResponse successResponse = new KakaoAlimtalkResponse();
 
-        given(teamMemberRepository.findByTeamId(10L)).willReturn(List.of(teamMember1, teamMember2));
+        given(userRepository.findAllByKakaoAccessTokenIsNotNull()).willReturn(List.of(user1, user2));
         given(notificationRepository.save(any(Notification.class))).willAnswer(inv -> inv.getArgument(0));
         given(kakaoApiClient.sendAlimtalk(anyString(), anyString())).willReturn(successResponse);
 
@@ -100,16 +85,16 @@ class NotificationServiceTest {
         notificationService.sendScheduleNotification(schedule, NotificationType.SCHEDULE_CREATED);
 
         // Assert
-        // 2명 팀원: 최초 저장(PENDING) + 성공 후 업데이트(SUCCESS) 각 2번 = 총 4번 save
+        // 2명 사용자: 최초 저장(PENDING) + 성공 후 업데이트(SUCCESS) 각 2번 = 총 4번 save
         then(notificationRepository).should(times(4)).save(any(Notification.class));
         then(kakaoApiClient).should(times(2)).sendAlimtalk(anyString(), anyString());
     }
 
     @Test
-    @DisplayName("sendScheduleNotification: 팀원이 없으면 알림을 발송하지 않는다")
-    void sendScheduleNotification_whenNoTeamMembers_shouldNotSendNotification() {
+    @DisplayName("sendScheduleNotification: 카카오 토큰이 있는 사용자가 없으면 알림을 발송하지 않는다")
+    void sendScheduleNotification_whenNoUsersWithToken_shouldNotSendNotification() {
         // Arrange
-        given(teamMemberRepository.findByTeamId(10L)).willReturn(List.of());
+        given(userRepository.findAllByKakaoAccessTokenIsNotNull()).willReturn(List.of());
 
         // Act
         notificationService.sendScheduleNotification(schedule, NotificationType.SCHEDULE_CREATED);
@@ -120,15 +105,13 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("sendScheduleNotification: 카카오 Access Token이 없는 멤버는 알림 발송을 건너뛰고 FAILED로 기록된다")
+    @DisplayName("sendScheduleNotification: 카카오 Access Token이 없는 사용자는 알림 발송을 건너뛰고 FAILED로 기록된다")
     void sendScheduleNotification_whenNoKakaoToken_shouldSkipAndMarkFailed() {
         // Arrange
         User noTokenUser = User.of(1003L, "notoken@test.com", "NoToken", null, null); // token=null
         ReflectionTestUtils.setField(noTokenUser, "id", 3L);
-        TeamMember noTokenMember = TeamMember.of(team, noTokenUser, TeamRole.MEMBER);
-        ReflectionTestUtils.setField(noTokenMember, "id", 102L);
 
-        given(teamMemberRepository.findByTeamId(10L)).willReturn(List.of(noTokenMember));
+        given(userRepository.findAllByKakaoAccessTokenIsNotNull()).willReturn(List.of(noTokenUser));
         given(notificationRepository.save(any(Notification.class))).willAnswer(inv -> inv.getArgument(0));
 
         // Act
@@ -148,7 +131,7 @@ class NotificationServiceTest {
     @DisplayName("sendScheduleNotification: 카카오 API 실패 시 FAILED 상태로 기록되고 예외를 전파하지 않는다")
     void sendScheduleNotification_whenKakaoApiFails_shouldMarkFailedAndNotThrow() {
         // Arrange
-        given(teamMemberRepository.findByTeamId(10L)).willReturn(List.of(teamMember1));
+        given(userRepository.findAllByKakaoAccessTokenIsNotNull()).willReturn(List.of(user1));
         given(notificationRepository.save(any(Notification.class))).willAnswer(inv -> inv.getArgument(0));
         given(kakaoApiClient.sendAlimtalk(anyString(), anyString()))
                 .willThrow(new RuntimeException("카카오 API 연결 실패"));
@@ -171,7 +154,7 @@ class NotificationServiceTest {
         // Arrange
         KakaoAlimtalkResponse successResponse = new KakaoAlimtalkResponse();
 
-        given(teamMemberRepository.findByTeamId(10L)).willReturn(List.of(teamMember1));
+        given(userRepository.findAllByKakaoAccessTokenIsNotNull()).willReturn(List.of(user1));
         given(notificationRepository.save(any(Notification.class))).willAnswer(inv -> inv.getArgument(0));
         given(kakaoApiClient.sendAlimtalk(anyString(), anyString())).willReturn(successResponse);
 

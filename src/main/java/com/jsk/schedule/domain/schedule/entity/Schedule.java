@@ -1,6 +1,5 @@
 package com.jsk.schedule.domain.schedule.entity;
 
-import com.jsk.schedule.domain.team.entity.Team;
 import com.jsk.schedule.domain.user.entity.User;
 import com.jsk.schedule.global.common.BaseEntity;
 import jakarta.persistence.Column;
@@ -57,10 +56,6 @@ public class Schedule extends BaseEntity {
     private boolean allDay = false;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "team_id", nullable = false)
-    private Team team;
-
-    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", nullable = false)
     private User createdBy;
 
@@ -69,7 +64,7 @@ public class Schedule extends BaseEntity {
 
     public static Schedule create(String title, String description, ScheduleType type,
                                   LocalDateTime startAt, LocalDateTime endAt, boolean allDay,
-                                  Team team, User createdBy) {
+                                  User createdBy) {
         Schedule schedule = new Schedule();
         schedule.title = title;
         schedule.description = description;
@@ -77,13 +72,12 @@ public class Schedule extends BaseEntity {
         schedule.startAt = startAt;
         schedule.endAt = endAt;
         schedule.allDay = allDay;
-        schedule.team = team;
         schedule.createdBy = createdBy;
         return schedule;
     }
 
     /**
-     * 일정 수정 — 제목, 설명, 일시, 종일 여부만 변경 가능 (type, team은 변경 불가)
+     * 일정 수정 — 제목, 설명, 일시, 종일 여부만 변경 가능 (type은 변경 불가)
      */
     public void update(String title, String description,
                        LocalDateTime startAt, LocalDateTime endAt, boolean allDay) {

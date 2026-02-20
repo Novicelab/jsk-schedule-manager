@@ -31,27 +31,27 @@ public class DataInitializer implements CommandLineRunner {
                 encodedPassword.substring(0, Math.min(20, encodedPassword.length())) + "...",
                 encodedPassword.length());
 
-        // 1. admin 계정 (ADMIN 등급)
+        // 1. admin 계정 (USER 역할)
         if (!userRepository.existsByUsername("admin")) {
-            User admin = User.ofCredential("admin", encodedPassword, "관리자", Role.ADMIN);
+            User admin = User.ofCredential("admin", encodedPassword, "관리자");
             admin = userRepository.save(admin);
             log.info("Created test account - admin: {}", admin.getId());
         } else {
             log.info("Test account 'admin' already exists - skipping creation");
         }
 
-        // 2. siljang 계정 (MANAGER 등급)
+        // 2. siljang 계정 (USER 역할)
         if (!userRepository.existsByUsername("siljang")) {
-            User siljang = User.ofCredential("siljang", encodedPassword, "실장", Role.MANAGER);
+            User siljang = User.ofCredential("siljang", encodedPassword, "실장");
             siljang = userRepository.save(siljang);
             log.info("Created test account - siljang: {}", siljang.getId());
         } else {
             log.info("Test account 'siljang' already exists");
         }
 
-        // 3. user 계정 (MEMBER 등급)
+        // 3. user 계정 (USER 역할)
         if (!userRepository.existsByUsername("user")) {
-            User user = User.ofCredential("user", encodedPassword, "사용자", Role.MEMBER);
+            User user = User.ofCredential("user", encodedPassword, "사용자");
             user = userRepository.save(user);
             log.info("Created test account - user: {}", user.getId());
         } else {

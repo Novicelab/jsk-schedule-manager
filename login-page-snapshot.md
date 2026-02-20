@@ -1,0 +1,4 @@
+- generic [ref=e4]:
+  - heading "JSK 일정 관리" [level=1] [ref=e5]
+  - paragraph [ref=e6]: 팀 중심의 스마트한 일정 관리 서비스
+  - button "카카오로 시작하기" [ref=e7] [cursor=pointer]

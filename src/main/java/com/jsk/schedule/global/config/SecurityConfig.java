@@ -46,14 +46,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // 인증 없이 허용할 경로
                 .requestMatchers("/api/auth/**").permitAll()
-                // 일정 조회는 비인증 사용자도 가능 (설계서 4.5 - 비소속 사용자 조회)
-                .requestMatchers(HttpMethod.GET, "/api/teams/*/schedules").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/teams/*/schedules/*").permitAll()
-                // 팀원 목록, 팀 상세, 내 팀 목록은 인증된 사용자만 조회 가능
-                .requestMatchers(HttpMethod.GET, "/api/teams").authenticated()
-                .requestMatchers(HttpMethod.GET, "/api/teams/*").authenticated()
-                .requestMatchers(HttpMethod.GET, "/api/teams/*/members").authenticated()
-                // 나머지 모든 요청은 인증 필요
+                // 나머지 모든 /api 요청은 인증 필수
                 .anyRequest().authenticated()
             );
 

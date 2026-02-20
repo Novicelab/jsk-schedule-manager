@@ -6,7 +6,7 @@ import apiClient from '../../api/client'
 import './ScheduleModal.css'
 
 const SCHEDULE_TYPES = [
-  { value: 'TEAM', label: '팀 일정' },
+  { value: 'WORK', label: '업무' },
   { value: 'VACATION', label: '휴가' },
 ]
 
@@ -18,7 +18,7 @@ const DURATIONS = [
   { value: 480, label: '8시간' },
 ]
 
-function ScheduleModal({ teamId, defaultDate, schedule, onSaved, onClose }) {
+function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
   const isEdit = !!schedule
 
   // 기본 날짜 계산
@@ -30,8 +30,8 @@ function ScheduleModal({ teamId, defaultDate, schedule, onSaved, onClose }) {
     type: 'VACATION',
     startDate: defaultDateObj, // Date 객체 (DatePicker용)
     endDate: defaultDateObj,   // Date 객체 (DatePicker용)
-    startTime: '09:00',        // 팀 일정용 시작 시간 (HH:mm)
-    duration: 60,              // 팀 일정용 소요 시간 (분)
+    startTime: '09:00',        // 업무일정용 시작 시간 (HH:mm)
+    duration: 60,              // 업무일정용 소요 시간 (분)
   })
   const [errors, setErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
@@ -51,7 +51,7 @@ function ScheduleModal({ teamId, defaultDate, schedule, onSaved, onClose }) {
       setForm({
         title: schedule.title || '',
         description: schedule.description || '',
-        type: schedule.type || 'TEAM',
+        type: schedule.type || 'WORK',
         startDate: startAtDayjs.toDate(),
         endDate: endAtDayjs.toDate(),
         startTime: startAtDayjs.format('HH:mm'),
@@ -121,10 +121,10 @@ function ScheduleModal({ teamId, defaultDate, schedule, onSaved, onClose }) {
     if (form.startDate && form.endDate && dayjs(form.endDate).isBefore(dayjs(form.startDate))) {
       newErrors.endDate = '종료 날짜는 시작 날짜 이후여야 합니다.'
     }
-    if (form.type === 'TEAM' && !form.startTime) {
+    if (form.type === 'WORK' && !form.startTime) {
       newErrors.startTime = '시작 시간은 필수입니다.'
     }
-    if (form.type === 'TEAM' && !form.duration) {
+    if (form.type === 'WORK' && !form.duration) {
       newErrors.duration = '소요 시간은 필수입니다.'
     }
     return newErrors
@@ -144,8 +144,8 @@ function ScheduleModal({ teamId, defaultDate, schedule, onSaved, onClose }) {
     try {
       let startAt, endAt, allDay
 
-      if (form.type === 'TEAM') {
-        // 팀 일정: 시작 날짜 + 시작 시간 + 소요 시간
+      if (form.type === 'WORK') {
+        // 업무일정: 시작 날짜 + 시작 시간 + 소요 시간
         const startDateTime = dayjs(form.startDate).format('YYYY-MM-DD') + 'T' + form.startTime + ':00'
         const endDateTime = dayjs(startDateTime).add(form.duration, 'minute').format('YYYY-MM-DDTHH:mm:ss')
         startAt = startDateTime
@@ -168,12 +168,9 @@ function ScheduleModal({ teamId, defaultDate, schedule, onSaved, onClose }) {
       }
 
       if (isEdit) {
-        await apiClient.put(
-          `/teams/${teamId}/schedules/${schedule.id}`,
-          payload
-        )
+        await apiClient.put(`/schedules/${schedule.id}`, payload)
       } else {
-        await apiClient.post(`/teams/${teamId}/schedules`, payload)
+        await apiClient.post('/schedules', payload)
       }
       onSaved()
     } catch (err) {

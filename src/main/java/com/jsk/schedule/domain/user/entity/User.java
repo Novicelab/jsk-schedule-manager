@@ -73,12 +73,12 @@ public class User {
     /**
      * ID/PW 로그인 시 사용자 생성
      */
-    public static User ofCredential(String username, String password, String name, Role role) {
+    public static User ofCredential(String username, String password, String name) {
         User user = new User();
         user.username = username;
         user.password = password;
         user.name = name;
-        user.role = role;
+        user.role = Role.USER;
         return user;
     }
 
@@ -93,7 +93,7 @@ public class User {
         user.name = name;
         user.profileImageUrl = profileImageUrl;
         user.kakaoAccessToken = kakaoAccessToken;
-        user.role = Role.MEMBER;
+        user.role = Role.USER;
         return user;
     }
 

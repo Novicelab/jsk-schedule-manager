@@ -2,7 +2,6 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import LoginPage from './pages/LoginPage'
 import CallbackPage from './pages/CallbackPage'
 import CalendarPage from './pages/CalendarPage'
-import TeamPage from './pages/TeamPage'
 import NotFoundPage from './pages/NotFoundPage'
 import PrivateRoute from './components/PrivateRoute'
 
@@ -17,14 +16,6 @@ function App() {
           element={
             <PrivateRoute>
               <CalendarPage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/teams"
-          element={
-            <PrivateRoute>
-              <TeamPage />
             </PrivateRoute>
           }
         />

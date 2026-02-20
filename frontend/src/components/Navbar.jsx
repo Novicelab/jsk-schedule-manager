@@ -35,16 +35,6 @@ function Navbar() {
             캘린더
           </NavLink>
         </li>
-        <li>
-          <NavLink
-            to="/teams"
-            className={({ isActive }) =>
-              isActive ? 'nav-link nav-link-active' : 'nav-link'
-            }
-          >
-            팀 관리
-          </NavLink>
-        </li>
       </ul>
       <button className="btn btn-logout" onClick={handleLogout}>
         로그아웃

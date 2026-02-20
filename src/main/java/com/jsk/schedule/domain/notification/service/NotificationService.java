@@ -5,9 +5,8 @@ import com.jsk.schedule.domain.notification.entity.Notification;
 import com.jsk.schedule.domain.notification.entity.NotificationType;
 import com.jsk.schedule.domain.notification.repository.NotificationRepository;
 import com.jsk.schedule.domain.schedule.entity.Schedule;
-import com.jsk.schedule.domain.team.entity.TeamMember;
-import com.jsk.schedule.domain.team.repository.TeamMemberRepository;
 import com.jsk.schedule.domain.user.entity.User;
+import com.jsk.schedule.domain.user.repository.UserRepository;
 import com.jsk.schedule.global.error.BusinessException;
 import com.jsk.schedule.infra.kakao.KakaoApiClient;
 import com.jsk.schedule.infra.kakao.dto.KakaoAlimtalkResponse;
@@ -34,33 +33,32 @@ public class NotificationService {
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     private final NotificationRepository notificationRepository;
-    private final TeamMemberRepository teamMemberRepository;
+    private final UserRepository userRepository;
     private final KakaoApiClient kakaoApiClient;
 
     /**
-     * 일정 이벤트 발생 시 해당 팀의 모든 팀원에게 알림을 발송한다.
-     * 각 팀원별로 알림 이력을 저장하고 카카오 API를 호출한다.
-     * 개별 팀원 발송 실패는 다른 팀원의 발송에 영향을 주지 않는다.
+     * 일정 이벤트 발생 시 카카오 AccessToken이 있는 모든 사용자에게 알림을 발송한다.
+     * 각 사용자별로 알림 이력을 저장하고 카카오 API를 호출한다.
+     * 개별 사용자 발송 실패는 다른 사용자의 발송에 영향을 주지 않는다.
      *
      * @param schedule 알림 대상 일정
      * @param type     알림 유형 (SCHEDULE_CREATED / UPDATED / DELETED)
      */
     @Transactional
     public void sendScheduleNotification(Schedule schedule, NotificationType type) {
-        Long teamId = schedule.getTeam().getId();
-        List<TeamMember> teamMembers = teamMemberRepository.findByTeamId(teamId);
+        List<User> users = userRepository.findAllByKakaoAccessTokenIsNotNull();
 
-        if (teamMembers.isEmpty()) {
-            log.debug("알림 발송 대상 팀원 없음: teamId={}", teamId);
+        if (users.isEmpty()) {
+            log.debug("알림 발송 대상 사용자 없음");
             return;
         }
 
         String message = buildMessage(schedule, type);
-        log.debug("일정 알림 발송 시작: scheduleId={}, type={}, 팀원 수={}",
-                schedule.getId(), type, teamMembers.size());
+        log.debug("일정 알림 발송 시작: scheduleId={}, type={}, 사용자 수={}",
+                schedule.getId(), type, users.size());
 
-        for (TeamMember teamMember : teamMembers) {
-            sendNotificationToMember(schedule, teamMember.getUser(), type, message);
+        for (User user : users) {
+            sendNotificationToUser(schedule, user, type, message);
         }
     }
 
@@ -68,8 +66,8 @@ public class NotificationService {
      * 특정 사용자에 대해 알림 저장 및 카카오 API 발송을 처리한다.
      * 최대 3회 재시도하며, 최종 실패 시 FAILED 상태로 기록하고 예외를 전파하지 않는다.
      */
-    private void sendNotificationToMember(Schedule schedule, User user,
-                                           NotificationType type, String message) {
+    private void sendNotificationToUser(Schedule schedule, User user,
+                                        NotificationType type, String message) {
         Notification notification = Notification.create(schedule, user, type, message);
         notificationRepository.save(notification);
 

@@ -1,9 +1,5 @@
 package com.jsk.schedule.domain.user.service;
 
-import com.jsk.schedule.domain.team.dto.TeamResponse;
-import com.jsk.schedule.domain.team.entity.TeamMember;
-import com.jsk.schedule.domain.team.repository.TeamMemberRepository;
-import com.jsk.schedule.domain.team.repository.TeamRepository;
 import com.jsk.schedule.domain.user.dto.UserProfileResponse;
 import com.jsk.schedule.domain.user.dto.UserProfileUpdateRequest;
 import com.jsk.schedule.domain.user.entity.User;
@@ -15,8 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -24,27 +18,16 @@ import java.util.List;
 public class UserService {
 
     private final UserRepository userRepository;
-    private final TeamMemberRepository teamMemberRepository;
-    private final TeamRepository teamRepository;
 
     /**
-     * 내 프로필 조회 (소속 팀 목록 포함).
+     * 내 프로필 조회.
      */
     @Transactional(readOnly = true)
     public UserProfileResponse getMyProfile(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        List<TeamMember> memberships = teamMemberRepository.findByUserId(userId);
-        List<Long> teamIds = memberships.stream()
-                .map(m -> m.getTeam().getId())
-                .toList();
-
-        List<TeamResponse> teams = teamRepository.findAllById(teamIds).stream()
-                .map(TeamResponse::from)
-                .toList();
-
-        return UserProfileResponse.of(user, teams);
+        return UserProfileResponse.of(user);
     }
 
     /**
@@ -58,15 +41,6 @@ public class UserService {
 
         log.info("프로필 수정 완료 — userId={}", userId);
 
-        List<TeamMember> memberships = teamMemberRepository.findByUserId(userId);
-        List<Long> teamIds = memberships.stream()
-                .map(m -> m.getTeam().getId())
-                .toList();
-
-        List<TeamResponse> teams = teamRepository.findAllById(teamIds).stream()
-                .map(TeamResponse::from)
-                .toList();
-
-        return UserProfileResponse.of(user, teams);
+        return UserProfileResponse.of(user);
     }
 }

@@ -2,14 +2,10 @@ package com.jsk.schedule.domain.user.entity;
 
 /**
  * 사용자 역할 (권한)
- * - ADMIN: 관리자 (시스템 전체 관리)
- * - MANAGER: 관리자 (팀 관리)
- * - MEMBER: 일반 팀원 (팀 일정 조회/생성)
+ * - USER: 모든 인증 사용자는 동등한 USER 역할
  */
 public enum Role {
-    ADMIN("관리자"),
-    MANAGER("팀 관리자"),
-    MEMBER("일반 팀원");
+    USER("사용자");
 
     private final String description;
 

@@ -4,7 +4,7 @@ import apiClient from '../../api/client'
 
 const TYPE_LABEL = {
   VACATION: '휴가',
-  TEAM: '팀 일정',
+  WORK: '업무',
 }
 
 function ScheduleDetail({ schedule, onEdit, onDeleted, onClose }) {
@@ -22,9 +22,7 @@ function ScheduleDetail({ schedule, onEdit, onDeleted, onClose }) {
     setDeleteError(null)
 
     try {
-      await apiClient.delete(
-        `/teams/${schedule.teamId}/schedules/${schedule.id}`
-      )
+      await apiClient.delete(`/schedules/${schedule.id}`)
       onDeleted()
     } catch (err) {
       console.error('일정 삭제 실패:', err)
