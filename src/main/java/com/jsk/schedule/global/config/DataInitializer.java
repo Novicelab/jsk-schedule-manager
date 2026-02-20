@@ -26,36 +26,27 @@ public class DataInitializer implements CommandLineRunner {
     public void run(String... args) throws Exception {
         log.info("Initializing test data...");
 
+        // 기존 계정 삭제
+        String[] existingUsernames = {"admin", "siljang", "user"};
+        for (String username : existingUsernames) {
+            userRepository.findByUsername(username).ifPresent(user -> {
+                userRepository.delete(user);
+                log.info("Deleted test account - {}: {}", username, user.getId());
+            });
+        }
+
         String encodedPassword = passwordEncoder.encode("1234");
         log.debug("Encoded password for '1234': {} (length: {})",
                 encodedPassword.substring(0, Math.min(20, encodedPassword.length())) + "...",
                 encodedPassword.length());
 
-        // 1. admin 계정 (USER 역할)
-        if (!userRepository.existsByUsername("admin")) {
-            User admin = User.ofCredential("admin", encodedPassword, "관리자");
-            admin = userRepository.save(admin);
-            log.info("Created test account - admin: {}", admin.getId());
+        // 신규 test 계정 생성 (id: test, pw: 1234)
+        if (!userRepository.existsByUsername("test")) {
+            User testUser = User.ofCredential("test", encodedPassword, "테스트 사용자");
+            testUser = userRepository.save(testUser);
+            log.info("Created test account - test: {}", testUser.getId());
         } else {
-            log.info("Test account 'admin' already exists - skipping creation");
-        }
-
-        // 2. siljang 계정 (USER 역할)
-        if (!userRepository.existsByUsername("siljang")) {
-            User siljang = User.ofCredential("siljang", encodedPassword, "실장");
-            siljang = userRepository.save(siljang);
-            log.info("Created test account - siljang: {}", siljang.getId());
-        } else {
-            log.info("Test account 'siljang' already exists");
-        }
-
-        // 3. user 계정 (USER 역할)
-        if (!userRepository.existsByUsername("user")) {
-            User user = User.ofCredential("user", encodedPassword, "사용자");
-            user = userRepository.save(user);
-            log.info("Created test account - user: {}", user.getId());
-        } else {
-            log.info("Test account 'user' already exists");
+            log.info("Test account 'test' already exists - skipping creation");
         }
 
         log.info("Test data initialization completed");
