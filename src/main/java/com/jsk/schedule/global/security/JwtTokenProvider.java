@@ -1,5 +1,6 @@
 package com.jsk.schedule.global.security;
 
+import com.jsk.schedule.domain.user.entity.Role;
 import com.jsk.schedule.global.config.JwtConfig;
 import com.jsk.schedule.global.error.BusinessException;
 import com.jsk.schedule.global.error.ErrorCode;
@@ -62,6 +63,23 @@ public class JwtTokenProvider {
     }
 
     /**
+     * userId, username, role을 포함하는 Access Token 생성.
+     */
+    public String generateAccessToken(Long userId, String username, Role role) {
+        Date now = new Date();
+        Date expiry = new Date(now.getTime() + jwtConfig.getAccessTokenExpiration());
+
+        return Jwts.builder()
+                .subject(String.valueOf(userId))
+                .claim("username", username)
+                .claim("role", role.name())
+                .issuedAt(now)
+                .expiration(expiry)
+                .signWith(secretKey)
+                .compact();
+    }
+
+    /**
      * userId를 subject로 하는 Refresh Token 생성.
      */
     public String generateRefreshToken(Long userId) {
@@ -82,6 +100,23 @@ public class JwtTokenProvider {
     public Long getUserId(String token) {
         Claims claims = parseClaims(token);
         return Long.parseLong(claims.getSubject());
+    }
+
+    /**
+     * 토큰에서 username 추출.
+     */
+    public String getUsername(String token) {
+        Claims claims = parseClaims(token);
+        return claims.get("username", String.class);
+    }
+
+    /**
+     * 토큰에서 role 추출.
+     */
+    public Role getRole(String token) {
+        Claims claims = parseClaims(token);
+        String roleStr = claims.get("role", String.class);
+        return roleStr != null ? Role.valueOf(roleStr) : Role.MEMBER;
     }
 
     /**

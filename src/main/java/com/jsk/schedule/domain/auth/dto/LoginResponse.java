@@ -1,43 +1,27 @@
 package com.jsk.schedule.domain.auth.dto;
 
-import com.jsk.schedule.domain.user.entity.User;
-import lombok.Builder;
+import com.jsk.schedule.domain.user.entity.Role;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
-/**
- * 카카오 로그인/토큰 재발급 응답 DTO.
- * 설계서 4.2절 인증 API 명세 기준.
- */
 @Getter
-@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class LoginResponse {
 
-    private final String accessToken;
-    private final String refreshToken;
-    private final String tokenType;
-    private final Long expiresIn;
-    private final UserInfo user;
-    private final boolean isNewUser;
+    private String accessToken;
+    private String refreshToken;
+    private UserInfo user;
 
-    /**
-     * 사용자 정보 내부 DTO.
-     */
     @Getter
-    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class UserInfo {
-
-        private final Long id;
-        private final String name;
-        private final String email;
-        private final String profileImageUrl;
-
-        public static UserInfo from(User user) {
-            return UserInfo.builder()
-                    .id(user.getId())
-                    .name(user.getName())
-                    .email(user.getEmail())
-                    .profileImageUrl(user.getProfileImageUrl())
-                    .build();
-        }
+        private Long id;
+        private String username;
+        private String name;
+        private String email;
+        private Role role;
     }
 }
