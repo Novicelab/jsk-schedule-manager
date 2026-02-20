@@ -39,6 +39,7 @@ services:
     name: jsk-schedule-frontend
     plan: free
     region: singapore
+    branch: main
 
     buildCommand: cd frontend && npm install && npm run build
     publishPath: frontend/dist
