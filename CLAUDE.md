@@ -98,6 +98,10 @@
   - 프론트엔드: React Static Site → https://jsk-schedule-frontend.onrender.com
   - 데이터베이스: Supabase PostgreSQL (PgBouncer 커넥션 풀링)
   - 배포 상태: ✅ Live and Operational
+- [x] 유지보수 & 개선: 카카오 로그인 버그 수정 (2026-02-21)
+  - ✅ KAKAO_CLIENT_ID 수정: 앱 번호(1389155) → REST API 키(240f33554023d9ab4957b2d638fb0d71)
+  - ✅ nickname null 처리: 카카오 프로필 미동의 시 기본값(카카오유저_{kakaoId}) 대체
+  - ✅ 카카오 로그인 정상화: KOE101 에러 + DB NOT NULL 제약 위반 500 에러 해결
 - [x] 유지보수 & 개선: 일정 생성 UI/UX 개선 및 버그 수정 (2026-02-20)
   - ✅ 날짜 오프셋 버그 해결 (toISOString 제거, 타임존 안전 포맷 사용)
   - ✅ 일정 생성 모달 개선: 스카이스캐너 방식의 날짜 범위 선택 (react-datepicker)
@@ -145,10 +149,10 @@ SPRING_PROFILES_ACTIVE=local java -jar build/libs/jsk-schedule-manager-0.0.1-SNA
 ```
 
 **특징:**
-- 포트: 8081
+- 포트: 9090
 - 데이터베이스: H2 In-Memory (자동 생성)
 - 프로파일 설정: `application-local.yml`
-- H2 콘솔: http://localhost:8081/h2-console
+- H2 콘솔: http://localhost:9090/h2-console
 
 ### 프론트엔드 실행
 
@@ -161,7 +165,7 @@ npm run dev
 **특징:**
 - 포트: 3001 (또는 사용 가능한 포트)
 - 자동 핫 리로드 (Vite)
-- API Base URL: http://localhost:8081
+- API Base URL: http://localhost:9090
 
 ### 환경 변수 설정
 
@@ -178,16 +182,16 @@ SUPABASE_ACCESS_TOKEN=sbp_bfa8be4b663f543b79aa2581ff6c0fd32ad1af48
 JWT_SECRET=kT9mQ2vN7xL5pR8yJ3wH6bD0cF4eG1sA
 
 # 카카오 OAuth
-KAKAO_CLIENT_ID=1389155
+KAKAO_CLIENT_ID=240f33554023d9ab4957b2d638fb0d71
 KAKAO_CLIENT_SECRET=[카카오 시크릿]
-KAKAO_REDIRECT_URI=http://localhost:3000/auth/callback
+KAKAO_REDIRECT_URI=http://localhost:3001/auth/callback
 ```
 
 **프론트엔드 (frontend/.env 파일)**
 ```env
-VITE_KAKAO_CLIENT_ID=1389155
-VITE_KAKAO_REDIRECT_URI=http://localhost:5173/auth/callback
-VITE_API_BASE_URL=http://localhost:8081
+VITE_KAKAO_CLIENT_ID=240f33554023d9ab4957b2d638fb0d71
+VITE_KAKAO_REDIRECT_URI=http://localhost:3001/auth/callback
+VITE_API_BASE_URL=http://localhost:9090
 ```
 
 템플릿: `frontend/.env.example` 참고
