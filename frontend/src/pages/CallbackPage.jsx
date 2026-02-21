@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import apiClient from '../api/client'
+import NameInputModal from '../components/auth/NameInputModal'
 
 function CallbackPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [errorMessage, setErrorMessage] = useState(null)
+  const [showNameModal, setShowNameModal] = useState(false)
   // StrictMode 이중 실행 방지
   const called = useRef(false)
 
@@ -23,13 +25,17 @@ function CallbackPage() {
     const processCallback = async () => {
       try {
         const response = await apiClient.post('/auth/kakao/callback', { code })
-        const { accessToken, refreshToken, user } = response.data.data
+        const { accessToken, refreshToken, user, isNewUser } = response.data.data
 
         localStorage.setItem('accessToken', accessToken)
         localStorage.setItem('refreshToken', refreshToken)
         localStorage.setItem('user', JSON.stringify(user))
 
-        navigate('/', { replace: true })
+        if (isNewUser) {
+          setShowNameModal(true)
+        } else {
+          navigate('/', { replace: true })
+        }
       } catch (err) {
         console.error('카카오 로그인 처리 실패:', err)
         const message =
@@ -50,6 +56,14 @@ function CallbackPage() {
           <p className="callback-sub">잠시 후 로그인 페이지로 이동합니다...</p>
         </div>
       </div>
+    )
+  }
+
+  if (showNameModal) {
+    return (
+      <NameInputModal
+        onComplete={() => navigate('/', { replace: true })}
+      />
     )
   }
 

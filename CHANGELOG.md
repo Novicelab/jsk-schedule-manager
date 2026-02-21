@@ -4,6 +4,45 @@
 
 ---
 
+## [2026-02-21] 카카오 신규 가입 시 이름 입력 팝업 + 휴가 말머리 자동 추가
+
+### 변경사항
+- **신규/기존 사용자 구분**: LoginResponse에 `isNewUser` 필드 추가
+  - 신규 가입 시 `isNewUser=true` → 프론트엔드에서 이름 입력 팝업 표시
+  - 기존 사용자 시 `isNewUser=false` → 바로 메인 페이지로 이동
+- **신규 가입 처리**: 카카오 닉네임 대신 임시값 저장
+  - 카카오 API 응답 nickname은 실명이 아닐 수 있음 → `__PENDING__` 임시값으로 저장
+  - 사용자가 팝업에서 실제 이름 입력 후 `PUT /api/users/me`로 업데이트
+- **이름 입력 팝업**: NameInputModal 컴포넌트 신규 생성
+  - 필수 입력 필드 (최대 50자)
+  - 배경 클릭/ESC 닫기 불가 (필수 입력이므로)
+  - 입력 후 확인 버튼 클릭 시 user 정보 업데이트 + 메인 이동
+- **VACATION 말머리 자동 추가**: 백엔드에서 휴가 일정의 제목에 이름 자동 추가
+  - `ScheduleService.createSchedule()`: VACATION 타입 시 `[사용자이름] 원본제목` 형식으로 저장
+  - WORK 타입은 원본 제목 그대로 저장
+- **UI/UX 개선**: ScheduleModal에서 VACATION 선택 시 placeholder 힌트 표시
+  - "예: 오전 반차 → 저장 시 [홍길동] 오전 반차" 형식으로 안내
+
+### 파일 변경
+**백엔드:**
+- `src/main/java/com/jsk/schedule/domain/auth/dto/LoginResponse.java`: isNewUser 필드 추가
+- `src/main/java/com/jsk/schedule/domain/auth/service/AuthService.java`: kakaoLogin() 메서드 수정 (신규/기존 구분, __PENDING__ 임시값)
+- `src/main/java/com/jsk/schedule/domain/schedule/service/ScheduleService.java`: createSchedule() 메서드 수정 (VACATION 말머리 자동 추가)
+
+**프론트엔드:**
+- `frontend/src/pages/CallbackPage.jsx`: isNewUser 확인 → NameInputModal 표시 로직 추가
+- `frontend/src/components/auth/NameInputModal.jsx`: ✨ 신규 생성 (이름 입력 모달)
+- `frontend/src/components/auth/NameInputModal.css`: ✨ 신규 생성 (모달 스타일)
+- `frontend/src/components/schedule/ScheduleModal.jsx`: VACATION 타입 시 placeholder 힌트 추가
+- `frontend/src/components/schedule/ScheduleModal.css`: schedule-hint 스타일 추가
+
+### 비고
+- DB의 `name` 컬럼은 NOT NULL 제약이므로, 신규 가입 시 임시값(`__PENDING__`) 사용 필수
+- NameInputModal은 PUT /api/users/me 엔드포인트 재사용 (기존 API 활용)
+- VACATION 일정의 이름은 저장 시에만 추가되므로, 사용자가 제목 입력 시에는 "오전 반차" 같이 입력 후 백엔드에서 "[이름] 오전 반차"로 변환됨
+
+---
+
 ## [2026-02-21] 카카오 로그인 버그 수정 (KAKAO_CLIENT_ID, nickname null 처리)
 
 ### 변경사항

@@ -107,6 +107,13 @@
   - ✅ 일정 생성 모달 개선: 스카이스캐너 방식의 날짜 범위 선택 (react-datepicker)
   - ✅ 유형별 UI 분기: 팀 일정(시간 포함) vs 휴가(날짜만)
   - ✅ CalendarPage 보안 강화: teamId null 체크 추가
+- [x] 유지보수 & 개선: 카카오 신규 가입 시 이름 입력 팝업 + 휴가 말머리 자동 추가 (2026-02-21)
+  - ✅ 신규/기존 사용자 구분: `LoginResponse.isNewUser` 필드 추가
+  - ✅ 신규 가입 처리: 카카오 닉네임 대신 임시값(`__PENDING__`) 저장 → 팝업에서 실제 이름 입력
+  - ✅ 이름 입력 팝업: `NameInputModal` 컴포넌트 신규 생성 (필수 입력, ESC 닫기 불가)
+  - ✅ VACATION 말머리 자동 추가: `[사용자이름] 제목` 형식으로 백엔드에서 자동 추가
+  - ✅ WORK 일정 구분: 업무 일정은 원본 제목 그대로 저장
+  - ✅ UI/UX 개선: ScheduleModal에서 VACATION 선택 시 placeholder 힌트 표시
 
 ---
 

@@ -212,6 +212,11 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
             <label htmlFor="title" className="form-label">
               제목 <span className="required">*</span>
             </label>
+            {form.type === 'VACATION' && (
+              <p className="schedule-hint">
+                💡 휴가 일정의 제목은 저장 시 자동으로 이름이 앞에 붙습니다.
+              </p>
+            )}
             <input
               id="title"
               name="title"
@@ -219,7 +224,11 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
               className={`form-input ${errors.title ? 'input-error' : ''}`}
               value={form.title}
               onChange={handleInputChange}
-              placeholder="일정 제목을 입력하세요"
+              placeholder={
+                form.type === 'VACATION'
+                  ? '예: 오전 반차 → 저장 시 [홍길동] 오전 반차'
+                  : '일정 제목을 입력하세요'
+              }
               maxLength={100}
             />
             {errors.title && (

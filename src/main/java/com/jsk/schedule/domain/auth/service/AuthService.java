@@ -91,24 +91,21 @@ public class AuthService {
                 kakaoId, kakaoUserInfo.getEmail(), kakaoUserInfo.getNickname());
 
         // Step 3: kakaoId로 기존 사용자 조회, 없으면 신규 사용자 생성
-        String nickname = kakaoUserInfo.getNickname();
-        if (nickname == null || nickname.isBlank()) {
-            nickname = "카카오유저_" + kakaoId;
-        }
-        final String resolvedNickname = nickname;
-
+        boolean[] isNewUserFlag = {false};
         User user = userRepository.findByKakaoId(kakaoId)
                 .orElseGet(() -> {
+                    isNewUserFlag[0] = true;
                     log.info("신규 카카오 사용자 가입: kakaoId={}", kakaoId);
                     User newUser = User.ofKakao(
                             kakaoId,
                             kakaoUserInfo.getEmail(),
-                            resolvedNickname,
+                            "__PENDING__",
                             kakaoUserInfo.getProfileImageUrl(),
                             kakaoAccessToken
                     );
                     return userRepository.save(newUser);
                 });
+        boolean isNewUser = isNewUserFlag[0];
 
         // 기존 사용자인 경우 카카오 Access Token 갱신
         if (user.getKakaoAccessToken() != null && !user.getKakaoAccessToken().equals(kakaoAccessToken)) {
@@ -128,7 +125,7 @@ public class AuthService {
         log.debug("Refresh Token 저장: userId={}", user.getId());
 
         log.info("카카오 OAuth 로그인 성공: userId={}, kakaoId={}, isNewUser={}",
-                user.getId(), kakaoId, user.getCreatedAt().equals(user.getUpdatedAt()));
+                user.getId(), kakaoId, isNewUser);
 
         return new LoginResponse(
                 accessToken,
@@ -139,7 +136,8 @@ public class AuthService {
                         user.getName(),
                         user.getEmail(),
                         user.getRole()
-                )
+                ),
+                isNewUser
         );
     }
 }
