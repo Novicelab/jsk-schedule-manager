@@ -4,6 +4,27 @@
 
 ---
 
+## [2026-02-21] 카카오 로그인 버그 수정 (KAKAO_CLIENT_ID, nickname null 처리)
+
+### 변경사항
+- **KAKAO_CLIENT_ID 수정**: 앱 번호(1389155) → REST API 키(240f33554023d9ab4957b2d638fb0d71)
+  - 프론트엔드 `frontend/.env`, 백엔드 `application-local.yml` 수정
+  - Render 프론트엔드/백엔드 환경변수 수동 수정 (VITE_KAKAO_CLIENT_ID, KAKAO_CLIENT_ID)
+- **nickname null 처리**: 카카오 프로필 미동의 시 `name` NOT NULL 제약 위반 500 에러 수정
+  - nickname null 또는 blank 시 `카카오유저_{kakaoId}` 기본값으로 대체
+
+### 파일 변경
+- `frontend/.env`: VITE_KAKAO_CLIENT_ID 수정
+- `src/main/resources/application-local.yml`: kakao.client-id 수정
+- `src/main/java/com/jsk/schedule/domain/auth/service/AuthService.java`: nickname null 기본값 처리 추가
+
+### 비고
+- 카카오 개발자 콘솔 동의항목에서 프로필 정보를 필수로 설정하면 닉네임을 항상 받을 수 있음
+- KOE101 에러(잘못된 앱 키) 해결 완료
+- DB not-null constraint 위반 500 에러 해결 완료
+
+---
+
 ## [2026-02-21] 카카오 OAuth 콜백 엔드포인트 구현
 
 ### 변경사항

@@ -34,10 +34,14 @@ jwt:
   refresh-token-expiration: 2592000000  # 30일 (ms)
 
 kakao:
-  client-id: "1389155"
+  client-id: "240f33554023d9ab4957b2d638fb0d71"
   client-secret: test-client-secret-for-local-dev
   redirect-uri: http://localhost:5173/auth/callback
   alimtalk-sender-key: test-sender-key-for-local-dev
+
+app:
+  cors:
+    allowed-origins: http://localhost:3001
 
 logging:
   level:
@@ -46,4 +50,4 @@ logging:
     org.hibernate.orm.jdbc.bind: TRACE
 
 server:
-  port: 6666
+  port: 9090
