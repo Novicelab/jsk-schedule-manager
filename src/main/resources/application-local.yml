@@ -41,7 +41,7 @@ kakao:
 
 app:
   cors:
-    allowed-origins: http://localhost:3001
+    allowed-origins: http://localhost:5173
 
 logging:
   level:

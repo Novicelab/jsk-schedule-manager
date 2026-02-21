@@ -4,6 +4,51 @@
 
 ---
 
+## [2026-02-21] 환경 설정 통합 - Kakao 로그인 포트/URI 일관성 수정
+
+### 변경사항
+- **환경 변수 통합 정리**: 로컬/프로덕션 환경의 포트 및 URI 불일치 문제 해결
+  - 프론트엔드 포트: 3001 → **5173** (Vite 기본값으로 통합)
+  - 백엔드 포트: 기존 9090 유지 (일관성)
+  - Kakao Redirect URI: 모든 환경에서 정확히 일치하도록 수정
+
+- **Kakao 로그인 오류 원인 분석 및 수정**:
+  - 문제: Vite 환경 변수는 빌드 시점에 고정 → Render 배포 시 localhost URI로 컴파일됨
+  - 해결: Render 환경 변수 설정 가이드 제공, 환경별 설정 분리
+
+- **프론트엔드 설정 파일 수정**:
+  - `frontend/.env`: 기존 값 유지 (로컬 개발용)
+  - `frontend/.env.example`: 올바른 REST API Key (240f33554023d9ab4957b2d638fb0d71) 및 포트(9090) 반영
+  - `frontend/vite.config.js`: 포트 5173, 프록시 대상 9090으로 수정
+
+- **백엔드 설정 파일 수정**:
+  - `application-local.yml`: CORS allowed-origins `http://localhost:3001` → `http://localhost:5173` 변경
+  - `application-prod.yml`: 기존 설정 유지 (환경 변수로 로드)
+
+- **문서화 추가**:
+  - `docs/environment-setup.md`: 로컬/프로덕션 환경 설정 완벽 가이드 추가
+  - `docs/render-deployment.md`: Render 배포 단계별 가이드 + 트러블슈팅 추가
+
+### 파일 변경
+**프론트엔드:**
+- `frontend/.env.example`: 올바른 값 + 주석으로 프로덕션 설정 가이드 추가
+- `frontend/vite.config.js`: port 5173, proxy target 9090 수정
+
+**백엔드:**
+- `src/main/resources/application-local.yml`: CORS allowed-origins 5173으로 수정
+
+**문서:**
+- `docs/environment-setup.md`: ✨ 신규 생성 (로컬/프로덕션 환경 설정 가이드)
+- `docs/render-deployment.md`: ✨ 신규 생성 (Render 배포 가이드)
+
+### 비고
+- 로컬 개발 환경: 프론트엔드 5173, 백엔드 9090 → Kakao 리다이렉트 `http://localhost:5173/auth/callback`
+- 프로덕션 (Render): 프론트엔드 `https://jsk-schedule-frontend.onrender.com`, 백엔드 `https://jsk-schedule-backend.onrender.com`
+- Kakao 콘솔에 두 Redirect URI 모두 등록 필수
+- Render 환경 변수 설정 시 `VITE_*` 변수는 빌드 시점에 컴파일되므로, 변경 후 반드시 "Clear Build Cache & Deploy" 실행
+
+---
+
 ## [2026-02-21] 일정 생성 팝업 UX 개선 + 휴가 제목 자동 설정
 
 ### 변경사항
