@@ -4,25 +4,29 @@
 
 ---
 
-## [2026-02-21] UI/UX 개선 + 데이터베이스 스키마 수정
+## [2026-02-21] UI/UX 개선 + 다층 외래키 CASCADE 구조화
 
 ### 변경사항
 - **일정 생성 팝업 개선**: 유형 선택을 `<select>` → 라디오 버튼으로 변경
   - 선택지 시각화 개선 (2개 항목 한눈에 비교 가능)
   - 호버 효과 및 상호작용성 향상
-- **외래키 제약 개선**: `schedules` 테이블의 `created_by` 외래키에 ON DELETE CASCADE 추가
-  - User 삭제 시 관련 Schedule도 자동 삭제됨
-  - 데이터 정합성 유지
+- **다층 외래키 CASCADE 설정**: 데이터 정합성 자동화
+  - `users` ← `schedules` (created_by): ON DELETE CASCADE
+  - `schedules` ← `notifications` (schedule_id): ON DELETE CASCADE
+  - `users` ← `notifications` (user_id): ON DELETE CASCADE
+  - User 삭제 시 관련 Schedule, Notification도 자동 삭제됨
 
 ### 파일 변경
 **프론트엔드:**
 - `frontend/src/components/schedule/ScheduleModal.jsx`: `<select>` → 라디오 버튼으로 변경
 - `frontend/src/components/schedule/ScheduleModal.css`: 라디오 버튼 스타일 추가 (.radio-group, .radio-label, .radio-input 등)
 
-**백엔드:**
+**백엔드 (외래키 CASCADE):**
 - `src/main/java/com/jsk/schedule/domain/schedule/entity/Schedule.java`:
-  * @OnDelete(action = OnDeleteAction.CASCADE) 애노테이션 추가
-  * import: org.hibernate.annotations.OnDelete, OnDeleteAction 추가
+  * @OnDelete(action = OnDeleteAction.CASCADE) 추가 (created_by 외래키)
+- `src/main/java/com/jsk/schedule/domain/notification/entity/Notification.java`:
+  * @OnDelete(action = OnDeleteAction.CASCADE) 추가 (schedule_id 외래키)
+  * @OnDelete(action = OnDeleteAction.CASCADE) 추가 (user_id 외래키)
 
 ### 비고
 - Hibernate 6+ `@OnDelete` 애노테이션으로 데이터베이스 수준의 CASCADE 동작 자동화
