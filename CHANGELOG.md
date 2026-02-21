@@ -4,6 +4,33 @@
 
 ---
 
+## [2026-02-21] UI/UX 개선 + 데이터베이스 스키마 수정
+
+### 변경사항
+- **일정 생성 팝업 개선**: 유형 선택을 `<select>` → 라디오 버튼으로 변경
+  - 선택지 시각화 개선 (2개 항목 한눈에 비교 가능)
+  - 호버 효과 및 상호작용성 향상
+- **외래키 제약 개선**: `schedules` 테이블의 `created_by` 외래키에 ON DELETE CASCADE 추가
+  - User 삭제 시 관련 Schedule도 자동 삭제됨
+  - 데이터 정합성 유지
+
+### 파일 변경
+**프론트엔드:**
+- `frontend/src/components/schedule/ScheduleModal.jsx`: `<select>` → 라디오 버튼으로 변경
+- `frontend/src/components/schedule/ScheduleModal.css`: 라디오 버튼 스타일 추가 (.radio-group, .radio-label, .radio-input 등)
+
+**백엔드:**
+- `src/main/java/com/jsk/schedule/domain/schedule/entity/Schedule.java`:
+  * @OnDelete(action = OnDeleteAction.CASCADE) 애노테이션 추가
+  * import: org.hibernate.annotations.OnDelete, OnDeleteAction 추가
+
+### 비고
+- Hibernate 6+ `@OnDelete` 애노테이션으로 데이터베이스 수준의 CASCADE 동작 자동화
+- Supabase에서도 해당 외래키 제약에 ON DELETE CASCADE 자동 적용됨
+- 이제 User 삭제 시 관련된 모든 Schedule이 자동으로 삭제되어 데이터 정합성 보장
+
+---
+
 ## [2026-02-21] 카카오 신규 가입 시 이름 입력 팝업 + 휴가 말머리 자동 추가
 
 ### 변경사항

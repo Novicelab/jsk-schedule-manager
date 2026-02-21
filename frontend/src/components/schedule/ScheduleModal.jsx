@@ -252,22 +252,24 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
           </div>
 
           <div className="form-group">
-            <label htmlFor="type" className="form-label">
+            <label className="form-label">
               유형 <span className="required">*</span>
             </label>
-            <select
-              id="type"
-              name="type"
-              className="form-input"
-              value={form.type}
-              onChange={handleTypeChange}
-            >
+            <div className="radio-group">
               {SCHEDULE_TYPES.map((t) => (
-                <option key={t.value} value={t.value}>
-                  {t.label}
-                </option>
+                <label key={t.value} className="radio-label">
+                  <input
+                    type="radio"
+                    name="type"
+                    value={t.value}
+                    checked={form.type === t.value}
+                    onChange={handleTypeChange}
+                    className="radio-input"
+                  />
+                  <span className="radio-text">{t.label}</span>
+                </label>
               ))}
-            </select>
+            </div>
           </div>
 
           {/* 날짜 범위 선택 */}
