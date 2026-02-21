@@ -45,10 +45,10 @@ public class ScheduleService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        // VACATION 타입이면 제목에 "[이름] " 말머리 자동 추가
+        // VACATION 타입이면 제목을 "[이름]휴가" 형태로 자동 설정
         String title = request.getTitle();
         if (request.getType() == ScheduleType.VACATION) {
-            title = "[" + user.getName() + "] " + title;
+            title = "[" + user.getName() + "]휴가";
         }
 
         Schedule schedule = Schedule.create(

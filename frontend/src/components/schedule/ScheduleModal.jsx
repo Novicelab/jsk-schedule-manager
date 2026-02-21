@@ -6,8 +6,8 @@ import apiClient from '../../api/client'
 import './ScheduleModal.css'
 
 const SCHEDULE_TYPES = [
-  { value: 'WORK', label: '업무' },
   { value: 'VACATION', label: '휴가' },
+  { value: 'WORK', label: '업무' },
 ]
 
 const DURATIONS = [
@@ -25,13 +25,13 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
   const defaultDateObj = defaultDate ? dayjs(defaultDate).toDate() : dayjs().toDate()
 
   const [form, setForm] = useState({
+    type: 'VACATION',       // 유형은 먼저 설정
     title: '',
     description: '',
-    type: 'VACATION',
-    startDate: defaultDateObj, // Date 객체 (DatePicker용)
-    endDate: defaultDateObj,   // Date 객체 (DatePicker용)
-    startTime: '09:00',        // 업무일정용 시작 시간 (HH:mm)
-    duration: 60,              // 업무일정용 소요 시간 (분)
+    startDate: defaultDateObj,
+    endDate: defaultDateObj,
+    startTime: '09:00',
+    duration: 60,
   })
   const [errors, setErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
@@ -49,9 +49,9 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
       }
 
       setForm({
+        type: schedule.type || 'WORK',
         title: schedule.title || '',
         description: schedule.description || '',
-        type: schedule.type || 'WORK',
         startDate: startAtDayjs.toDate(),
         endDate: endAtDayjs.toDate(),
         startTime: startAtDayjs.format('HH:mm'),
@@ -66,7 +66,6 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
       ...prev,
       [name]: value,
     }))
-    // 입력 시 해당 필드 에러 초기화
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: null }))
     }
@@ -87,7 +86,6 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
     setForm((prev) => ({
       ...prev,
       startDate: date,
-      // 종료일이 시작일보다 이전이면 종료일을 시작일로 맞춤
       endDate: dayjs(date).isAfter(prev.endDate) ? date : prev.endDate,
     }))
     if (errors.startDate) {
@@ -107,11 +105,7 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
 
   const validate = () => {
     const newErrors = {}
-    if (!form.title.trim()) {
-      newErrors.title = '제목은 필수입니다.'
-    } else if (form.title.trim().length > 100) {
-      newErrors.title = '제목은 100자 이내로 입력해주세요.'
-    }
+
     if (!form.startDate) {
       newErrors.startDate = '시작 날짜는 필수입니다.'
     }
@@ -121,12 +115,22 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
     if (form.startDate && form.endDate && dayjs(form.endDate).isBefore(dayjs(form.startDate))) {
       newErrors.endDate = '종료 날짜는 시작 날짜 이후여야 합니다.'
     }
-    if (form.type === 'WORK' && !form.startTime) {
-      newErrors.startTime = '시작 시간은 필수입니다.'
+
+    // WORK 타입의 경우에만 제목, 설명, 시간 검증
+    if (form.type === 'WORK') {
+      if (!form.title.trim()) {
+        newErrors.title = '제목은 필수입니다.'
+      } else if (form.title.trim().length > 100) {
+        newErrors.title = '제목은 100자 이내로 입력해주세요.'
+      }
+      if (!form.startTime) {
+        newErrors.startTime = '시작 시간은 필수입니다.'
+      }
+      if (!form.duration) {
+        newErrors.duration = '소요 시간은 필수입니다.'
+      }
     }
-    if (form.type === 'WORK' && !form.duration) {
-      newErrors.duration = '소요 시간은 필수입니다.'
-    }
+
     return newErrors
   }
 
@@ -142,7 +146,7 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
     setApiError(null)
 
     try {
-      let startAt, endAt, allDay
+      let startAt, endAt, allDay, title
 
       if (form.type === 'WORK') {
         // 업무일정: 시작 날짜 + 시작 시간 + 소요 시간
@@ -151,16 +155,18 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
         startAt = startDateTime
         endAt = endDateTime
         allDay = false
+        title = form.title.trim()
       } else {
         // 휴가: 시작 날짜 ~ 종료 날짜 (시간 없음)
         startAt = dayjs(form.startDate).format('YYYY-MM-DD') + 'T00:00:00'
         endAt = dayjs(form.endDate).format('YYYY-MM-DD') + 'T23:59:59'
         allDay = true
+        title = ''  // 휴가는 제목이 없음 (백엔드에서 "[이름]" 형식으로 설정)
       }
 
       const payload = {
-        title: form.title.trim(),
-        description: form.description.trim() || null,
+        title: title,
+        description: form.type === 'WORK' ? (form.description.trim() || null) : null,
         type: form.type,
         startAt,
         endAt,
@@ -208,146 +214,184 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
         {apiError && <div className="error-banner">{apiError}</div>}
 
         <form onSubmit={handleSubmit} className="modal-form" noValidate>
-          <div className="form-group">
-            <label htmlFor="title" className="form-label">
-              제목 <span className="required">*</span>
-            </label>
-            {form.type === 'VACATION' && (
-              <p className="schedule-hint">
-                💡 휴가 일정의 제목은 저장 시 자동으로 이름이 앞에 붙습니다.
-              </p>
-            )}
-            <input
-              id="title"
-              name="title"
-              type="text"
-              className={`form-input ${errors.title ? 'input-error' : ''}`}
-              value={form.title}
-              onChange={handleInputChange}
-              placeholder={
-                form.type === 'VACATION'
-                  ? '예: 오전 반차 → 저장 시 [홍길동] 오전 반차'
-                  : '일정 제목을 입력하세요'
-              }
-              maxLength={100}
-            />
-            {errors.title && (
-              <span className="field-error">{errors.title}</span>
-            )}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="description" className="form-label">
-              설명
-            </label>
-            <textarea
-              id="description"
-              name="description"
-              className="form-input form-textarea"
-              value={form.description}
-              onChange={handleInputChange}
-              placeholder="일정 설명을 입력하세요 (선택)"
-              rows={3}
-            />
-          </div>
-
+          {/* Step 1: 유형 선택 (필수, 맨 위) */}
           <div className="form-group">
             <label className="form-label">
-              유형 <span className="required">*</span>
+              유형 선택 <span className="required">*</span>
             </label>
-            <div className="radio-group">
+            <div className="type-box-group">
               {SCHEDULE_TYPES.map((t) => (
-                <label key={t.value} className="radio-label">
+                <label
+                  key={t.value}
+                  className={`type-box ${form.type === t.value ? 'type-box-selected' : ''}`}
+                >
                   <input
                     type="radio"
                     name="type"
                     value={t.value}
                     checked={form.type === t.value}
                     onChange={handleTypeChange}
-                    className="radio-input"
+                    className="type-radio"
                   />
-                  <span className="radio-text">{t.label}</span>
+                  <span className="type-box-label">{t.label}</span>
                 </label>
               ))}
             </div>
           </div>
 
-          {/* 날짜 범위 선택 */}
-          <div className="form-group">
-            <label className="form-label">
-              {form.type === 'WORK' ? '일정 날짜' : '휴가 기간'} <span className="required">*</span>
-            </label>
-            <div className="date-range-container">
-              <div className="date-picker-wrapper">
-                <label className="date-label">시작</label>
-                <DatePicker
-                  selected={form.startDate}
-                  onChange={handleStartDateChange}
-                  dateFormat="yyyy-MM-dd"
-                  className={`form-input date-picker ${errors.startDate ? 'input-error' : ''}`}
-                />
-              </div>
-              <span className="date-separator">→</span>
-              <div className="date-picker-wrapper">
-                <label className="date-label">종료</label>
-                <DatePicker
-                  selected={form.endDate}
-                  onChange={handleEndDateChange}
-                  dateFormat="yyyy-MM-dd"
-                  className={`form-input date-picker ${errors.endDate ? 'input-error' : ''}`}
-                />
-              </div>
-            </div>
-            {errors.startDate && (
-              <span className="field-error">{errors.startDate}</span>
-            )}
-            {errors.endDate && (
-              <span className="field-error">{errors.endDate}</span>
-            )}
-          </div>
+          {/* Step 2: VACATION인 경우 - 날짜만 */}
+          {form.type === 'VACATION' && (
+            <>
+              <p className="form-section-hint">
+                휴가 기간을 선택해주세요. 제목은 저장 시 자동으로 [이름] 형식으로 생성됩니다.
+              </p>
 
-          {/* 시간 선택 (업무 일정에서만) */}
-          {form.type === 'WORK' && (
-            <div className="form-row">
               <div className="form-group">
-                <label htmlFor="startTime" className="form-label">
-                  시작 시간 <span className="required">*</span>
+                <label className="form-label">
+                  휴가 기간 <span className="required">*</span>
+                </label>
+                <div className="date-range-container">
+                  <div className="date-picker-wrapper">
+                    <label className="date-label">시작</label>
+                    <DatePicker
+                      selected={form.startDate}
+                      onChange={handleStartDateChange}
+                      dateFormat="yyyy-MM-dd"
+                      className={`form-input date-picker ${errors.startDate ? 'input-error' : ''}`}
+                    />
+                  </div>
+                  <span className="date-separator">→</span>
+                  <div className="date-picker-wrapper">
+                    <label className="date-label">종료</label>
+                    <DatePicker
+                      selected={form.endDate}
+                      onChange={handleEndDateChange}
+                      dateFormat="yyyy-MM-dd"
+                      className={`form-input date-picker ${errors.endDate ? 'input-error' : ''}`}
+                    />
+                  </div>
+                </div>
+                {errors.startDate && (
+                  <span className="field-error">{errors.startDate}</span>
+                )}
+                {errors.endDate && (
+                  <span className="field-error">{errors.endDate}</span>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Step 3: WORK인 경우 - 제목, 설명, 날짜, 시간 */}
+          {form.type === 'WORK' && (
+            <>
+              <div className="form-group">
+                <label htmlFor="title" className="form-label">
+                  제목 <span className="required">*</span>
                 </label>
                 <input
-                  id="startTime"
-                  name="startTime"
-                  type="time"
-                  className={`form-input ${errors.startTime ? 'input-error' : ''}`}
-                  value={form.startTime}
+                  id="title"
+                  name="title"
+                  type="text"
+                  className={`form-input ${errors.title ? 'input-error' : ''}`}
+                  value={form.title}
                   onChange={handleInputChange}
+                  placeholder="일정 제목을 입력하세요"
+                  maxLength={100}
                 />
-                {errors.startTime && (
-                  <span className="field-error">{errors.startTime}</span>
+                {errors.title && (
+                  <span className="field-error">{errors.title}</span>
                 )}
               </div>
 
               <div className="form-group">
-                <label htmlFor="duration" className="form-label">
-                  소요 시간 <span className="required">*</span>
+                <label htmlFor="description" className="form-label">
+                  설명 <span className="optional">(선택)</span>
                 </label>
-                <select
-                  id="duration"
-                  name="duration"
-                  className="form-input"
-                  value={form.duration}
+                <textarea
+                  id="description"
+                  name="description"
+                  className="form-input form-textarea"
+                  value={form.description}
                   onChange={handleInputChange}
-                >
-                  {DURATIONS.map((d) => (
-                    <option key={d.value} value={d.value}>
-                      {d.label}
-                    </option>
-                  ))}
-                </select>
-                {errors.duration && (
-                  <span className="field-error">{errors.duration}</span>
+                  placeholder="일정 설명을 입력하세요"
+                  rows={3}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">
+                  일정 날짜 <span className="required">*</span>
+                </label>
+                <div className="date-range-container">
+                  <div className="date-picker-wrapper">
+                    <label className="date-label">시작</label>
+                    <DatePicker
+                      selected={form.startDate}
+                      onChange={handleStartDateChange}
+                      dateFormat="yyyy-MM-dd"
+                      className={`form-input date-picker ${errors.startDate ? 'input-error' : ''}`}
+                    />
+                  </div>
+                  <span className="date-separator">→</span>
+                  <div className="date-picker-wrapper">
+                    <label className="date-label">종료</label>
+                    <DatePicker
+                      selected={form.endDate}
+                      onChange={handleEndDateChange}
+                      dateFormat="yyyy-MM-dd"
+                      className={`form-input date-picker ${errors.endDate ? 'input-error' : ''}`}
+                    />
+                  </div>
+                </div>
+                {errors.startDate && (
+                  <span className="field-error">{errors.startDate}</span>
+                )}
+                {errors.endDate && (
+                  <span className="field-error">{errors.endDate}</span>
                 )}
               </div>
-            </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="startTime" className="form-label">
+                    시작 시간 <span className="required">*</span>
+                  </label>
+                  <input
+                    id="startTime"
+                    name="startTime"
+                    type="time"
+                    className={`form-input ${errors.startTime ? 'input-error' : ''}`}
+                    value={form.startTime}
+                    onChange={handleInputChange}
+                  />
+                  {errors.startTime && (
+                    <span className="field-error">{errors.startTime}</span>
+                  )}
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="duration" className="form-label">
+                    소요 시간 <span className="required">*</span>
+                  </label>
+                  <select
+                    id="duration"
+                    name="duration"
+                    className="form-input"
+                    value={form.duration}
+                    onChange={handleInputChange}
+                  >
+                    {DURATIONS.map((d) => (
+                      <option key={d.value} value={d.value}>
+                        {d.label}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.duration && (
+                    <span className="field-error">{errors.duration}</span>
+                  )}
+                </div>
+              </div>
+            </>
           )}
 
           <div className="modal-footer">

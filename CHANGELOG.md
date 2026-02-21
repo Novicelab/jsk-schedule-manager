@@ -4,6 +4,46 @@
 
 ---
 
+## [2026-02-21] 일정 생성 팝업 UX 개선 + 휴가 제목 자동 설정
+
+### 변경사항
+- **일정 생성 팝업 구조 개선**:
+  * 유형 선택을 맨 위로 이동 (필수 입력 강조)
+  * 라디오 버튼을 **박스 형태**로 스타일 변경 (시각적 개선)
+  * 유형 선택에 따라 나머지 필드 동적 렌더링
+
+- **유형별 입력 필드 조건부 표시**:
+  * **VACATION (휴가)**: 날짜(from-to)만 표시
+  * **WORK (업무)**: 제목, 설명, 날짜(from-to), 시간(from-to) 표시
+
+- **휴가 제목 자동 설정**:
+  * VACATION 타입 저장 시 제목을 `[사용자이름]휴가` 형식으로 자동 설정
+  * 사용자가 제목 입력할 필요 없음
+
+### 파일 변경
+**프론트엔드:**
+- `frontend/src/components/schedule/ScheduleModal.jsx`:
+  * 유형 선택을 최상단으로 이동
+  * 조건부 렌더링 로직 추가 (유형별 UI 분기)
+  * 상태 관리 순서 개선 (type이 먼저)
+- `frontend/src/components/schedule/ScheduleModal.css`:
+  * `.type-box-group`: 박스 형태 라디오 버튼 레이아웃
+  * `.type-box`: 박스 스타일 + 호버 효과
+  * `.type-box-selected`: 선택 상태 스타일
+  * `.form-section-hint`: 섹션별 안내 메시지
+
+**백엔드:**
+- `src/main/java/com/jsk/schedule/domain/schedule/service/ScheduleService.java`:
+  * VACATION 타입 시 제목을 `[이름]휴가` 형식으로 자동 설정
+  * 주석 개선
+
+### 비고
+- UX 개선으로 사용자가 더 명확하게 일정 유형을 선택
+- 휴가 등록 시 불필요한 제목 입력 제거 (자동 생성)
+- 박스 형태 선택지로 선택성이 더 명확해짐
+
+---
+
 ## [2026-02-21] UI/UX 개선 + 다층 외래키 CASCADE 구조화
 
 ### 변경사항

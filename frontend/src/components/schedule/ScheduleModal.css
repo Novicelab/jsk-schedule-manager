@@ -153,35 +153,70 @@
   border-left: 3px solid #0891b2;
 }
 
-/* Radio Button Group */
-.radio-group {
+/* Type Selection Box Group */
+.type-box-group {
   display: flex;
-  gap: 16px;
-  margin-top: 8px;
+  gap: 12px;
+  margin-top: 12px;
 }
 
-.radio-label {
+.type-box {
+  flex: 1;
+  padding: 16px;
+  border: 2px solid #d1d5db;
+  border-radius: 8px;
+  cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  font-size: 0.95rem;
+  gap: 12px;
+  transition: all 0.2s ease;
   user-select: none;
 }
 
-.radio-input {
-  width: 18px;
-  height: 18px;
+.type-box:hover {
+  border-color: #2563eb;
+  background-color: #f0f4ff;
+}
+
+.type-box-selected {
+  border-color: #2563eb;
+  background-color: #eff6ff;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.type-radio {
+  width: 20px;
+  height: 20px;
   cursor: pointer;
   accent-color: #2563eb;
+  flex-shrink: 0;
 }
 
-.radio-text {
-  font-weight: 500;
+.type-box-label {
+  font-weight: 600;
   color: #333;
-  transition: color 0.2s ease;
+  font-size: 1rem;
 }
 
-.radio-label:hover .radio-text {
+.type-box-selected .type-box-label {
   color: #2563eb;
+}
+
+/* Form Section Hint */
+.form-section-hint {
+  margin: 0 0 20px;
+  font-size: 0.9rem;
+  color: #6b7280;
+  background-color: #f9fafb;
+  padding: 12px;
+  border-radius: 6px;
+  border-left: 3px solid #0891b2;
+  line-height: 1.5;
+}
+
+/* Optional Label */
+.optional {
+  font-size: 0.85rem;
+  color: #9ca3af;
+  font-weight: normal;
 }
