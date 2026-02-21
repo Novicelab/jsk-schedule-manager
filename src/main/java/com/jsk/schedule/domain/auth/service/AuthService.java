@@ -67,7 +67,8 @@ public class AuthService {
                         user.getName(),
                         user.getEmail(),
                         user.getRole()
-                )
+                ),
+                false  // 일반 로그인은 신규 사용자가 아님
         );
     }
 
