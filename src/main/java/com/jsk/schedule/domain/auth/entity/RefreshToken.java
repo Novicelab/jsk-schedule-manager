@@ -58,6 +58,20 @@ public class RefreshToken {
         return refreshToken;
     }
 
+    /**
+     * User와 토큰값으로 Refresh Token 생성.
+     * expiresAt은 토큰 생성 + 30일로 설정 (ms → LocalDateTime 변환).
+     */
+    public static RefreshToken of(User user, String token) {
+        RefreshToken refreshToken = new RefreshToken();
+        refreshToken.user = user;
+        refreshToken.token = token;
+        // 30일 = 2592000000ms
+        long expirationMs = 2592000000L;
+        refreshToken.expiresAt = LocalDateTime.now().plusSeconds(expirationMs / 1000);
+        return refreshToken;
+    }
+
     public boolean isExpired() {
         return expiresAt.isBefore(LocalDateTime.now());
     }

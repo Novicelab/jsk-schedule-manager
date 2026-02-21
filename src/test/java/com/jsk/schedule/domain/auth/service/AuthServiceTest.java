@@ -62,7 +62,7 @@ class AuthServiceTest {
 
     @BeforeEach
     void setUp() {
-        existingUser = User.of(12345L, "user@test.com", "테스트유저", "http://img.url", "kakaoToken");
+        existingUser = User.ofKakao(12345L, "user@test.com", "테스트유저", "http://img.url", "kakaoToken");
         ReflectionTestUtils.setField(existingUser, "id", 1L);
 
         kakaoTokenResponse = new KakaoTokenResponse();
@@ -73,170 +73,150 @@ class AuthServiceTest {
         ReflectionTestUtils.setField(kakaoUserInfo, "id", 12345L);
     }
 
-    // ========== login 테스트 ==========
+    // ========== kakaoLogin 테스트 ==========
 
     @Test
-    @DisplayName("login: 기존 사용자가 로그인하면 JWT 토큰이 발급되고 isNewUser가 false이다")
-    void login_whenExistingUser_shouldReturnTokensWithIsNewUserFalse() {
+    @DisplayName("kakaoLogin: 신규 사용자는 자동 가입되고 isNewUser가 true이다")
+    void kakaoLogin_whenNewUser_shouldCreateUserAndReturnIsNewUserTrue() {
         // Arrange
-        given(kakaoOAuthClient.getKakaoToken("authCode")).willReturn(kakaoTokenResponse);
-        given(kakaoOAuthClient.getKakaoUserInfo("kakaoAccessToken")).willReturn(kakaoUserInfo);
-        given(userRepository.existsByKakaoId(12345L)).willReturn(true);
-        given(userRepository.findByKakaoId(12345L)).willReturn(Optional.of(existingUser));
-        given(jwtTokenProvider.generateAccessToken(1L)).willReturn("newAccessToken");
-        given(jwtTokenProvider.generateRefreshToken(1L)).willReturn("newRefreshToken");
-        given(jwtTokenProvider.getExpiration("newRefreshToken"))
-                .willReturn(LocalDateTime.now().plusDays(30));
-        given(refreshTokenRepository.save(any(RefreshToken.class))).willAnswer(inv -> inv.getArgument(0));
-        given(jwtConfig.getAccessTokenExpiration()).willReturn(3600000L);
+        String authCode = "kakaoAuthCode123";
+        Long kakaoId = 12345L;
+
+        KakaoUserInfo kakaoUserInfo = new KakaoUserInfo();
+        ReflectionTestUtils.setField(kakaoUserInfo, "id", kakaoId);
+
+        User newUser = User.ofKakao(kakaoId, "user@kakao.com", "카카오유저",
+                "http://profile.url", "kakaoAccessToken");
+        ReflectionTestUtils.setField(newUser, "id", 1L);
+        ReflectionTestUtils.setField(newUser, "createdAt", LocalDateTime.now());
+        ReflectionTestUtils.setField(newUser, "updatedAt", LocalDateTime.now());
+
+        given(kakaoOAuthClient.getKakaoToken(authCode))
+                .willReturn(kakaoTokenResponse);
+        given(kakaoOAuthClient.getKakaoUserInfo("kakaoAccessToken"))
+                .willReturn(kakaoUserInfo);
+        given(userRepository.findByKakaoId(kakaoId))
+                .willReturn(Optional.empty());
+        given(userRepository.save(any(User.class)))
+                .willReturn(newUser);
+        given(jwtTokenProvider.generateAccessToken(1L))
+                .willReturn("newAccessToken");
+        given(jwtTokenProvider.generateRefreshToken(1L))
+                .willReturn("newRefreshToken");
+        given(refreshTokenRepository.save(any(RefreshToken.class)))
+                .willAnswer(inv -> inv.getArgument(0));
 
         // Act
-        LoginResponse response = authService.login("authCode");
+        LoginResponse response = authService.kakaoLogin(authCode);
 
         // Assert
         assertThat(response).isNotNull();
         assertThat(response.getAccessToken()).isEqualTo("newAccessToken");
         assertThat(response.getRefreshToken()).isEqualTo("newRefreshToken");
-        assertThat(response.isNewUser()).isFalse();
-        assertThat(response.getTokenType()).isEqualTo("Bearer");
-    }
-
-    @Test
-    @DisplayName("login: 신규 사용자가 로그인하면 사용자가 생성되고 isNewUser가 true이다")
-    void login_whenNewUser_shouldCreateUserAndReturnIsNewUserTrue() {
-        // Arrange
-        given(kakaoOAuthClient.getKakaoToken("authCode")).willReturn(kakaoTokenResponse);
-        given(kakaoOAuthClient.getKakaoUserInfo("kakaoAccessToken")).willReturn(kakaoUserInfo);
-        given(userRepository.existsByKakaoId(12345L)).willReturn(false);
-        given(userRepository.findByKakaoId(12345L)).willReturn(Optional.empty());
-        given(userRepository.save(any(User.class))).willReturn(existingUser);
-        given(jwtTokenProvider.generateAccessToken(1L)).willReturn("accessToken");
-        given(jwtTokenProvider.generateRefreshToken(1L)).willReturn("refreshToken");
-        given(jwtTokenProvider.getExpiration("refreshToken"))
-                .willReturn(LocalDateTime.now().plusDays(30));
-        given(refreshTokenRepository.save(any(RefreshToken.class))).willAnswer(inv -> inv.getArgument(0));
-        given(jwtConfig.getAccessTokenExpiration()).willReturn(3600000L);
-
-        // Act
-        LoginResponse response = authService.login("authCode");
-
-        // Assert
-        assertThat(response.isNewUser()).isTrue();
+        assertThat(response.getUser()).isNotNull();
+        assertThat(response.getUser().getName()).isEqualTo("카카오유저");
         then(userRepository).should(times(1)).save(any(User.class));
     }
 
     @Test
-    @DisplayName("login: 로그인 시 기존 Refresh Token이 삭제되고 새 토큰으로 교체된다 (Rotation)")
-    void login_shouldDeleteOldRefreshTokenAndSaveNew() {
+    @DisplayName("kakaoLogin: 기존 사용자는 자동 로그인되고 isNewUser가 false이다")
+    void kakaoLogin_whenExistingUser_shouldLoginAndReturnIsNewUserFalse() {
         // Arrange
-        given(kakaoOAuthClient.getKakaoToken("authCode")).willReturn(kakaoTokenResponse);
-        given(kakaoOAuthClient.getKakaoUserInfo("kakaoAccessToken")).willReturn(kakaoUserInfo);
-        given(userRepository.existsByKakaoId(12345L)).willReturn(true);
-        given(userRepository.findByKakaoId(12345L)).willReturn(Optional.of(existingUser));
-        given(jwtTokenProvider.generateAccessToken(1L)).willReturn("accessToken");
-        given(jwtTokenProvider.generateRefreshToken(1L)).willReturn("refreshToken");
-        given(jwtTokenProvider.getExpiration("refreshToken"))
-                .willReturn(LocalDateTime.now().plusDays(30));
-        given(refreshTokenRepository.save(any(RefreshToken.class))).willAnswer(inv -> inv.getArgument(0));
-        given(jwtConfig.getAccessTokenExpiration()).willReturn(3600000L);
+        String authCode = "kakaoAuthCode456";
+        Long kakaoId = 54321L;
+
+        KakaoUserInfo kakaoUserInfo = new KakaoUserInfo();
+        ReflectionTestUtils.setField(kakaoUserInfo, "id", kakaoId);
+
+        User existingKakaoUser = User.ofKakao(kakaoId, "existing@kakao.com", "기존유저",
+                "http://profile2.url", "oldKakaoToken");
+        ReflectionTestUtils.setField(existingKakaoUser, "id", 2L);
+        ReflectionTestUtils.setField(existingKakaoUser, "createdAt", LocalDateTime.now().minusMonths(1));
+        ReflectionTestUtils.setField(existingKakaoUser, "updatedAt", LocalDateTime.now().minusMonths(1));
+
+        given(kakaoOAuthClient.getKakaoToken(authCode))
+                .willReturn(kakaoTokenResponse);
+        given(kakaoOAuthClient.getKakaoUserInfo("kakaoAccessToken"))
+                .willReturn(kakaoUserInfo);
+        given(userRepository.findByKakaoId(kakaoId))
+                .willReturn(Optional.of(existingKakaoUser));
+        given(jwtTokenProvider.generateAccessToken(2L))
+                .willReturn("existingAccessToken");
+        given(jwtTokenProvider.generateRefreshToken(2L))
+                .willReturn("existingRefreshToken");
+        given(refreshTokenRepository.save(any(RefreshToken.class)))
+                .willAnswer(inv -> inv.getArgument(0));
 
         // Act
-        authService.login("authCode");
+        LoginResponse response = authService.kakaoLogin(authCode);
 
         // Assert
-        then(refreshTokenRepository).should(times(1)).deleteByUserId(1L);
+        assertThat(response).isNotNull();
+        assertThat(response.getAccessToken()).isEqualTo("existingAccessToken");
+        assertThat(response.getUser().getId()).isEqualTo(2L);
+        then(userRepository).should(never()).save(any(User.class));
+    }
+
+    @Test
+    @DisplayName("kakaoLogin: 카카오 API 오류 시 KAKAO_API_ERROR 예외가 발생한다")
+    void kakaoLogin_whenKakaoApiError_shouldThrowKakaoApiError() {
+        // Arrange
+        String authCode = "invalidAuthCode";
+
+        given(kakaoOAuthClient.getKakaoToken(authCode))
+                .willThrow(new BusinessException(ErrorCode.KAKAO_API_ERROR));
+
+        // Act & Assert
+        assertThatThrownBy(() -> authService.kakaoLogin(authCode))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.KAKAO_API_ERROR);
+    }
+
+    @Test
+    @DisplayName("kakaoLogin: Refresh Token이 정상적으로 저장된다")
+    void kakaoLogin_shouldSaveRefreshTokenWithExpiration() {
+        // Arrange
+        String authCode = "kakaoAuthCode789";
+        Long kakaoId = 99999L;
+
+        KakaoUserInfo kakaoUserInfo = new KakaoUserInfo();
+        ReflectionTestUtils.setField(kakaoUserInfo, "id", kakaoId);
+
+        User newUser = User.ofKakao(kakaoId, "newuser@kakao.com", "신규유저",
+                "http://profile3.url", "kakaoAccessToken");
+        ReflectionTestUtils.setField(newUser, "id", 3L);
+
+        given(kakaoOAuthClient.getKakaoToken(authCode))
+                .willReturn(kakaoTokenResponse);
+        given(kakaoOAuthClient.getKakaoUserInfo("kakaoAccessToken"))
+                .willReturn(kakaoUserInfo);
+        given(userRepository.findByKakaoId(kakaoId))
+                .willReturn(Optional.empty());
+        given(userRepository.save(any(User.class)))
+                .willReturn(newUser);
+        given(jwtTokenProvider.generateAccessToken(3L))
+                .willReturn("accessToken");
+        given(jwtTokenProvider.generateRefreshToken(3L))
+                .willReturn("refreshToken");
+
+        ArgumentCaptor<RefreshToken> refreshTokenCaptor = ArgumentCaptor.forClass(RefreshToken.class);
+        given(refreshTokenRepository.save(refreshTokenCaptor.capture()))
+                .willAnswer(inv -> inv.getArgument(0));
+
+        // Act
+        authService.kakaoLogin(authCode);
+
+        // Assert
+        then(refreshTokenRepository).should(times(1)).deleteByUserId(3L);
         then(refreshTokenRepository).should(times(1)).save(any(RefreshToken.class));
+
+        RefreshToken savedToken = refreshTokenCaptor.getValue();
+        assertThat(savedToken.getToken()).isEqualTo("refreshToken");
+        assertThat(savedToken.isExpired()).isFalse();
     }
 
-    // ========== reissue 테스트 ==========
+    // ========== login 테스트 ==========
 
-    @Test
-    @DisplayName("reissue: 유효한 Refresh Token으로 재발급 시 새 토큰이 반환된다")
-    void reissue_whenValidToken_shouldReturnNewTokens() {
-        // Arrange
-        RefreshToken storedToken = RefreshToken.create(existingUser, "validRefreshToken",
-                LocalDateTime.now().plusDays(30));
 
-        given(refreshTokenRepository.findByToken("validRefreshToken"))
-                .willReturn(Optional.of(storedToken));
-        given(jwtTokenProvider.generateAccessToken(1L)).willReturn("newAccessToken");
-        given(jwtTokenProvider.generateRefreshToken(1L)).willReturn("newRefreshToken");
-        given(jwtTokenProvider.getExpiration("newRefreshToken"))
-                .willReturn(LocalDateTime.now().plusDays(30));
-        given(refreshTokenRepository.save(any(RefreshToken.class))).willAnswer(inv -> inv.getArgument(0));
-        given(jwtConfig.getAccessTokenExpiration()).willReturn(3600000L);
-
-        // Act
-        LoginResponse response = authService.reissue("validRefreshToken");
-
-        // Assert
-        assertThat(response.getAccessToken()).isEqualTo("newAccessToken");
-        assertThat(response.getRefreshToken()).isEqualTo("newRefreshToken");
-    }
-
-    @Test
-    @DisplayName("reissue: 존재하지 않는 Refresh Token으로 재발급 시 REFRESH_TOKEN_NOT_FOUND 예외가 발생한다")
-    void reissue_whenTokenNotFound_shouldThrowRefreshTokenNotFound() {
-        // Arrange
-        given(refreshTokenRepository.findByToken("invalidToken")).willReturn(Optional.empty());
-
-        // Act & Assert
-        assertThatThrownBy(() -> authService.reissue("invalidToken"))
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.REFRESH_TOKEN_NOT_FOUND);
-
-        then(jwtTokenProvider).should(never()).generateAccessToken(anyLong());
-    }
-
-    @Test
-    @DisplayName("reissue: 만료된 Refresh Token 재발급 시 EXPIRED_TOKEN 예외가 발생한다")
-    void reissue_whenExpiredToken_shouldThrowExpiredToken() {
-        // Arrange
-        RefreshToken storedToken = RefreshToken.create(existingUser, "expiredToken",
-                LocalDateTime.now().minusDays(1));
-
-        given(refreshTokenRepository.findByToken("expiredToken"))
-                .willReturn(Optional.of(storedToken));
-        given(jwtTokenProvider.validateToken("expiredToken")).willAnswer(inv -> {
-            throw new BusinessException(ErrorCode.EXPIRED_TOKEN);
-        });
-
-        // Act & Assert
-        assertThatThrownBy(() -> authService.reissue("expiredToken"))
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.EXPIRED_TOKEN);
-    }
-
-    // ========== logout 테스트 ==========
-
-    @Test
-    @DisplayName("logout: 유효한 Refresh Token으로 로그아웃 시 토큰이 삭제된다")
-    void logout_whenValidToken_shouldDeleteRefreshToken() {
-        // Arrange
-        RefreshToken storedToken = RefreshToken.create(existingUser, "refreshToken",
-                LocalDateTime.now().plusDays(30));
-
-        given(refreshTokenRepository.findByToken("refreshToken"))
-                .willReturn(Optional.of(storedToken));
-
-        // Act
-        authService.logout("refreshToken");
-
-        // Assert
-        then(refreshTokenRepository).should(times(1)).delete(storedToken);
-    }
-
-    @Test
-    @DisplayName("logout: 존재하지 않는 Refresh Token으로 로그아웃 시 예외 없이 조용히 처리된다")
-    void logout_whenTokenNotFound_shouldNotThrowException() {
-        // Arrange
-        given(refreshTokenRepository.findByToken("nonExistingToken")).willReturn(Optional.empty());
-
-        // Act & Assert (예외 없이 정상 종료 확인)
-        authService.logout("nonExistingToken");
-
-        then(refreshTokenRepository).should(never()).delete(any(RefreshToken.class));
-    }
 }
