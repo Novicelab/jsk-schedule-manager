@@ -21,17 +21,26 @@
 - `frontend/src/components/schedule/ScheduleModal.jsx`: `<select>` → 라디오 버튼으로 변경
 - `frontend/src/components/schedule/ScheduleModal.css`: 라디오 버튼 스타일 추가 (.radio-group, .radio-label, .radio-input 등)
 
-**백엔드 (외래키 CASCADE):**
+**백엔드 (외래키 CASCADE - Hibernate 레벨):**
 - `src/main/java/com/jsk/schedule/domain/schedule/entity/Schedule.java`:
   * @OnDelete(action = OnDeleteAction.CASCADE) 추가 (created_by 외래키)
 - `src/main/java/com/jsk/schedule/domain/notification/entity/Notification.java`:
   * @OnDelete(action = OnDeleteAction.CASCADE) 추가 (schedule_id 외래키)
   * @OnDelete(action = OnDeleteAction.CASCADE) 추가 (user_id 외래키)
+- `src/main/java/com/jsk/schedule/domain/auth/entity/RefreshToken.java`:
+  * @OnDelete(action = OnDeleteAction.CASCADE) 추가 (user_id 외래키)
+
+**데이터베이스 (PostgreSQL 레벨 - Supabase):**
+- `ALTER TABLE schedules`: ON DELETE CASCADE 추가 (created_by 외래키)
+- `ALTER TABLE notifications`: ON DELETE CASCADE 추가 (schedule_id, user_id 외래키)
+- `ALTER TABLE refresh_tokens`: ON DELETE CASCADE 추가 (user_id 외래키)
 
 ### 비고
-- Hibernate 6+ `@OnDelete` 애노테이션으로 데이터베이스 수준의 CASCADE 동작 자동화
-- Supabase에서도 해당 외래키 제약에 ON DELETE CASCADE 자동 적용됨
-- 이제 User 삭제 시 관련된 모든 Schedule이 자동으로 삭제되어 데이터 정합성 보장
+- Hibernate 6+ `@OnDelete` 애노테이션으로 Hibernate 레벨 CASCADE 처리
+- **Supabase SQL 실행 완료**: PostgreSQL 외래키 제약에 ON DELETE CASCADE 수동 적용
+  * 기존 외래키 삭제 후 새로운 외래키 추가 (DROP IF EXISTS → ADD CONSTRAINT)
+  * 이제 Supabase에서도 User 삭제 가능 (관련 데이터 자동 삭제)
+- 다층 CASCADE 구조 완성: `users` ← `refresh_tokens`, `schedules`, `notifications` 모두 CASCADE
 
 ---
 
