@@ -91,13 +91,19 @@ public class AuthService {
                 kakaoId, kakaoUserInfo.getEmail(), kakaoUserInfo.getNickname());
 
         // Step 3: kakaoId로 기존 사용자 조회, 없으면 신규 사용자 생성
+        String nickname = kakaoUserInfo.getNickname();
+        if (nickname == null || nickname.isBlank()) {
+            nickname = "카카오유저_" + kakaoId;
+        }
+        final String resolvedNickname = nickname;
+
         User user = userRepository.findByKakaoId(kakaoId)
                 .orElseGet(() -> {
                     log.info("신규 카카오 사용자 가입: kakaoId={}", kakaoId);
                     User newUser = User.ofKakao(
                             kakaoId,
                             kakaoUserInfo.getEmail(),
-                            kakaoUserInfo.getNickname(),
+                            resolvedNickname,
                             kakaoUserInfo.getProfileImageUrl(),
                             kakaoAccessToken
                     );
