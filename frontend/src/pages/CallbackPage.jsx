@@ -25,15 +25,24 @@ function CallbackPage() {
     const processCallback = async () => {
       try {
         const response = await apiClient.post('/auth/kakao/callback', { code })
+
+        // 전체 응답 구조 로깅 (디버깅용)
+        console.log('카카오 로그인 응답:', response.data)
+
         const { accessToken, refreshToken, user, isNewUser } = response.data.data
+
+        // isNewUser 값 명시적 로깅
+        console.log('isNewUser 값:', isNewUser, '타입:', typeof isNewUser)
 
         localStorage.setItem('accessToken', accessToken)
         localStorage.setItem('refreshToken', refreshToken)
         localStorage.setItem('user', JSON.stringify(user))
 
         if (isNewUser) {
+          console.log('신규 사용자 감지 → NameInputModal 표시')
           setShowNameModal(true)
         } else {
+          console.log('기존 사용자 → 메인 페이지로 이동')
           navigate('/', { replace: true })
         }
       } catch (err) {

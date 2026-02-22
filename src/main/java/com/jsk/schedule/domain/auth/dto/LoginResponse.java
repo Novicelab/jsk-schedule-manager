@@ -1,5 +1,6 @@
 package com.jsk.schedule.domain.auth.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.jsk.schedule.domain.user.entity.Role;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -13,6 +14,8 @@ public class LoginResponse {
     private String accessToken;
     private String refreshToken;
     private UserInfo user;
+
+    @JsonProperty("isNewUser")
     private boolean isNewUser;
 
     @Getter

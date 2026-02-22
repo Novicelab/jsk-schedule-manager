@@ -130,10 +130,11 @@ public class AuthService {
         refreshTokenRepository.save(refreshTokenEntity);
         log.debug("Refresh Token 저장: userId={}", user.getId());
 
-        log.info("카카오 OAuth 로그인 성공: userId={}, kakaoId={}, isNewUser={}",
-                user.getId(), kakaoId, isNewUser);
+        // isNewUser 플래그 최종 확인
+        log.info("카카오 OAuth 로그인 성공: userId={}, kakaoId={}, isNewUser={}, userName={}",
+                user.getId(), kakaoId, isNewUser, user.getName());
 
-        return new LoginResponse(
+        LoginResponse loginResponse = new LoginResponse(
                 accessToken,
                 refreshToken,
                 new LoginResponse.UserInfo(
@@ -145,5 +146,9 @@ public class AuthService {
                 ),
                 isNewUser
         );
+
+        log.debug("LoginResponse 생성 완료: isNewUser={}, userId={}", isNewUser, user.getId());
+
+        return loginResponse;
     }
 }
