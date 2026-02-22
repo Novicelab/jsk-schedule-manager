@@ -4,6 +4,44 @@
 
 ---
 
+## [2026-02-22] 캘린더 UI/UX 개선 및 403 Forbidden 에러 수정
+
+### 문제 분석
+1. **모바일 이벤트 클릭 이슈**: 모바일에서 일정 dot 클릭 시 바텀 시트를 거치지 않고 바로 상세 팝업 표시
+   - 의도: 모바일 → 바텀 시트(날짜별 일정 목록) → PC → 상세 팝업
+2. **[오늘] 버튼 노출**: 캘린더 헤더에 [오늘] 버튼이 표시됨 (UI 정리 필요)
+3. **403 Forbidden 에러**: 가끔 일정 로드 실패
+   - 원인: Spring Security 미인증 요청 시 기본값으로 **403** 반환 (401이어야 함)
+   - 프론트엔드 인터셉터는 **401에만** 토큰 재발급 로직 실행 → 403 수신 시 재발급 불가
+
+### 변경사항
+
+**백엔드 (`src/main/java/com/jsk/schedule/global/config/SecurityConfig.java`):**
+- `AuthenticationEntryPoint` 추가: 미인증 요청 시 **401** 반환 (기본 403 대신)
+  - JSON 응답: `{ "code": "UNAUTHORIZED", "message": "인증이 필요합니다.", "data": null }`
+- import 추가: `ObjectMapper`, `MediaType`, `HashMap`, `Map`, `IOException`
+
+**프론트엔드 (`frontend/src/pages/CalendarPage.jsx`):**
+- L183 headerToolbar 수정: `left: 'prev,next today'` → `left: 'prev,next'` ([오늘] 버튼 제거)
+- L110-137 `handleEventClick` 수정: 모바일/PC 분기 처리
+  - 모바일: 해당 날짜의 바텀 시트(날짜별 일정 목록) 표시
+  - PC: 기존대로 일정 상세 팝업 표시
+  - dependency 추가: `[isMobile, events]`
+
+### 파일 변경
+- `src/main/java/com/jsk/schedule/global/config/SecurityConfig.java`: AuthenticationEntryPoint 추가
+- `frontend/src/pages/CalendarPage.jsx`: [오늘] 버튼 제거 + 모바일 이벤트 클릭 분기
+
+### 검증 방법
+1. 백엔드 빌드 후 토큰 만료 시뮬레이션 → HTTP 401 응답 확인
+2. 프론트엔드 개발 서버:
+   - 모바일 너비(< 768px): dot 클릭 → 바텀 시트 표시 확인
+   - PC 너비(≥ 768px): 이벤트 클릭 → 상세 팝업 표시 확인
+   - [오늘] 버튼 사라짐 확인
+3. Render 자동 배포 후 프로덕션 서비스 확인
+
+---
+
 ## [2026-02-22] QA 버그 수정 - POST /api/auth/reissue 엔드포인트 누락
 
 ### 발견 경위

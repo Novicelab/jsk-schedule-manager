@@ -1,10 +1,12 @@
 package com.jsk.schedule.global.config;
 
 import com.jsk.schedule.global.security.JwtAuthenticationFilter;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -14,6 +16,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfigurationSource;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 @Configuration
 @EnableWebSecurity
@@ -40,6 +46,22 @@ public class SecurityConfig {
             // 세션 사용 안 함 (STATELESS)
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            )
+
+            // 예외 처리: 미인증 요청 시 401 반환
+            .exceptionHandling(exception -> exception
+                .authenticationEntryPoint((request, response, authException) -> {
+                    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                    response.setStatus(401);
+
+                    final Map<String, Object> body = new HashMap<>();
+                    body.put("code", "UNAUTHORIZED");
+                    body.put("message", "인증이 필요합니다.");
+                    body.put("data", null);
+
+                    final ObjectMapper mapper = new ObjectMapper();
+                    mapper.writeValue(response.getOutputStream(), body);
+                })
             )
 
             // 요청 권한 설정

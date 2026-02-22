@@ -106,9 +106,23 @@ function CalendarPage() {
     }
   }, [isMobile, events])
 
-  // 이벤트 클릭 → 일정 상세 모달
+  // 이벤트 클릭 → 모바일: 바텀 시트로 이동, PC: 상세 모달 표시
   const handleEventClick = useCallback(
     async (info) => {
+      if (isMobile) {
+        // 모바일: 해당 날짜 바텀 시트로 redirect
+        const eventStart = dayjs(info.event.startStr).format('YYYY-MM-DD')
+        const dayEvents = events.filter(e =>
+          dayjs(e.start).format('YYYY-MM-DD') <= eventStart &&
+          dayjs(e.end || e.start).format('YYYY-MM-DD') >= eventStart
+        )
+        setClickedDate(eventStart)
+        setClickedDateEvents(dayEvents)
+        setShowDatePopup(true)
+        return
+      }
+
+      // PC: 기존 상세 팝업
       const scheduleId = info.event.id
       try {
         const response = await apiClient.get(`/schedules/${scheduleId}`)
@@ -119,7 +133,7 @@ function CalendarPage() {
         setSchedulesError('일정 상세 정보를 불러오지 못했습니다.')
       }
     },
-    []
+    [isMobile, events]
   )
 
   // 일정 저장 완료 후 목록 새로고침
@@ -181,7 +195,7 @@ function CalendarPage() {
             initialView="dayGridMonth"
             locale="ko"
             headerToolbar={{
-              left: 'prev,next today',
+              left: 'prev,next',
               center: 'title',
               right: 'dayGridMonth,timeGridWeek,timeGridDay',
             }}
