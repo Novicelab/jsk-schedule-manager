@@ -4,6 +4,10 @@ import apiClient from '../api/client'
 function Navbar() {
   const navigate = useNavigate()
 
+  // localStorage에서 user 정보 읽기
+  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  const displayInfo = user.name ? `${user.name} / ${user.email || ''}` : ''
+
   const handleLogout = async () => {
     const refreshToken = localStorage.getItem('refreshToken')
     try {
@@ -40,6 +44,9 @@ function Navbar() {
           </NavLink>
         </li>
       </ul>
+      <div className="navbar-center">
+        {displayInfo && <span className="navbar-user-info">{displayInfo}</span>}
+      </div>
       <div className="navbar-actions">
         <button className="btn btn-settings" onClick={handleSettings}>
           설정

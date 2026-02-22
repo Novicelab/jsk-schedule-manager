@@ -27,7 +27,20 @@ function CalendarPage() {
 
   const [schedulesError, setSchedulesError] = useState(null)
 
+  // 모바일 반응형 UI
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+  const [showDatePopup, setShowDatePopup] = useState(false)
+  const [clickedDate, setClickedDate] = useState(null)
+  const [clickedDateEvents, setClickedDateEvents] = useState([])
+
   const calendarRef = useRef(null)
+
+  // 윈도우 리사이즈 감지
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   // 일정 목록 로드
   const loadSchedules = useCallback(async (range) => {
@@ -75,12 +88,23 @@ function CalendarPage() {
     setCurrentRange({ start: dateInfo.start, end: dateInfo.end })
   }, [])
 
-  // 날짜 클릭 → 새 일정 생성 모달
+  // 날짜 클릭 → 모바일: 팝업 표시, 데스크톱: 모달 열기
   const handleDateClick = useCallback((info) => {
-    setSelectedDate(info.dateStr)
-    setEditingSchedule(null)
-    setShowScheduleModal(true)
-  }, [])
+    if (isMobile) {
+      const dateStr = info.dateStr
+      const dayEvents = events.filter(e =>
+        dayjs(e.start).format('YYYY-MM-DD') <= dateStr &&
+        dayjs(e.end || e.start).format('YYYY-MM-DD') >= dateStr
+      )
+      setClickedDate(dateStr)
+      setClickedDateEvents(dayEvents)
+      setShowDatePopup(true)
+    } else {
+      setSelectedDate(info.dateStr)
+      setEditingSchedule(null)
+      setShowScheduleModal(true)
+    }
+  }, [isMobile, events])
 
   // 이벤트 클릭 → 일정 상세 모달
   const handleEventClick = useCallback(
@@ -171,6 +195,11 @@ function CalendarPage() {
             datesSet={handleDatesSet}
             dateClick={handleDateClick}
             eventClick={handleEventClick}
+            eventContent={isMobile ? (info) => (
+              <div className="mobile-event-dot"
+                   style={{ backgroundColor: info.backgroundColor }} />
+            ) : undefined}
+            dayMaxEvents={isMobile ? 1 : false}
             height="700px"
             selectable={true}
             editable={false}
@@ -201,6 +230,72 @@ function CalendarPage() {
             setSelectedSchedule(null)
           }}
         />
+      )}
+
+      {/* 모바일 날짜 이벤트 팝업 */}
+      {showDatePopup && (
+        <div className="date-popup-overlay" onClick={() => setShowDatePopup(false)}>
+          <div
+            className="date-popup"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="date-popup-header">
+              <h3>{dayjs(clickedDate).format('YYYY년 MM월 DD일')}</h3>
+              <button
+                className="date-popup-close"
+                onClick={() => setShowDatePopup(false)}
+                aria-label="닫기"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="date-popup-content">
+              {clickedDateEvents.length > 0 ? (
+                <ul className="date-events-list">
+                  {clickedDateEvents.map((event) => (
+                    <li
+                      key={event.id}
+                      className="date-event-item"
+                      onClick={async () => {
+                        try {
+                          const response = await apiClient.get(`/schedules/${event.id}`)
+                          setSelectedSchedule(response.data.data)
+                          setShowScheduleDetail(true)
+                          setShowDatePopup(false)
+                        } catch (err) {
+                          console.error('일정 상세 조회 실패:', err)
+                        }
+                      }}
+                    >
+                      <span
+                        className="date-event-dot"
+                        style={{ backgroundColor: event.backgroundColor }}
+                      />
+                      <span className="date-event-title">{event.title}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="date-no-events">일정이 없습니다.</p>
+              )}
+            </div>
+
+            <div className="date-popup-footer">
+              <button
+                className="btn btn-primary"
+                onClick={() => {
+                  setSelectedDate(clickedDate)
+                  setEditingSchedule(null)
+                  setShowScheduleModal(true)
+                  setShowDatePopup(false)
+                }}
+              >
+                일정 추가
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

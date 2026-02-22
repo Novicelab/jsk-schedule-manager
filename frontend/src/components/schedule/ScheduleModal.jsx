@@ -48,9 +48,16 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
         calculatedDuration = endAtDayjs.diff(startAtDayjs, 'minute')
       }
 
+      // VACATION인 경우 "[이름] 부제목" 형식에서 부제목만 추출
+      let displayTitle = schedule.title || ''
+      if (schedule.type === 'VACATION' && displayTitle.includes(']')) {
+        const endBracketIndex = displayTitle.indexOf(']')
+        displayTitle = displayTitle.substring(endBracketIndex + 1).trim()
+      }
+
       setForm({
         type: schedule.type || 'WORK',
-        title: schedule.title || '',
+        title: displayTitle,
         description: schedule.description || '',
         startDate: startAtDayjs.toDate(),
         endDate: endAtDayjs.toDate(),
@@ -116,7 +123,7 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
       newErrors.endDate = '종료 날짜는 시작 날짜 이후여야 합니다.'
     }
 
-    // WORK 타입의 경우에만 제목, 설명, 시간 검증
+    // WORK 타입의 경우: 제목, 설명, 시간 검증
     if (form.type === 'WORK') {
       if (!form.title.trim()) {
         newErrors.title = '제목은 필수입니다.'
@@ -128,6 +135,11 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
       }
       if (!form.duration) {
         newErrors.duration = '소요 시간은 필수입니다.'
+      }
+    } else if (form.type === 'VACATION') {
+      // VACATION 타입의 경우: 부제목은 선택이지만 길이 검증
+      if (form.title.trim().length > 100) {
+        newErrors.title = '부제목은 100자 이내로 입력해주세요.'
       }
     }
 
@@ -161,7 +173,7 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
         startAt = dayjs(form.startDate).format('YYYY-MM-DD') + 'T00:00:00'
         endAt = dayjs(form.endDate).format('YYYY-MM-DD') + 'T23:59:59'
         allDay = true
-        title = ''  // 휴가는 제목이 없음 (백엔드에서 "[이름]" 형식으로 설정)
+        title = form.title.trim()  // 부제목 또는 빈 문자열 (백엔드에서 "[이름] [부제목]" 형식으로 설정)
       }
 
       const payload = {
@@ -239,12 +251,32 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
             </div>
           </div>
 
-          {/* Step 2: VACATION인 경우 - 날짜만 */}
+          {/* Step 2: VACATION인 경우 - 날짜 + 선택 제목 */}
           {form.type === 'VACATION' && (
             <>
               <p className="form-section-hint">
-                휴가 기간을 선택해주세요. 제목은 저장 시 자동으로 [이름] 형식으로 생성됩니다.
+                휴가 기간을 선택해주세요. 저장 시 제목은 [이름] 형식으로 자동 생성됩니다.
               </p>
+
+              <div className="form-group">
+                <label htmlFor="vacation-title" className="form-label">
+                  부제목 <span className="optional">(선택)</span>
+                </label>
+                <input
+                  id="vacation-title"
+                  name="title"
+                  type="text"
+                  className={`form-input ${errors.title ? 'input-error' : ''}`}
+                  value={form.title}
+                  onChange={handleInputChange}
+                  placeholder="예: 오전 반차, 연차 등 (선택 입력)"
+                  maxLength={100}
+                />
+                <p className="form-hint">저장 시 [이름] 형식으로 자동 추가됩니다.</p>
+                {errors.title && (
+                  <span className="field-error">{errors.title}</span>
+                )}
+              </div>
 
               <div className="form-group">
                 <label className="form-label">

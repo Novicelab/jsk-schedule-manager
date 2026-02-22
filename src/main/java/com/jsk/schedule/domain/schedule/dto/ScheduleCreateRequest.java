@@ -2,7 +2,6 @@ package com.jsk.schedule.domain.schedule.dto;
 
 import com.jsk.schedule.domain.schedule.entity.ScheduleType;
 import jakarta.validation.constraints.AssertTrue;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -14,7 +13,6 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class ScheduleCreateRequest {
 
-    @NotBlank(message = "일정 제목은 필수입니다.")
     @Size(max = 100, message = "일정 제목은 100자 이하여야 합니다.")
     private String title;
 
@@ -41,5 +39,17 @@ public class ScheduleCreateRequest {
             return true;
         }
         return endAt.isAfter(startAt);
+    }
+
+    /**
+     * 업무 일정(WORK)의 경우 제목은 필수.
+     * 휴가(VACATION)는 제목 선택.
+     */
+    @AssertTrue(message = "업무 일정의 제목은 필수입니다.")
+    public boolean isTitleValidForType() {
+        if (type == ScheduleType.WORK) {
+            return title != null && !title.isBlank();
+        }
+        return true;
     }
 }

@@ -139,6 +139,20 @@ select {
   color: #fff;
 }
 
+.navbar-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+}
+
+.navbar-user-info {
+  font-size: 13px;
+  color: #adb5bd;
+  white-space: nowrap;
+  text-align: center;
+}
+
 /* ============================================
    Buttons
    ============================================ */
@@ -1011,6 +1025,160 @@ select {
 
 .toggle-btn-on .toggle-thumb {
   transform: translateX(20px);
+}
+
+/* ============================================
+   Mobile Calendar - Event Dots
+   ============================================ */
+.mobile-event-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin: 2px auto;
+  display: block;
+}
+
+/* ============================================
+   Date Events Popup (Mobile)
+   ============================================ */
+.date-popup-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 200;
+}
+
+.date-popup {
+  background: #fff;
+  border-radius: 12px 12px 0 0;
+  width: 100%;
+  max-width: 100%;
+  max-height: 75vh;
+  overflow-y: auto;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 768px) {
+  .date-popup {
+    max-width: 400px;
+    border-radius: 12px;
+    margin: 16px;
+  }
+
+  .date-popup-overlay {
+    align-items: center;
+  }
+}
+
+.date-popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-bottom: 1px solid #eaecee;
+  background-color: #f9f9f9;
+  border-radius: 12px 12px 0 0;
+}
+
+.date-popup-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0;
+}
+
+.date-popup-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #7f8c8d;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.date-popup-close:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: #2c3e50;
+}
+
+.date-popup-content {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.date-events-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.date-event-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.date-event-item:hover {
+  background-color: #f0f0f0;
+}
+
+.date-event-dot {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.date-event-title {
+  font-size: 14px;
+  color: #333;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.date-no-events {
+  text-align: center;
+  color: #7f8c8d;
+  padding: 32px 16px;
+  font-size: 14px;
+  margin: 0;
+}
+
+.date-popup-footer {
+  padding: 16px;
+  border-top: 1px solid #eaecee;
+  background-color: #f9f9f9;
+  border-radius: 0 0 12px 12px;
+  display: flex;
+  gap: 8px;
+}
+
+.date-popup-footer .btn {
+  flex: 1;
 }
 
 .toggle-btn-off .toggle-thumb {

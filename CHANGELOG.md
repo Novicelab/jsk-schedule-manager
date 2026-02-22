@@ -4,6 +4,94 @@
 
 ---
 
+## [2026-02-22] UI/UX 3가지 개선 (휴가 제목 선택, GNB 계정 정보, 캘린더 반응형)
+
+### 변경사항
+
+**백엔드:**
+- `ScheduleCreateRequest.java` 수정:
+  - `@NotBlank` 제거, `@Size` 유지 (null 허용)
+  - `isTitleValidForType()` 메서드 추가: WORK만 title 필수, VACATION은 선택
+- `ScheduleUpdateRequest.java` 수정:
+  - 동일하게 `@NotBlank` 제거, 커스텀 검증 추가
+- `ScheduleService.java` 수정:
+  - `createSchedule()` L48-52: VACATION 부제목 지원 개선
+    - 사용자 입력 있을 시: `[이름] 부제목` (예: `[홍길동] 오전 반차`)
+    - 사용자 입력 없을 시: `[이름]` (예: `[홍길동]`)
+  - `updateSchedule()`: 동일 로직 적용
+
+**프론트엔드:**
+- `ScheduleModal.jsx` 수정:
+  - VACATION 섹션에 부제목 입력 필드 추가 (선택 입력)
+  - L164: `title = form.title.trim()` (백엔드에서 "[이름]" 포맷 처리)
+  - L41-61: 수정 모드에서 저장된 title에서 부제목 추출 로직 추가
+  - validate() 함수: VACATION 부제목 길이 검증 추가
+- `Navbar.jsx` 수정:
+  - localStorage에서 user 정보 읽기
+  - `{user.name} / {user.email}` 형식으로 GNB에 표시
+  - `.navbar-center` 추가, navbar-user-info 스타일 적용
+- `CalendarPage.jsx` 수정:
+  - 모바일 감지 state 추가 (window.innerWidth < 768)
+  - 리사이즈 이벤트 리스너 추가
+  - `handleDateClick()` 분기: 모바일 → 팝업, 데스크톱 → 모달
+  - FullCalendar props 조건부:
+    - 모바일: `eventContent` 도트 표시, `dayMaxEvents=1`
+    - 데스크톱: 기존 block 표시
+  - DateEventsPopup 인라인 컴포넌트 추가
+    - 선택 날짜 이벤트 목록 표시
+    - 이벤트 클릭 → ScheduleDetail
+    - "일정 추가" 버튼 → ScheduleModal
+    - 배경 클릭 시 닫기
+
+- `global.css` 수정:
+  - `.navbar-user-info`, `.navbar-center` 스타일 추가
+  - `.mobile-event-dot` 스타일 추가 (8px 원형 도트)
+  - `.date-popup-overlay`, `.date-popup` 관련 스타일 추가 (20개 스타일)
+  - 모바일 반응형 처리 (@media max-width: 768px)
+
+### 기능 상세
+
+**Feature 1: 휴가 제목 선택사항**
+- 휴가(VACATION) 등록 시 제목 입력은 선택사항
+- 백엔드에서 자동으로 `[사용자이름]` 또는 `[사용자이름] 부제목` 형식으로 저장
+- 업무(WORK) 등록 시 제목은 필수 (기존과 동일)
+
+**Feature 2: GNB 계정 정보 표시**
+- Navbar 중앙에 로그인한 사용자의 이름과 이메일 표시
+- 형식: `홍길동 / hong@kakao.com`
+- 반응형 처리: 화면 좁을 때 텍스트 중앙 정렬
+
+**Feature 3: 캘린더 반응형 UI**
+- 768px 미만(모바일): 날짜별 이벤트 1개 표시 → 도트로 축약, 날짜 클릭 시 팝업
+- 768px 이상(데스크톱): 기존 동작 유지 (모든 이벤트 표시, 날짜 클릭 시 모달)
+- DateEventsPopup: 선택 날짜의 모든 이벤트 목록 표시 및 상호작용
+
+### 테스트 확인 사항
+
+- [ ] 휴가 등록: 제목 없이 저장 → `[홍길동]` 확인
+- [ ] 휴가 등록: "오전 반차" 입력 → `[홍길동] 오전 반차` 확인
+- [ ] 업무 일정: 제목 없이 제출 → 에러 메시지 확인
+- [ ] GNB: 로그인 후 이름/이메일 표시 확인
+- [ ] 모바일(768px 미만): 이벤트 도트 표시 확인
+- [ ] 모바일: 날짜 클릭 → DateEventsPopup 표시 확인
+- [ ] 모바일: 팝업에서 "일정 추가" 클릭 → ScheduleModal 열림 확인
+- [ ] 데스크톱(768px+): 기존 동작 유지 확인
+
+### 파일 변경
+
+**백엔드:**
+- `src/main/java/com/jsk/schedule/domain/schedule/dto/ScheduleCreateRequest.java`
+- `src/main/java/com/jsk/schedule/domain/schedule/dto/ScheduleUpdateRequest.java`
+- `src/main/java/com/jsk/schedule/domain/schedule/service/ScheduleService.java`
+
+**프론트엔드:**
+- `frontend/src/components/schedule/ScheduleModal.jsx`
+- `frontend/src/components/Navbar.jsx`
+- `frontend/src/pages/CalendarPage.jsx`
+- `frontend/src/styles/global.css`
+
+---
+
 ## [2026-02-22] 신규 회원가입 이름 입력 팝업 기능 복구
 
 ### 변경사항

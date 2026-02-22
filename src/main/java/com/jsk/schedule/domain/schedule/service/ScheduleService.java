@@ -45,10 +45,13 @@ public class ScheduleService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        // VACATION 타입이면 제목을 "[이름]휴가" 형태로 자동 설정
+        // VACATION 타입이면 제목을 "[이름] [부제목]" 형태로 자동 설정
+        // 사용자가 부제목 입력 시: "[이름] 부제목" (예: "[홍길동] 오전 반차")
+        // 부제목 없을 시: "[이름]" (예: "[홍길동]")
         String title = request.getTitle();
         if (request.getType() == ScheduleType.VACATION) {
-            title = "[" + user.getName() + "]휴가";
+            String subtitle = (title != null && !title.isBlank()) ? " " + title.trim() : "";
+            title = "[" + user.getName() + "]" + subtitle;
         }
 
         Schedule schedule = Schedule.create(
@@ -132,8 +135,16 @@ public class ScheduleService {
             throw new BusinessException(ErrorCode.FORBIDDEN);
         }
 
+        // VACATION 타입이면 제목을 "[이름] [부제목]" 형태로 처리
+        String title = request.getTitle();
+        if (request.getType() == ScheduleType.VACATION) {
+            User user = schedule.getCreatedBy();
+            String subtitle = (title != null && !title.isBlank()) ? " " + title.trim() : "";
+            title = "[" + user.getName() + "]" + subtitle;
+        }
+
         schedule.update(
-                request.getTitle(),
+                title,
                 request.getDescription(),
                 request.getStartAt(),
                 request.getEndAt(),
