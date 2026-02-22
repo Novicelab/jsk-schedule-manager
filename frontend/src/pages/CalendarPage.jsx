@@ -106,21 +106,11 @@ function CalendarPage() {
     }
   }, [isMobile, events])
 
-  // 이벤트 클릭 → 모바일: 바텀 시트로 이동, PC: 상세 모달 표시
+  // 이벤트 클릭 → 모바일: 무시 (날짜 셀 클릭으로만 바텀 시트 접근), PC: 상세 모달 표시
   const handleEventClick = useCallback(
     async (info) => {
-      if (isMobile) {
-        // 모바일: 해당 날짜 바텀 시트로 redirect
-        const eventStart = dayjs(info.event.startStr).format('YYYY-MM-DD')
-        const dayEvents = events.filter(e =>
-          dayjs(e.start).format('YYYY-MM-DD') <= eventStart &&
-          dayjs(e.end || e.start).format('YYYY-MM-DD') >= eventStart
-        )
-        setClickedDate(eventStart)
-        setClickedDateEvents(dayEvents)
-        setShowDatePopup(true)
-        return
-      }
+      // 모바일: 이벤트(dot) 클릭 무시 — 날짜 셀 클릭 → 바텀 시트에서만 일정 접근
+      if (isMobile) return
 
       // PC: 기존 상세 팝업
       const scheduleId = info.event.id
@@ -133,7 +123,7 @@ function CalendarPage() {
         setSchedulesError('일정 상세 정보를 불러오지 못했습니다.')
       }
     },
-    [isMobile, events]
+    [isMobile]
   )
 
   // 일정 저장 완료 후 목록 새로고침
@@ -275,10 +265,12 @@ function CalendarPage() {
                         try {
                           const response = await apiClient.get(`/schedules/${event.id}`)
                           setSelectedSchedule(response.data.data)
-                          setShowScheduleDetail(true)
                           setShowDatePopup(false)
+                          setShowScheduleDetail(true)
                         } catch (err) {
                           console.error('일정 상세 조회 실패:', err)
+                          setSchedulesError('일정 상세 정보를 불러오지 못했습니다.')
+                          setShowDatePopup(false)
                         }
                       }}
                     >
