@@ -200,10 +200,10 @@ function CalendarPage() {
             dateClick={handleDateClick}
             eventClick={handleEventClick}
             eventContent={isMobile ? (info) => (
-              <div className="mobile-event-dot"
+              <div className="mobile-event-square"
                    style={{ backgroundColor: info.backgroundColor }} />
             ) : undefined}
-            dayMaxEvents={isMobile ? 1 : false}
+            dayMaxEvents={isMobile ? false : false}
             height="700px"
             selectable={true}
             editable={false}

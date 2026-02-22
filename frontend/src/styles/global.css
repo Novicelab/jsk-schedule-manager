@@ -1028,14 +1028,51 @@ select {
 }
 
 /* ============================================
-   Mobile Calendar - Event Dots
+   Mobile Calendar - Event Squares
    ============================================ */
-.mobile-event-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  margin: 2px auto;
+.mobile-event-square {
+  width: 6px;
+  height: 6px;
+  border-radius: 1px;
   display: block;
+}
+
+/* 모바일: 이벤트를 정사각형으로 순차 배치 (■■■■ / ■■) */
+@media (max-width: 767px) {
+  .calendar-container .fc-daygrid-day-events {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1px;
+    padding: 1px 2px;
+    min-height: auto !important;
+  }
+
+  .calendar-container .fc-daygrid-event-harness {
+    margin: 0 !important;
+    position: relative !important;
+    top: auto !important;
+    width: auto;
+    flex-shrink: 0;
+  }
+
+  .calendar-container .fc-daygrid-event {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
+  /* +more 링크 숨김 */
+  .calendar-container .fc-daygrid-more-link {
+    display: none !important;
+  }
+
+  /* 이벤트 미러/하이라이트 제거 */
+  .calendar-container .fc-event-main {
+    padding: 0;
+  }
 }
 
 /* ============================================
