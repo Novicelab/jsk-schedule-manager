@@ -47,10 +47,10 @@ public class ScheduleService {
 
         // VACATION 타입이면 제목을 "[이름] [부제목]" 형태로 자동 설정
         // 사용자가 부제목 입력 시: "[이름] 부제목" (예: "[홍길동] 오전 반차")
-        // 부제목 없을 시: "[이름]" (예: "[홍길동]")
+        // 부제목 없을 시: "[이름] 휴가" (예: "[홍길동] 휴가")
         String title = request.getTitle();
         if (request.getType() == ScheduleType.VACATION) {
-            String subtitle = (title != null && !title.isBlank()) ? " " + title.trim() : "";
+            String subtitle = (title != null && !title.isBlank()) ? " " + title.trim() : " 휴가";
             title = "[" + user.getName() + "]" + subtitle;
         }
 
@@ -136,10 +136,12 @@ public class ScheduleService {
         }
 
         // VACATION 타입이면 제목을 "[이름] [부제목]" 형태로 처리
+        // 사용자가 부제목 입력 시: "[이름] 부제목" (예: "[홍길동] 오전 반차")
+        // 부제목 없을 시: "[이름] 휴가" (예: "[홍길동] 휴가")
         String title = request.getTitle();
         if (request.getType() == ScheduleType.VACATION) {
             User user = schedule.getCreatedBy();
-            String subtitle = (title != null && !title.isBlank()) ? " " + title.trim() : "";
+            String subtitle = (title != null && !title.isBlank()) ? " " + title.trim() : " 휴가";
             title = "[" + user.getName() + "]" + subtitle;
         }
 

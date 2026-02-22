@@ -255,7 +255,7 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
           {form.type === 'VACATION' && (
             <>
               <p className="form-section-hint">
-                휴가 기간을 선택해주세요. 저장 시 제목은 [이름] 형식으로 자동 생성됩니다.
+                휴가 기간을 선택해주세요. 저장 시 제목은 [이름] 휴가 형식으로 자동 생성됩니다.
               </p>
 
               <div className="form-group">
@@ -272,7 +272,7 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
                   placeholder="예: 오전 반차, 연차 등 (선택 입력)"
                   maxLength={100}
                 />
-                <p className="form-hint">저장 시 [이름] 형식으로 자동 추가됩니다.</p>
+                <p className="form-hint">저장 시 [이름] 휴가 또는 [이름] 부제목 형식으로 자동 추가됩니다.</p>
                 {errors.title && (
                   <span className="field-error">{errors.title}</span>
                 )}
