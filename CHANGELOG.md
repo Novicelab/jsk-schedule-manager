@@ -4,6 +4,49 @@
 
 ---
 
+## [2026-02-22] 신규 회원가입 이름 입력 팝업 기능 복구
+
+### 변경사항
+
+**백엔드:**
+- `LoginResponse.java` 수정:
+  - `isNewUser` 필드에 `@JsonProperty` 애너테이션 추가
+  - boolean 필드의 JSON 직렬화 명시적 처리
+- `AuthService.java` 수정:
+  - `kakaoLogin()` 메서드 로깅 강화
+  - isNewUser 플래그 최종 확인 로그 추가
+
+**프론트엔드:**
+- `CallbackPage.jsx` 수정:
+  - 응답 구조 디버깅 로그 추가
+  - isNewUser 값 및 타입 명시적 로깅
+  - 신규/기존 사용자 분기 처리 로그 추가
+
+### 문제 해결
+
+- ❌ **문제**: 신규 회원가입 후 이름 입력 팝업이 표시되지 않음
+- ✅ **원인**: LoginResponse의 `isNewUser` 필드 JSON 직렬화 문제
+- ✅ **해결**: @JsonProperty 애너테이션 추가 및 디버깅 로그 강화
+
+### 동작 흐름
+
+```
+신규 사용자 → 카카오 로그인
+→ AuthService: isNewUser=true 설정
+→ LoginResponse: isNewUser 필드 포함하여 반환
+→ CallbackPage: isNewUser 감지 → NameInputModal 표시
+→ NameInputModal: 사용자가 이름 입력
+→ PUT /users/me로 이름 업데이트 후 메인으로 이동
+```
+
+### 배포 정보
+
+- 커밋: 36e2410
+- 상태: Render 자동 배포 진행 중 (5-10분)
+- 테스트: 신규 회원 로그인 후 이름 입력 팝업 확인 필요
+
+---
+
 ## [2026-02-22] CORS 설정 강화 - 마이페이지 알림 설정 CORS 에러 해결
 
 ### 변경사항
