@@ -4,6 +4,32 @@
 
 ---
 
+## [2026-02-22] CORS 설정 강화 - 마이페이지 알림 설정 CORS 에러 해결
+
+### 변경사항
+
+**백엔드:**
+- `CorsConfig.java` 수정:
+  - 환경 변수 누락 시 기본값 추가 (https://jsk-schedule-frontend.onrender.com)
+  - 콤마 구분 origins 정규식 개선 (공백 처리)
+  - allowedMethods를 "*"로 확대 (모든 HTTP 메서드 지원)
+  - CORS preflight 요청 캐시 타임 추가 (3600초)
+
+### 문제 해결
+
+- ❌ **문제**: 프로덕션 마이페이지에서 알림 설정 조회 시 CORS 에러 발생
+  - 에러: "No 'Access-Control-Allow-Origin' header is present"
+  - 엔드포인트: `GET /api/users/me/notification-preferences`
+- ✅ **원인**: 환경 변수 미설정 시 CORS 기본값 부재로 인한 헤더 누락
+- ✅ **해결**: CorsConfig에 기본값 및 예외 처리 강화
+
+### 배포 정보
+
+- 커밋: 50a0eeb
+- 상태: Render 자동 배포 진행 중 (5-10분)
+
+---
+
 ## [2026-02-21] 마이페이지 및 알림 설정 기능 추가
 
 ### 변경사항
