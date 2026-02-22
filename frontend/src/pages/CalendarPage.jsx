@@ -262,7 +262,7 @@ function CalendarPage() {
                           const response = await apiClient.get(`/schedules/${event.id}`)
                           setSelectedSchedule(response.data.data)
                           setShowScheduleDetail(true)
-                          setShowDatePopup(false)
+                          // 바텀 시트는 계속 열려있음 (반복 탐색 가능)
                         } catch (err) {
                           console.error('일정 상세 조회 실패:', err)
                         }
@@ -270,7 +270,10 @@ function CalendarPage() {
                     >
                       <span
                         className="date-event-dot"
-                        style={{ backgroundColor: event.backgroundColor }}
+                        style={{
+                          backgroundColor: event.backgroundColor,
+                          pointerEvents: 'none'  // 도트는 클릭 불가
+                        }}
                       />
                       <span className="date-event-title">{event.title}</span>
                     </li>
