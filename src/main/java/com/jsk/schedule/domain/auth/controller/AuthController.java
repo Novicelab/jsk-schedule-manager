@@ -3,6 +3,7 @@ package com.jsk.schedule.domain.auth.controller;
 import com.jsk.schedule.domain.auth.dto.KakaoLoginRequest;
 import com.jsk.schedule.domain.auth.dto.LoginRequest;
 import com.jsk.schedule.domain.auth.dto.LoginResponse;
+import com.jsk.schedule.domain.auth.dto.TokenReissueRequest;
 import com.jsk.schedule.domain.auth.service.AuthService;
 import com.jsk.schedule.global.common.ApiResponse;
 import jakarta.validation.Valid;
@@ -29,6 +30,17 @@ public class AuthController {
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         LoginResponse response = authService.login(request);
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Access Token 재발급 (Token Rotation 정책).
+     * Refresh Token으로 새 Access Token + Refresh Token을 발급한다.
+     */
+    @PostMapping("/reissue")
+    public ResponseEntity<ApiResponse<LoginResponse>> reissue(@Valid @RequestBody TokenReissueRequest request) {
+        log.info("토큰 재발급 요청 수신");
+        LoginResponse response = authService.reissue(request.getRefreshToken());
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     /**

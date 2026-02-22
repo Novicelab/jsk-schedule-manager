@@ -75,6 +75,59 @@ public class AuthService {
     }
 
     /**
+     * Refresh Token으로 Access Token 재발급 (Rotation 정책).
+     * 기존 Refresh Token을 삭제하고 새 Access Token + Refresh Token을 발급한다.
+     */
+    @Transactional
+    public LoginResponse reissue(String refreshToken) {
+        log.info("토큰 재발급 요청");
+
+        // Step 1: Refresh Token DB 조회
+        RefreshToken storedToken = refreshTokenRepository.findByToken(refreshToken)
+                .orElseThrow(() -> new BusinessException(ErrorCode.REFRESH_TOKEN_NOT_FOUND));
+
+        // Step 2: 만료 여부 확인
+        if (storedToken.isExpired()) {
+            refreshTokenRepository.delete(storedToken);
+            throw new BusinessException(ErrorCode.EXPIRED_TOKEN);
+        }
+
+        // Step 3: JWT 서명 유효성 검증
+        try {
+            jwtTokenProvider.validateToken(refreshToken);
+        } catch (BusinessException e) {
+            refreshTokenRepository.delete(storedToken);
+            throw e;
+        }
+
+        // Step 4: 사용자 조회
+        User user = storedToken.getUser();
+
+        // Step 5: 기존 토큰 삭제 (Rotation)
+        refreshTokenRepository.deleteByUserId(user.getId());
+
+        // Step 6: 새 토큰 생성 및 저장
+        String newAccessToken = jwtTokenProvider.generateAccessToken(user.getId());
+        String newRefreshToken = jwtTokenProvider.generateRefreshToken(user.getId());
+        refreshTokenRepository.save(RefreshToken.of(user, newRefreshToken));
+
+        log.info("토큰 재발급 완료: userId={}", user.getId());
+
+        return new LoginResponse(
+                newAccessToken,
+                newRefreshToken,
+                new LoginResponse.UserInfo(
+                        user.getId(),
+                        user.getUsername(),
+                        user.getName(),
+                        user.getEmail(),
+                        user.getRole()
+                ),
+                false
+        );
+    }
+
+    /**
      * 카카오 OAuth 로그인/회원가입.
      * Authorization Code → 카카오 Access Token 교환 → 사용자 정보 조회 → 사용자 저장 또는 조회 → JWT 토큰 발급
      */

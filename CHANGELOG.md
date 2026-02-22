@@ -4,6 +4,33 @@
 
 ---
 
+## [2026-02-22] QA 버그 수정 - POST /api/auth/reissue 엔드포인트 누락
+
+### 발견 경위
+- QA 팀 E2E 테스트 중 토큰 재발급 API 호출 시 500 에러 확인
+- 소스 분석 결과: TokenReissueRequest DTO, RefreshToken Entity/Repository는 존재하나
+  AuthService.reissue() 메서드 및 AuthController POST /reissue 엔드포인트 완전 누락 확인
+
+### 영향
+- Access Token 만료(1시간) 후 자동 갱신 불가 → 사용자 강제 로그아웃 발생
+- 장시간 사용 시 서비스 사용 불가 상태
+
+### 변경사항
+
+**백엔드 (`AuthService.java`):**
+- `reissue(String refreshToken)` 메서드 추가
+  - DB에서 RefreshToken 조회 → 만료 체크 → JWT 서명 검증 → 기존 토큰 삭제(Rotation) → 새 토큰 발급
+
+**백엔드 (`AuthController.java`):**
+- `POST /api/auth/reissue` 엔드포인트 추가 (`TokenReissueRequest` 사용, `ApiResponse<LoginResponse>` 반환)
+- import `TokenReissueRequest` 추가
+
+### 파일 변경
+- `src/main/java/.../auth/service/AuthService.java`: reissue() 메서드 추가
+- `src/main/java/.../auth/controller/AuthController.java`: /reissue 엔드포인트 추가
+
+---
+
 ## [2026-02-22] 연동 설정 추가 수정 (KAKAO_CLIENT_ID 하드코딩, 백엔드 자동배포 설정)
 
 ### 변경사항
