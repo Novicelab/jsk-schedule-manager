@@ -32,7 +32,7 @@ jwt:
   refresh-token-expiration: 2592000000  # 30일 (ms)
 
 kakao:
-  client-id: ${KAKAO_CLIENT_ID}
+  client-id: "240f33554023d9ab4957b2d638fb0d71"
   client-secret: ${KAKAO_CLIENT_SECRET}
   redirect-uri: ${KAKAO_REDIRECT_URI}
 

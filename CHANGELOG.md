@@ -4,6 +4,26 @@
 
 ---
 
+## [2026-02-22] 연동 설정 추가 수정 (KAKAO_CLIENT_ID 하드코딩, 백엔드 자동배포 설정)
+
+### 변경사항
+
+**백엔드 설정 (`src/main/resources/application-prod.yml`):**
+- `kakao.client-id` 환경변수 의존 제거 → REST API 키 직접 하드코딩
+  - 기존: `${KAKAO_CLIENT_ID}` (Render 대시보드 env var에 의존 → "1389155" 잔류 위험)
+  - 변경: `"240f33554023d9ab4957b2d638fb0d71"` (소스에 직접 명시)
+  - 근거: KAKAO_CLIENT_ID는 공개값 (OAuth URL에서도 노출됨)
+
+**배포 설정 (`render.yaml`):**
+- 백엔드 서비스에 `branch: main`, `autoDeployTrigger: commit` 추가 (프론트엔드와 동일하게)
+- 백엔드 섹션에서 `KAKAO_CLIENT_ID` env var 항목 제거 (application-prod.yml에 직접 명시)
+
+### 파일 변경
+- `src/main/resources/application-prod.yml`: kakao.client-id 하드코딩
+- `render.yaml`: 백엔드 자동배포 트리거 추가, KAKAO_CLIENT_ID env var 제거
+
+---
+
 ## [2026-02-22] 연동 설정 버그 수정 (render.yaml KAKAO_CLIENT_ID, Dockerfile HEALTHCHECK, client.js 포트)
 
 ### 변경사항

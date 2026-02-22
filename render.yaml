@@ -5,6 +5,8 @@ services:
     env: docker
     plan: free
     region: singapore
+    branch: main
+    autoDeployTrigger: commit
 
     # Build configuration
     dockerfilePath: ./Dockerfile
@@ -21,8 +23,6 @@ services:
       # SECURITY: Do NOT hardcode JWT_SECRET here. Set in Render Dashboard.
       - key: JWT_SECRET
         value: ${JWT_SECRET}
-      - key: KAKAO_CLIENT_ID
-        value: "240f33554023d9ab4957b2d638fb0d71"
       # SECURITY: Do NOT hardcode KAKAO_CLIENT_SECRET here. Set in Render Dashboard.
       - key: KAKAO_CLIENT_SECRET
         value: ${KAKAO_CLIENT_SECRET}
