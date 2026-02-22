@@ -4,6 +4,74 @@
 
 ---
 
+## [2026-02-21] 마이페이지 및 알림 설정 기능 추가
+
+### 변경사항
+
+**프론트엔드:**
+- GNB(Navbar)에 "설정" 버튼 추가 → `/mypage` 경로로 이동
+- `/mypage` 라우트 추가 (PrivateRoute 보호)
+- `MyPage.jsx` 신규 생성: 마이페이지 UI (뒤로가기 + 알림 설정 섹션)
+- `NotificationSettings.jsx` 신규 생성:
+  - 휴가/업무 × 등록/수정/삭제 6개 토글 버튼 (3x2 그리드)
+  - `GET /api/users/me/notification-preferences` 초기 로드
+  - `PUT /api/users/me/notification-preferences/{key}` 토글 시 즉시 반영
+  - 토글 성공 시 "켜짐/꺼짐" 피드백 표시
+- CSS 추가: `.navbar-actions`, `.btn-settings`, `.mypage-*`, `.notification-settings-*`, `.toggle-*`
+
+**백엔드:**
+- `NotificationActionType` Enum 신규 생성 (CREATED, UPDATED, DELETED)
+- `NotificationPreference` 엔티티 신규 생성 (`notification_preferences` 테이블)
+- `NotificationPreferenceRepository` 신규 생성
+- `NotificationPreferenceResponse` DTO 신규 생성
+- `NotificationPreferenceUpdateRequest` DTO 신규 생성
+- `NotificationPreferenceService` 신규 생성:
+  - `initializeDefaultPreferences()`: 신규 가입 시 6개 기본 설정 생성(모두 true)
+  - `getPreferences()`: 전체 설정 조회 (없으면 자동 초기화)
+  - `updatePreference()`: 개별 설정 업데이트
+  - `isNotificationEnabled()`: 알림 발송 전 수신 여부 확인
+- `UserController` 수정: 알림 설정 GET/PUT API 2개 추가
+- `NotificationService` 수정:
+  - `sendNotificationToUser()`: 발송 전 사용자 수신 설정 확인 로직 추가
+  - `buildMessage()`: 휴가/업무 유형별 포맷 분리 (사용자명, 날짜/시간 포함)
+- `AuthService` 수정: 신규 카카오 사용자 가입 시 알림 기본 설정 자동 생성
+
+**데이터베이스:**
+- `docs/migrations/add_notification_preferences.sql` 신규 생성 (Supabase 수동 실행용)
+
+### 파일 변경
+**신규 생성 (백엔드):**
+- `src/main/java/com/jsk/schedule/domain/notification/entity/NotificationActionType.java`
+- `src/main/java/com/jsk/schedule/domain/notification/entity/NotificationPreference.java`
+- `src/main/java/com/jsk/schedule/domain/notification/repository/NotificationPreferenceRepository.java`
+- `src/main/java/com/jsk/schedule/domain/notification/dto/NotificationPreferenceResponse.java`
+- `src/main/java/com/jsk/schedule/domain/notification/dto/NotificationPreferenceUpdateRequest.java`
+- `src/main/java/com/jsk/schedule/domain/notification/service/NotificationPreferenceService.java`
+
+**수정 (백엔드):**
+- `src/main/java/com/jsk/schedule/domain/user/controller/UserController.java`
+- `src/main/java/com/jsk/schedule/domain/notification/service/NotificationService.java`
+- `src/main/java/com/jsk/schedule/domain/auth/service/AuthService.java`
+
+**신규 생성 (프론트엔드):**
+- `frontend/src/pages/MyPage.jsx`
+- `frontend/src/components/settings/NotificationSettings.jsx`
+
+**수정 (프론트엔드):**
+- `frontend/src/App.jsx`
+- `frontend/src/components/Navbar.jsx`
+- `frontend/src/styles/global.css`
+
+**신규 생성 (문서/마이그레이션):**
+- `docs/migrations/add_notification_preferences.sql`
+
+### 비고
+- Supabase prod 환경은 `ddl-auto: none`이므로 마이그레이션 SQL 수동 실행 필요
+- 로컬 H2 환경은 `ddl-auto: create`이므로 자동 테이블 생성
+- 기존 사용자의 알림 설정 미존재 시 GET 호출 시 자동 초기화 (폴백 처리)
+
+---
+
 ## [2026-02-21] 환경 설정 통합 - Kakao 로그인 포트/URI 일관성 수정
 
 ### 변경사항

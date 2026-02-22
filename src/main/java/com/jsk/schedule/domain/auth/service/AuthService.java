@@ -6,6 +6,7 @@ import com.jsk.schedule.domain.auth.dto.LoginRequest;
 import com.jsk.schedule.domain.auth.dto.LoginResponse;
 import com.jsk.schedule.domain.auth.entity.RefreshToken;
 import com.jsk.schedule.domain.auth.repository.RefreshTokenRepository;
+import com.jsk.schedule.domain.notification.service.NotificationPreferenceService;
 import com.jsk.schedule.domain.user.entity.User;
 import com.jsk.schedule.domain.user.repository.UserRepository;
 import com.jsk.schedule.global.error.BusinessException;
@@ -27,6 +28,7 @@ public class AuthService {
     private final JwtTokenProvider jwtTokenProvider;
     private final KakaoOAuthClient kakaoOAuthClient;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final NotificationPreferenceService notificationPreferenceService;
 
     /**
      * ID/PW 로그인
@@ -104,7 +106,10 @@ public class AuthService {
                             kakaoUserInfo.getProfileImageUrl(),
                             kakaoAccessToken
                     );
-                    return userRepository.save(newUser);
+                    User savedUser = userRepository.save(newUser);
+                    notificationPreferenceService.initializeDefaultPreferences(savedUser);
+                    log.debug("신규 사용자 알림 기본 설정 생성: userId={}", savedUser.getId());
+                    return savedUser;
                 });
         boolean isNewUser = isNewUserFlag[0];
 

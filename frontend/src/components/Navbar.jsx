@@ -20,6 +20,10 @@ function Navbar() {
     }
   }
 
+  const handleSettings = () => {
+    navigate('/mypage')
+  }
+
   return (
     <nav className="navbar">
       <div className="navbar-brand">JSK 일정 관리</div>
@@ -36,9 +40,14 @@ function Navbar() {
           </NavLink>
         </li>
       </ul>
-      <button className="btn btn-logout" onClick={handleLogout}>
-        로그아웃
-      </button>
+      <div className="navbar-actions">
+        <button className="btn btn-settings" onClick={handleSettings}>
+          설정
+        </button>
+        <button className="btn btn-logout" onClick={handleLogout}>
+          로그아웃
+        </button>
+      </div>
     </nav>
   )
 }

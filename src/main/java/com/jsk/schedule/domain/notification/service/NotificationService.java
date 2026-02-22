@@ -2,9 +2,11 @@ package com.jsk.schedule.domain.notification.service;
 
 import com.jsk.schedule.domain.notification.dto.NotificationResponse;
 import com.jsk.schedule.domain.notification.entity.Notification;
+import com.jsk.schedule.domain.notification.entity.NotificationActionType;
 import com.jsk.schedule.domain.notification.entity.NotificationType;
 import com.jsk.schedule.domain.notification.repository.NotificationRepository;
 import com.jsk.schedule.domain.schedule.entity.Schedule;
+import com.jsk.schedule.domain.schedule.entity.ScheduleType;
 import com.jsk.schedule.domain.user.entity.User;
 import com.jsk.schedule.domain.user.repository.UserRepository;
 import com.jsk.schedule.global.error.BusinessException;
@@ -29,12 +31,15 @@ import java.util.List;
 public class NotificationService {
 
     private static final int MAX_RETRY_COUNT = 3;
-    private static final DateTimeFormatter DATE_TIME_FORMATTER =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+    private static final DateTimeFormatter DATE_FORMATTER =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private static final DateTimeFormatter TIME_FORMATTER =
+            DateTimeFormatter.ofPattern("HH:mm");
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
     private final KakaoApiClient kakaoApiClient;
+    private final NotificationPreferenceService notificationPreferenceService;
 
     /**
      * 일정 이벤트 발생 시 카카오 AccessToken이 있는 모든 사용자에게 알림을 발송한다.
@@ -63,11 +68,22 @@ public class NotificationService {
     }
 
     /**
-     * 특정 사용자에 대해 알림 저장 및 카카오 API 발송을 처리한다.
+     * 특정 사용자에 대해 알림 수신 설정을 확인 후 알림 저장 및 카카오 API 발송을 처리한다.
      * 최대 3회 재시도하며, 최종 실패 시 FAILED 상태로 기록하고 예외를 전파하지 않는다.
      */
     private void sendNotificationToUser(Schedule schedule, User user,
                                         NotificationType type, String message) {
+        // 사용자 알림 수신 설정 확인
+        NotificationActionType actionType = toActionType(type);
+        boolean isEnabled = notificationPreferenceService.isNotificationEnabled(
+                user.getId(), schedule.getType(), actionType);
+
+        if (!isEnabled) {
+            log.debug("알림 수신 비활성화됨: userId={}, scheduleType={}, actionType={}",
+                    user.getId(), schedule.getType(), actionType);
+            return;
+        }
+
         Notification notification = Notification.create(schedule, user, type, message);
         notificationRepository.save(notification);
 
@@ -108,29 +124,54 @@ public class NotificationService {
 
     /**
      * 알림 유형에 맞는 메시지를 생성한다.
+     * 휴가: "[사용자명] 휴가 등록" 형식
+     * 업무: "[사용자명] 제목 등록" 형식 (날짜/시간 포함)
      *
      * @param schedule 일정 엔티티
      * @param type     알림 유형
      * @return 발송할 메시지 문자열
      */
     private String buildMessage(Schedule schedule, NotificationType type) {
+        String userName = schedule.getCreatedBy().getName();
+        String title = schedule.getTitle();
+        String startDate = schedule.getStartAt().format(DATE_FORMATTER);
+        String endDate = schedule.getEndAt().format(DATE_FORMATTER);
+
+        if (schedule.getType() == ScheduleType.VACATION) {
+            return switch (type) {
+                case SCHEDULE_CREATED -> String.format(
+                        "[%s] 휴가 등록\n일자: %s ~ %s", userName, startDate, endDate);
+                case SCHEDULE_UPDATED -> String.format(
+                        "[%s] 휴가 일정 수정\n변경 후: %s ~ %s", userName, startDate, endDate);
+                case SCHEDULE_DELETED -> String.format(
+                        "[%s] 휴가 삭제\n일자: %s ~ %s", userName, startDate, endDate);
+                default -> "";
+            };
+        } else {
+            String startTime = schedule.getStartAt().format(TIME_FORMATTER);
+            String endTime = schedule.getEndAt().format(TIME_FORMATTER);
+            return switch (type) {
+                case SCHEDULE_CREATED -> String.format(
+                        "[%s] %s 등록\n일자: %s ~ %s\n시간: %s ~ %s",
+                        userName, title, startDate, endDate, startTime, endTime);
+                case SCHEDULE_UPDATED -> String.format(
+                        "[%s] %s 수정\n일자: %s ~ %s\n시간: %s ~ %s",
+                        userName, title, startDate, endDate, startTime, endTime);
+                case SCHEDULE_DELETED -> String.format(
+                        "[%s] %s 삭제", userName, title);
+                default -> "";
+            };
+        }
+    }
+
+    /**
+     * NotificationType을 NotificationActionType으로 변환한다.
+     */
+    private NotificationActionType toActionType(NotificationType type) {
         return switch (type) {
-            case SCHEDULE_CREATED -> String.format(
-                    "[JSK] 새 일정이 등록되었습니다.\n제목: %s\n시작: %s\n종료: %s",
-                    schedule.getTitle(),
-                    schedule.getStartAt().format(DATE_TIME_FORMATTER),
-                    schedule.getEndAt().format(DATE_TIME_FORMATTER)
-            );
-            case SCHEDULE_UPDATED -> String.format(
-                    "[JSK] 일정이 수정되었습니다.\n제목: %s\n시작: %s\n종료: %s",
-                    schedule.getTitle(),
-                    schedule.getStartAt().format(DATE_TIME_FORMATTER),
-                    schedule.getEndAt().format(DATE_TIME_FORMATTER)
-            );
-            case SCHEDULE_DELETED -> String.format(
-                    "[JSK] 일정이 삭제되었습니다.\n제목: %s",
-                    schedule.getTitle()
-            );
+            case SCHEDULE_CREATED -> NotificationActionType.CREATED;
+            case SCHEDULE_UPDATED -> NotificationActionType.UPDATED;
+            case SCHEDULE_DELETED -> NotificationActionType.DELETED;
             default -> throw new IllegalArgumentException("지원하지 않는 알림 유형: " + type);
         };
     }
