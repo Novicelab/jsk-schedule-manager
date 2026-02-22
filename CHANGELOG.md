@@ -4,6 +4,30 @@
 
 ---
 
+## [2026-02-22] 연동 설정 버그 수정 (render.yaml KAKAO_CLIENT_ID, Dockerfile HEALTHCHECK, client.js 포트)
+
+### 변경사항
+
+**배포 설정 (`render.yaml`):**
+- `KAKAO_CLIENT_ID` 오류 수정: 앱 번호(`1389155`) → REST API 키(`240f33554023d9ab4957b2d638fb0d71`)
+  - backend 섹션 + frontend 섹션 모두 수정
+  - 기존 오류로 프로덕션 카카오 로그인 시 KOE101 에러 발생 가능
+
+**Docker (`Dockerfile`):**
+- HEALTHCHECK 제거: `spring-boot-starter-actuator` 미설치로 `/actuator/health` 엔드포인트 미존재
+  - 헬스체크가 항상 실패하여 Docker가 컨테이너를 unhealthy로 마킹하던 문제 해결
+  - Render는 자체 헬스체크 메커니즘을 사용하므로 영향 없음
+
+**프론트엔드 (`frontend/src/api/client.js`):**
+- 로컬 폴백 URL 포트 수정: `8081` → `9090` (실제 로컬 백엔드 포트 일치)
+
+### 파일 변경
+- `render.yaml`: KAKAO_CLIENT_ID 값 수정 (backend + frontend)
+- `Dockerfile`: HEALTHCHECK 명령어 제거
+- `frontend/src/api/client.js`: 폴백 포트 수정
+
+---
+
 ## [2026-02-22] UI/UX 3가지 개선 (휴가 제목 선택, GNB 계정 정보, 캘린더 반응형)
 
 ### 변경사항

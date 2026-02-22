@@ -7,7 +7,7 @@ const getBackendUrl = () => {
     return 'https://jsk-schedule-backend.onrender.com/api'
   }
   // 로컬 개발 환경
-  return import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/api'
+  return import.meta.env.VITE_API_BASE_URL || 'http://localhost:9090/api'
 }
 
 const apiClient = axios.create({

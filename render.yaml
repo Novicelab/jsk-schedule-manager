@@ -22,7 +22,7 @@ services:
       - key: JWT_SECRET
         value: ${JWT_SECRET}
       - key: KAKAO_CLIENT_ID
-        value: "1389155"
+        value: "240f33554023d9ab4957b2d638fb0d71"
       # SECURITY: Do NOT hardcode KAKAO_CLIENT_SECRET here. Set in Render Dashboard.
       - key: KAKAO_CLIENT_SECRET
         value: ${KAKAO_CLIENT_SECRET}
@@ -48,7 +48,7 @@ services:
     # Environment variables
     envVars:
       - key: VITE_KAKAO_CLIENT_ID
-        value: "1389155"
+        value: "240f33554023d9ab4957b2d638fb0d71"
       - key: VITE_KAKAO_REDIRECT_URI
         value: https://jsk-schedule-frontend.onrender.com/auth/callback
       - key: VITE_API_BASE_URL
