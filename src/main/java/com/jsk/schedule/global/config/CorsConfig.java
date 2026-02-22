@@ -23,10 +23,20 @@ public class CorsConfig {
         List<String> origins = List.of(allowedOrigins.split(",\\s*"));
         configuration.setAllowedOrigins(origins);
 
-        configuration.setAllowedMethods(List.of("*"));
+        // 모든 HTTP 메서드 허용
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+
+        // 모든 헤더 허용
         configuration.setAllowedHeaders(List.of("*"));
+
+        // 자격증명(쿠키, 인증헤더) 포함 허용
         configuration.setAllowCredentials(true);
+
+        // Preflight 응답 캐시 시간 (1시간)
         configuration.setMaxAge(3600L);
+
+        // 응답 헤더 노출
+        configuration.setExposedHeaders(List.of("Authorization", "X-Total-Count"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
