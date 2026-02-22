@@ -115,13 +115,7 @@
   - ✅ WORK 일정 구분: 업무 일정은 원본 제목 그대로 저장
   - ✅ UI/UX 개선: ScheduleModal에서 VACATION 선택 시 placeholder 힌트 표시
 - [x] 유지보수 & 개선: CORS 설정 강화 및 신규 회원가입 이름 팝업 수정 (2026-02-22)
-  - ✅ CORS 설정 개선: 알림 설정 엔드포인트 CORS 헤더 반환 (GET, POST, PUT, DELETE, PATCH, OPTIONS)
-  - ✅ CORS Preflight 캐시: 3600초 설정으로 성능 최적화
-  - ✅ isNewUser JSON 직렬화: `@JsonProperty("isNewUser")` 추가로 boolean 필드 직렬화 보장
-  - ✅ 신규 사용자 판단 로깅: AuthService에서 isNewUser 플래그 명시적 로깅
-  - ✅ 프론트엔드 디버깅: CallbackPage에서 응답 구조 및 isNewUser 값 콘솔 로깅 추가
-  - ✅ 마이페이지 알림 설정: 모든 엔드포인트에서 정상적인 CORS 헤더 반환
-  - ✅ 배포 검증: 신규/기존 사용자 시나리오 모두 정상 동작 확인
+  - 상세 이력은 CHANGELOG.md 참고
 
 ---
 
