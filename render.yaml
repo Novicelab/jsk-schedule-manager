@@ -24,6 +24,5 @@ services:
         value: https://jsk-schedule-frontend.onrender.com/auth/callback
       - key: VITE_SUPABASE_URL
         value: https://qphhpfolrbsyiyoevaoe.supabase.co
-      # SECURITY: Set VITE_SUPABASE_ANON_KEY in Render Dashboard
       - key: VITE_SUPABASE_ANON_KEY
-        value: ${SUPABASE_ANON_KEY}
+        value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwaGhwZm9scmJzeWl5b2V2YW9lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0OTA4NTQsImV4cCI6MjA4NzA2Njg1NH0.8nMygPUObvGiPFJZE02mvl4J7_lqILF3bOkj69KLzqs"
