@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import apiClient from '../api/client'
+import { supabase } from '../lib/supabase'
 
 function Navbar() {
   const navigate = useNavigate()
@@ -9,16 +9,11 @@ function Navbar() {
   const displayInfo = user.name ? `${user.name} / ${user.email || ''}` : ''
 
   const handleLogout = async () => {
-    const refreshToken = localStorage.getItem('refreshToken')
     try {
-      if (refreshToken) {
-        await apiClient.post('/auth/logout', { refreshToken })
-      }
+      await supabase.auth.signOut()
     } catch (err) {
-      console.error('로그아웃 API 호출 실패:', err)
+      console.error('로그아웃 실패:', err)
     } finally {
-      localStorage.removeItem('accessToken')
-      localStorage.removeItem('refreshToken')
       localStorage.removeItem('user')
       navigate('/login', { replace: true })
     }

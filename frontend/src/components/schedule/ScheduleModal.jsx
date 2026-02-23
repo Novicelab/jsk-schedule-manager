@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import dayjs from 'dayjs'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
-import apiClient from '../../api/client'
+import { supabase } from '../../lib/supabase'
 import './ScheduleModal.css'
 
 const SCHEDULE_TYPES = [
@@ -25,7 +25,7 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
   const defaultDateObj = defaultDate ? dayjs(defaultDate).toDate() : dayjs().toDate()
 
   const [form, setForm] = useState({
-    type: 'VACATION',       // 유형은 먼저 설정
+    type: 'VACATION',
     title: '',
     description: '',
     startDate: defaultDateObj,
@@ -123,7 +123,6 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
       newErrors.endDate = '종료 날짜는 시작 날짜 이후여야 합니다.'
     }
 
-    // WORK 타입의 경우: 제목, 설명, 시간 검증
     if (form.type === 'WORK') {
       if (!form.title.trim()) {
         newErrors.title = '제목은 필수입니다.'
@@ -137,7 +136,6 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
         newErrors.duration = '소요 시간은 필수입니다.'
       }
     } else if (form.type === 'VACATION') {
-      // VACATION 타입의 경우: 부제목은 선택이지만 길이 검증
       if (form.title.trim().length > 100) {
         newErrors.title = '부제목은 100자 이내로 입력해주세요.'
       }
@@ -158,43 +156,75 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
     setApiError(null)
 
     try {
-      let startAt, endAt, allDay, title
+      let start_at, end_at, all_day, title
 
       if (form.type === 'WORK') {
-        // 업무일정: 시작 날짜 + 시작 시간 + 소요 시간
         const startDateTime = dayjs(form.startDate).format('YYYY-MM-DD') + 'T' + form.startTime + ':00'
         const endDateTime = dayjs(startDateTime).add(form.duration, 'minute').format('YYYY-MM-DDTHH:mm:ss')
-        startAt = startDateTime
-        endAt = endDateTime
-        allDay = false
+        start_at = startDateTime
+        end_at = endDateTime
+        all_day = false
         title = form.title.trim()
       } else {
-        // 휴가: 시작 날짜 ~ 종료 날짜 (시간 없음)
-        startAt = dayjs(form.startDate).format('YYYY-MM-DD') + 'T00:00:00'
-        endAt = dayjs(form.endDate).format('YYYY-MM-DD') + 'T23:59:59'
-        allDay = true
-        title = form.title.trim()  // 부제목 또는 빈 문자열 (백엔드에서 "[이름] [부제목]" 형식으로 설정)
+        start_at = dayjs(form.startDate).format('YYYY-MM-DD') + 'T00:00:00'
+        end_at = dayjs(form.endDate).format('YYYY-MM-DD') + 'T23:59:59'
+        all_day = true
+        title = form.title.trim() // DB 트리거가 "[이름] 부제목" 형식으로 자동 설정
       }
 
-      const payload = {
-        title: title,
-        description: form.type === 'WORK' ? (form.description.trim() || null) : null,
-        type: form.type,
-        startAt,
-        endAt,
-        allDay,
-      }
+      // 현재 사용자 ID 조회
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      const { data: currentUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_id', authUser.id)
+        .single()
 
       if (isEdit) {
-        await apiClient.put(`/schedules/${schedule.id}`, payload)
+        const { error } = await supabase
+          .from('schedules')
+          .update({
+            title,
+            description: form.type === 'WORK' ? (form.description.trim() || null) : null,
+            type: form.type,
+            start_at,
+            end_at,
+            all_day,
+          })
+          .eq('id', schedule.id)
+
+        if (error) throw error
+
+        // 알림 발송 (Edge Function)
+        supabase.functions.invoke('send-notification', {
+          body: { scheduleId: schedule.id, actionType: 'UPDATED', actorUserId: currentUser.id },
+        }).catch(err => console.error('알림 발송 실패:', err))
       } else {
-        await apiClient.post('/schedules', payload)
+        const { data: newSchedule, error } = await supabase
+          .from('schedules')
+          .insert({
+            title,
+            description: form.type === 'WORK' ? (form.description.trim() || null) : null,
+            type: form.type,
+            start_at,
+            end_at,
+            all_day,
+            created_by: currentUser.id,
+          })
+          .select()
+          .single()
+
+        if (error) throw error
+
+        // 알림 발송 (Edge Function)
+        supabase.functions.invoke('send-notification', {
+          body: { scheduleId: newSchedule.id, actionType: 'CREATED', actorUserId: currentUser.id },
+        }).catch(err => console.error('알림 발송 실패:', err))
       }
       onSaved()
     } catch (err) {
       console.error('일정 저장 실패:', err)
-      const message =
-        err.response?.data?.message || '일정 저장 중 오류가 발생했습니다.'
+      const message = err.message || '일정 저장 중 오류가 발생했습니다.'
       setApiError(message)
     } finally {
       setSubmitting(false)
@@ -226,7 +256,7 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
         {apiError && <div className="error-banner">{apiError}</div>}
 
         <form onSubmit={handleSubmit} className="modal-form" noValidate>
-          {/* Step 1: 유형 선택 (필수, 맨 위) */}
+          {/* Step 1: 유형 선택 */}
           <div className="form-group">
             <label className="form-label">
               유형 선택 <span className="required">*</span>
@@ -251,7 +281,7 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
             </div>
           </div>
 
-          {/* Step 2: VACATION인 경우 - 날짜 + 선택 제목 */}
+          {/* Step 2: VACATION */}
           {form.type === 'VACATION' && (
             <>
               <p className="form-section-hint">
@@ -313,7 +343,7 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
             </>
           )}
 
-          {/* Step 3: WORK인 경우 - 제목, 설명, 날짜, 시간 */}
+          {/* Step 3: WORK */}
           {form.type === 'WORK' && (
             <>
               <div className="form-group">

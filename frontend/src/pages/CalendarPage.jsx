@@ -7,7 +7,7 @@ import dayjs from 'dayjs'
 import Navbar from '../components/Navbar'
 import ScheduleModal from '../components/schedule/ScheduleModal'
 import ScheduleDetail from '../components/schedule/ScheduleDetail'
-import apiClient from '../api/client'
+import { supabase } from '../lib/supabase'
 
 // 일정 유형별 색상
 const SCHEDULE_COLORS = {
@@ -46,26 +46,30 @@ function CalendarPage() {
   const loadSchedules = useCallback(async (range) => {
     if (!range) return
     try {
-      const response = await apiClient.get('/schedules', {
-        params: {
-          // 백엔드가 ISO 8601 날짜시간 형식을 기대하므로 LocalDateTime과 호환되는 형식으로 전달
-          startDate: dayjs(range.start).startOf('day').format('YYYY-MM-DDTHH:mm:ss'),
-          endDate: dayjs(range.end).endOf('day').format('YYYY-MM-DDTHH:mm:ss'),
-        },
-      })
-      const scheduleList = response.data.data?.content || response.data.data || []
-      const calendarEvents = scheduleList.map((s) => ({
+      const startDate = dayjs(range.start).startOf('day').format('YYYY-MM-DDTHH:mm:ss')
+      const endDate = dayjs(range.end).endOf('day').format('YYYY-MM-DDTHH:mm:ss')
+
+      // Supabase에서 일정 조회 (뷰 사용)
+      const { data: scheduleList, error } = await supabase
+        .from('schedules_with_user')
+        .select('*')
+        .gte('end_at', startDate)
+        .lte('start_at', endDate)
+
+      if (error) throw error
+
+      const calendarEvents = (scheduleList || []).map((s) => ({
         id: String(s.id),
         title: s.title,
-        start: s.startAt,
-        end: s.endAt,
-        allDay: s.allDay,
+        start: s.start_at,
+        end: s.end_at,
+        allDay: s.all_day,
         backgroundColor: SCHEDULE_COLORS[s.type] || '#7f8c8d',
         borderColor: SCHEDULE_COLORS[s.type] || '#7f8c8d',
         extendedProps: {
           type: s.type,
           description: s.description,
-          createdBy: s.createdBy,
+          createdBy: s.created_by,
         },
       }))
       setEvents(calendarEvents)
@@ -106,17 +110,36 @@ function CalendarPage() {
     }
   }, [isMobile, events])
 
-  // 이벤트 클릭 → 모바일: 무시 (날짜 셀 클릭으로만 바텀 시트 접근), PC: 상세 모달 표시
+  // 이벤트 클릭 → 모바일: 무시, PC: 상세 모달 표시
   const handleEventClick = useCallback(
     async (info) => {
-      // 모바일: 이벤트(dot) 클릭 무시 — 날짜 셀 클릭 → 바텀 시트에서만 일정 접근
       if (isMobile) return
 
-      // PC: 기존 상세 팝업
       const scheduleId = info.event.id
       try {
-        const response = await apiClient.get(`/schedules/${scheduleId}`)
-        setSelectedSchedule(response.data.data)
+        const { data, error } = await supabase
+          .from('schedules_with_user')
+          .select('*')
+          .eq('id', scheduleId)
+          .single()
+
+        if (error) throw error
+
+        // 필드명 매핑 (snake_case → camelCase)
+        setSelectedSchedule({
+          id: data.id,
+          title: data.title,
+          startAt: data.start_at,
+          endAt: data.end_at,
+          allDay: data.all_day,
+          type: data.type,
+          description: data.description,
+          createdBy: data.created_by,
+          createdByName: data.created_by_name,
+          createdAt: data.created_at,
+          canEdit: data.can_edit,
+          canDelete: data.can_delete,
+        })
         setShowScheduleDetail(true)
       } catch (err) {
         console.error('일정 상세 조회 실패:', err)
@@ -263,8 +286,28 @@ function CalendarPage() {
                       className="date-event-item"
                       onClick={async () => {
                         try {
-                          const response = await apiClient.get(`/schedules/${event.id}`)
-                          setSelectedSchedule(response.data.data)
+                          const { data, error } = await supabase
+                            .from('schedules_with_user')
+                            .select('*')
+                            .eq('id', event.id)
+                            .single()
+
+                          if (error) throw error
+
+                          setSelectedSchedule({
+                            id: data.id,
+                            title: data.title,
+                            startAt: data.start_at,
+                            endAt: data.end_at,
+                            allDay: data.all_day,
+                            type: data.type,
+                            description: data.description,
+                            createdBy: data.created_by,
+                            createdByName: data.created_by_name,
+                            createdAt: data.created_at,
+                            canEdit: data.can_edit,
+                            canDelete: data.can_delete,
+                          })
                           setShowDatePopup(false)
                           setShowScheduleDetail(true)
                         } catch (err) {

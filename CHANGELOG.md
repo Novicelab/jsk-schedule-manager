@@ -4,6 +4,62 @@
 
 ---
 
+## [2026-02-23] Supabase 중심 구조 전환 (아키텍처 리팩토링)
+
+### 배경
+- Spring Boot 백엔드를 별도 Docker 서비스로 운영하는 것이 비효율적
+- Supabase를 단순 DB로만 사용 중 (Auth, RLS, Edge Functions 미활용)
+- Java + JavaScript 2개 언어 유지보수 부담
+
+### 변경사항
+
+**구조 변경: 3-tier → Supabase BaaS**
+- Before: `React → Spring Boot (Docker) → Supabase PostgreSQL`
+- After: `React → Supabase Client (Auth + RLS + Edge Functions)`
+
+**제거된 항목 (Spring Boot 백엔드 전체):**
+- `src/` 디렉토리 (Java 64개 파일)
+- `Dockerfile`, `build.gradle`, `settings.gradle`, `gradle/`, `gradlew`
+- `application.yml`, `application-prod.yml`, `application-local.yml`, `application-dev.yml`
+- `test_api.sh`, `test_login.sh`
+
+**추가된 항목:**
+- `supabase/config.toml` - Supabase 프로젝트 설정
+- `supabase/functions/kakao-auth/index.ts` - 카카오 OAuth Edge Function
+- `supabase/functions/send-notification/index.ts` - 알림톡 발송 Edge Function
+- `frontend/src/lib/supabase.js` - Supabase Client 설정
+- `docs/migrations/supabase_migration.sql` - RLS + 트리거 마이그레이션
+
+**수정된 프론트엔드 파일 (12개):**
+- `frontend/src/api/client.js` → 삭제 (Axios 제거)
+- `frontend/src/lib/supabase.js` → 신규 (Supabase Client)
+- `frontend/src/pages/LoginPage.jsx` → Supabase Auth 세션 체크
+- `frontend/src/pages/CallbackPage.jsx` → Edge Function 호출
+- `frontend/src/pages/CalendarPage.jsx` → Supabase 직접 쿼리
+- `frontend/src/components/schedule/ScheduleModal.jsx` → Supabase insert/update
+- `frontend/src/components/schedule/ScheduleDetail.jsx` → Supabase soft delete
+- `frontend/src/components/auth/NameInputModal.jsx` → Supabase update
+- `frontend/src/components/Navbar.jsx` → supabase.auth.signOut()
+- `frontend/src/components/settings/NotificationSettings.jsx` → Supabase 쿼리
+- `frontend/src/hooks/useAuth.js` → Supabase Auth 상태 관리
+- `frontend/src/components/PrivateRoute.jsx` → Supabase 세션 기반
+
+**배포 설정 변경:**
+- `render.yaml`: Backend 서비스 제거, Frontend Static Site만 유지
+- `frontend/.env`: `VITE_API_BASE_URL` 제거, `VITE_SUPABASE_URL/ANON_KEY` 추가
+- `frontend/vite.config.js`: proxy 설정 제거
+
+**패키지 변경:**
+- 추가: `@supabase/supabase-js`
+- 제거: `axios`
+
+### 비고
+- DB 마이그레이션 SQL은 Supabase SQL Editor에서 수동 실행 필요
+- Edge Functions는 `supabase functions deploy`로 별도 배포 필요
+- Supabase Anon Key, Service Role Key 설정 필요
+
+---
+
 ## [2026-02-22] 캘린더 UI/UX 개선 및 403 Forbidden 에러 수정
 
 ### 문제 분석

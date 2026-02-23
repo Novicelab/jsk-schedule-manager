@@ -39,7 +39,7 @@
 ### 데이터 정책
 - 모든 데이터는 데이터베이스(DB)에 영구 저장한다.
 - 삭제된 일정은 소프트 딜리트(soft delete) 방식으로 처리한다 (물리 삭제 금지).
-- 사용자 비밀번호는 반드시 암호화하여 저장한다 (BCrypt 사용).
+- 사용자 인증은 Supabase Auth + 카카오 OAuth를 통해 관리한다.
 
 ---
 
@@ -47,40 +47,60 @@
 
 | 구분 | 항목 | 비고 |
 |------|------|------|
-| 언어 | Java | |
-| 백엔드 | Spring Boot | Spring Data JPA, Spring Security |
+| 언어 | JavaScript / TypeScript | 단일 언어 스택 |
 | 프론트엔드 | React + Vite | FullCalendar, Tailwind CSS, react-datepicker |
+| BaaS | Supabase | Auth, PostgreSQL, RLS, Edge Functions |
+| 데이터베이스 | Supabase PostgreSQL | RLS(Row Level Security), PgBouncer 커넥션 풀링 |
+| 서버리스 함수 | Supabase Edge Functions (Deno) | 카카오 OAuth, 알림톡 발송 |
 | 날짜 처리 | dayjs | ISO 8601 형식, 타임존 안전성 |
 | 스타일링 | Tailwind CSS | 유틸리티 기반 CSS, 빠른 프로토타이핑 |
-| 데이터베이스 | Supabase (PostgreSQL) | 프로덕션: BaaS, 클라우드 관리형 DB, PgBouncer 커넥션 풀링 |
-| 로컬 개발 DB | H2 In-Memory Database | 로컬 개발/테스트 환경용, Gradle 의존성 추가 |
-| 빌드 도구 | Gradle | |
-| 배포 플랫폼 | Render | 클라우드 앱 호스팅 플랫폼 (Singapore 리전) |
-| 배포 구성 | Docker (Backend) + Static Site (Frontend) | 자동 배포 (GitHub 연동) |
-| 배포 URL | Backend: https://jsk-schedule-backend.onrender.com<br/>Frontend: https://jsk-schedule-frontend.onrender.com | Live |
+| 빌드 도구 | Vite | |
+| 배포 플랫폼 | Render (Static Site) | 클라우드 앱 호스팅 플랫폼 (Singapore 리전) |
+| 배포 구성 | Static Site (Frontend Only) | 자동 배포 (GitHub 연동) |
+| 배포 URL | Frontend: https://jsk-schedule-frontend.onrender.com | Live |
 | 소스관리/CI·CD | GitHub | 코드 버전관리 및 자동 배포 연동 |
-| 인증 | 카카오톡 OAuth 2.0 + JWT | Access Token + Refresh Token (30일) |
-| 알림 | 카카오톡 알림톡 API | 비동기 처리 (@Async) |
+| 인증 | 카카오톡 OAuth 2.0 + Supabase Auth | 세션 자동 갱신 (Supabase Client 내장) |
+| 알림 | 카카오톡 알림톡 API | Supabase Edge Function에서 비동기 처리 |
+
+---
+
+## 아키텍처
+
+```
+[React SPA (Static Site)] ←→ [Supabase Client]
+                                ├── PostgreSQL + RLS (CRUD 직접 접근)
+                                ├── Auth (세션 관리, 토큰 자동 갱신)
+                                └── Edge Functions
+                                    ├── kakao-auth (카카오 OAuth 처리)
+                                    └── send-notification (알림톡 발송)
+```
+
+- **프론트엔드**: React SPA → Supabase JS Client로 DB 직접 접근
+- **인증**: Supabase Auth (카카오 OAuth는 Edge Function 경유)
+- **보안**: RLS(Row Level Security)로 행 수준 접근 제어
+- **알림**: Edge Function에서 카카오 알림톡 API 호출
+- **DB 트리거**: VACATION 일정 제목 자동 생성 (`[이름] 부제목`)
 
 ---
 
 ## 개발 정책
 
 ### 코드 컨벤션
-- Java 표준 네이밍 컨벤션을 따른다 (클래스: PascalCase, 메서드/변수: camelCase).
-- 패키지 구조는 레이어드 아키텍처 기준으로 분리한다 (controller / service / repository / domain).
+- JavaScript/TypeScript 표준 네이밍 컨벤션을 따른다 (함수/변수: camelCase, 컴포넌트: PascalCase).
+- React 컴포넌트는 기능별로 분리한다 (pages / components / hooks / lib).
 - 메서드는 단일 책임 원칙(SRP)을 준수한다.
 - 주석은 로직이 명확하지 않은 경우에만 작성한다.
 
 ### 보안 정책
-- 인증되지 않은 사용자의 API 접근을 차단한다.
+- Supabase RLS로 인증되지 않은 사용자의 데이터 접근을 차단한다.
 - SQL Injection, XSS 등 OWASP Top 10 취약점을 반드시 방어한다.
-- 민감 정보(비밀번호, API 키 등)는 코드에 하드코딩하지 않는다.
+- 민감 정보(API 키, 시크릿 등)는 코드에 하드코딩하지 않는다.
+- Supabase Anon Key는 공개 가능하나, Service Role Key는 Edge Functions에서만 사용한다.
 
 ### 테스트 정책
-- 핵심 비즈니스 로직은 단위 테스트(JUnit 5)를 작성한다.
-- 테스트는 AAA 패턴(Arrange / Act / Assert)을 따른다.
-- 테스트 메서드명은 `메서드명_상황_기대결과` 형식으로 작성한다.
+- 프론트엔드 컴포넌트는 필요 시 단위 테스트를 작성한다.
+- Edge Functions는 로컬 Supabase CLI로 테스트한다.
+- RLS 정책은 Supabase Dashboard에서 검증한다.
 
 ---
 
@@ -88,34 +108,17 @@
 
 - [x] 기획: 서비스 컨셉 및 주요 정책 정의 → [기획서](docs/planning/service-planning.md)
 - [x] 설계: 시스템 아키텍처 및 데이터 모델 설계 → [설계서](docs/design/system-design.md)
-- [x] 개발: 기능 구현 (백엔드 62개 파일 + 프론트엔드 14개 파일 + 공통 15개 파일 = 총 91개)
-- [x] 테스트: QA 및 버그 수정 완료
-  - QA 종합 검토: 7개 버그 발견 및 전체 수정 완료
-  - JUnit 5 테스트 코드: 47개 테스트 케이스 작성 및 저장 완료
-  - 정합성 검증: 100% 통과 (모든 테스트 구현 코드와 일치)
-- [x] 배포: 서비스 배포 (Render 완료)
-  - 백엔드: Spring Boot Docker (prod 프로파일) → https://jsk-schedule-backend.onrender.com
-  - 프론트엔드: React Static Site → https://jsk-schedule-frontend.onrender.com
-  - 데이터베이스: Supabase PostgreSQL (PgBouncer 커넥션 풀링)
-  - 배포 상태: ✅ Live and Operational
-- [x] 유지보수 & 개선: 카카오 로그인 버그 수정 (2026-02-21)
-  - ✅ KAKAO_CLIENT_ID 수정: 앱 번호(1389155) → REST API 키(240f33554023d9ab4957b2d638fb0d71)
-  - ✅ nickname null 처리: 카카오 프로필 미동의 시 기본값(카카오유저_{kakaoId}) 대체
-  - ✅ 카카오 로그인 정상화: KOE101 에러 + DB NOT NULL 제약 위반 500 에러 해결
-- [x] 유지보수 & 개선: 일정 생성 UI/UX 개선 및 버그 수정 (2026-02-20)
-  - ✅ 날짜 오프셋 버그 해결 (toISOString 제거, 타임존 안전 포맷 사용)
-  - ✅ 일정 생성 모달 개선: 스카이스캐너 방식의 날짜 범위 선택 (react-datepicker)
-  - ✅ 유형별 UI 분기: 팀 일정(시간 포함) vs 휴가(날짜만)
-  - ✅ CalendarPage 보안 강화: teamId null 체크 추가
-- [x] 유지보수 & 개선: 카카오 신규 가입 시 이름 입력 팝업 + 휴가 말머리 자동 추가 (2026-02-21)
-  - ✅ 신규/기존 사용자 구분: `LoginResponse.isNewUser` 필드 추가
-  - ✅ 신규 가입 처리: 카카오 닉네임 대신 임시값(`__PENDING__`) 저장 → 팝업에서 실제 이름 입력
-  - ✅ 이름 입력 팝업: `NameInputModal` 컴포넌트 신규 생성 (필수 입력, ESC 닫기 불가)
-  - ✅ VACATION 말머리 자동 추가: `[사용자이름] 제목` 형식으로 백엔드에서 자동 추가
-  - ✅ WORK 일정 구분: 업무 일정은 원본 제목 그대로 저장
-  - ✅ UI/UX 개선: ScheduleModal에서 VACATION 선택 시 placeholder 힌트 표시
-- [x] 유지보수 & 개선: CORS 설정 강화 및 신규 회원가입 이름 팝업 수정 (2026-02-22)
-  - 상세 이력은 CHANGELOG.md 참고
+- [x] 개발 v1: Spring Boot + React 구현 (총 91개 파일)
+- [x] 테스트 v1: QA 7개 버그 수정, JUnit 47개 케이스
+- [x] 배포 v1: Render (Backend Docker + Frontend Static)
+- [x] 유지보수: 카카오 로그인, UI/UX, CORS 등 개선 (상세 → CHANGELOG.md)
+- [x] 구조 전환 (2026-02-23): Spring Boot → Supabase 중심 구조
+  - ✅ Spring Boot 백엔드 완전 제거 (Java 64개 파일)
+  - ✅ Supabase Edge Functions 생성 (kakao-auth, send-notification)
+  - ✅ RLS 정책 + DB 트리거 마이그레이션 SQL 작성
+  - ✅ 프론트엔드 Axios → Supabase Client 전환 (12개 파일)
+  - ✅ Render 2개 서비스 → 1개 Static Site 축소
+  - ✅ Docker, Gradle, Spring 관련 파일 전체 삭제
 
 ---
 
@@ -127,7 +130,7 @@
 |--------|------|
 | `/plan` | 기능 기획, 요구사항 분석, 사용자 스토리 작성 |
 | `/design` | 아키텍처, 데이터 모델, 클래스 설계 |
-| `/dev` | Java 코드 구현 및 리뷰 |
+| `/dev` | 코드 구현 및 리뷰 |
 | `/qa` | 테스트 케이스 작성 및 QA |
 
 ### 서브에이전트 (자동 호출)
@@ -145,24 +148,6 @@
 
 ## 로컬 개발 환경 설정
 
-### 백엔드 실행
-
-```bash
-cd "C:\AI Project\JSK_schedule manager"
-SPRING_PROFILES_ACTIVE=local java -jar build/libs/jsk-schedule-manager-0.0.1-SNAPSHOT.jar
-```
-
-또는 Gradle 빌드 후 실행:
-```bash
-./gradlew bootRun -Pargs='--spring.profiles.active=local'
-```
-
-**특징:**
-- 포트: 9090
-- 데이터베이스: H2 In-Memory (자동 생성)
-- 프로파일 설정: `application-local.yml`
-- H2 콘솔: http://localhost:9090/h2-console
-
 ### 프론트엔드 실행
 
 ```bash
@@ -172,60 +157,43 @@ npm run dev
 ```
 
 **특징:**
-- 포트: 3001 (또는 사용 가능한 포트)
+- 포트: 5173
 - 자동 핫 리로드 (Vite)
-- API Base URL: http://localhost:9090
+- Supabase에 직접 연결 (백엔드 불필요)
 
 ### 환경 변수 설정
-
-**백엔드 (.env 파일)**
-```env
-# Supabase 데이터베이스
-SUPABASE_DB_USERNAME=postgres
-SUPABASE_DB_PASSWORD=[Supabase 비밀번호]
-
-# Supabase CLI/Management API
-SUPABASE_ACCESS_TOKEN=sbp_bfa8be4b663f543b79aa2581ff6c0fd32ad1af48
-
-# JWT 인증
-JWT_SECRET=kT9mQ2vN7xL5pR8yJ3wH6bD0cF4eG1sA
-
-# 카카오 OAuth
-KAKAO_CLIENT_ID=240f33554023d9ab4957b2d638fb0d71
-KAKAO_CLIENT_SECRET=[카카오 시크릿]
-KAKAO_REDIRECT_URI=http://localhost:3001/auth/callback
-```
 
 **프론트엔드 (frontend/.env 파일)**
 ```env
 VITE_KAKAO_CLIENT_ID=240f33554023d9ab4957b2d638fb0d71
-VITE_KAKAO_REDIRECT_URI=http://localhost:3001/auth/callback
-VITE_API_BASE_URL=http://localhost:9090
+VITE_KAKAO_REDIRECT_URI=http://localhost:5173/auth/callback
+VITE_SUPABASE_URL=https://qphhpfolrbsyiyoevaoe.supabase.co
+VITE_SUPABASE_ANON_KEY=[Supabase Anon Key]
 ```
 
 템플릿: `frontend/.env.example` 참고
 
-### 서비스 상태 확인
+**Supabase Edge Functions 환경변수 (Supabase Dashboard에서 설정)**
+```
+KAKAO_CLIENT_ID=240f33554023d9ab4957b2d638fb0d71
+KAKAO_CLIENT_SECRET=[카카오 시크릿]
+SUPABASE_URL=https://qphhpfolrbsyiyoevaoe.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=[Supabase Service Role Key]
+SUPABASE_ANON_KEY=[Supabase Anon Key]
+```
+
+### Supabase Edge Functions 배포
 
 ```bash
-./test_api.sh
-```
+# Supabase CLI 설치 (최초 1회)
+npm install -g supabase
 
-**출력 예시:**
-```
-============================================
-🔍 로컬 개발환경 테스트
-============================================
+# 로그인
+supabase login
 
-1️⃣ 백엔드 (포트 8081)
-─────────────────────────
-상태: ✅ 정상 (Running)
-
-2️⃣ 프론트엔드 (포트 3001)
-─────────────────────────
-상태: ✅ 정상 (Running)
-
-============================================
+# Edge Functions 배포
+supabase functions deploy kakao-auth --project-ref qphhpfolrbsyiyoevaoe
+supabase functions deploy send-notification --project-ref qphhpfolrbsyiyoevaoe
 ```
 
 ---

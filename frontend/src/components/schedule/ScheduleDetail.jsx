@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import dayjs from 'dayjs'
-import apiClient from '../../api/client'
+import { supabase } from '../../lib/supabase'
 
 const TYPE_LABEL = {
   VACATION: '휴가',
@@ -22,12 +22,30 @@ function ScheduleDetail({ schedule, onEdit, onDeleted, onClose }) {
     setDeleteError(null)
 
     try {
-      await apiClient.delete(`/schedules/${schedule.id}`)
+      // Soft delete: deleted_at 설정
+      const { error } = await supabase
+        .from('schedules')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('id', schedule.id)
+
+      if (error) throw error
+
+      // 알림 발송 (Edge Function, fire-and-forget)
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      const { data: currentUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_id', authUser.id)
+        .single()
+
+      supabase.functions.invoke('send-notification', {
+        body: { scheduleId: schedule.id, actionType: 'DELETED', actorUserId: currentUser?.id },
+      }).catch(err => console.error('알림 발송 실패:', err))
+
       onDeleted()
     } catch (err) {
       console.error('일정 삭제 실패:', err)
-      const message =
-        err.response?.data?.message || '일정 삭제 중 오류가 발생했습니다.'
+      const message = err.message || '일정 삭제 중 오류가 발생했습니다.'
       setDeleteError(message)
       setConfirmDelete(false)
     } finally {

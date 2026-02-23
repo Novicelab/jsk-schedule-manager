@@ -1,6 +1,6 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import apiClient from '../api/client'
+import { supabase } from '../lib/supabase'
 
 const useAuth = () => {
   const navigate = useNavigate()
@@ -14,30 +14,31 @@ const useAuth = () => {
     }
   })
 
-  const [isLoggedIn, setIsLoggedIn] = useState(
-    () => !!localStorage.getItem('accessToken')
-  )
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
 
-  const login = useCallback((accessToken, refreshToken, userData) => {
-    localStorage.setItem('accessToken', accessToken)
-    localStorage.setItem('refreshToken', refreshToken)
-    localStorage.setItem('user', JSON.stringify(userData))
-    setUser(userData)
-    setIsLoggedIn(true)
+  // Supabase Auth 세션 감지
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsLoggedIn(!!session)
+    })
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsLoggedIn(!!session)
+      if (!session) {
+        setUser(null)
+        localStorage.removeItem('user')
+      }
+    })
+
+    return () => subscription.unsubscribe()
   }, [])
 
   const logout = useCallback(async () => {
-    const refreshToken = localStorage.getItem('refreshToken')
     try {
-      if (refreshToken) {
-        await apiClient.post('/auth/logout', { refreshToken })
-      }
+      await supabase.auth.signOut()
     } catch (err) {
-      // 로그아웃 API 실패해도 로컬 상태는 반드시 초기화
-      console.error('로그아웃 API 호출 실패:', err)
+      console.error('로그아웃 실패:', err)
     } finally {
-      localStorage.removeItem('accessToken')
-      localStorage.removeItem('refreshToken')
       localStorage.removeItem('user')
       setUser(null)
       setIsLoggedIn(false)
@@ -45,7 +46,7 @@ const useAuth = () => {
     }
   }, [navigate])
 
-  return { user, isLoggedIn, login, logout }
+  return { user, isLoggedIn, logout }
 }
 
 export default useAuth

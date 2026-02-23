@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import apiClient from '../api/client'
+import { supabase } from '../lib/supabase'
 import NameInputModal from '../components/auth/NameInputModal'
 
 function CallbackPage() {
@@ -24,19 +24,32 @@ function CallbackPage() {
 
     const processCallback = async () => {
       try {
-        const response = await apiClient.post('/auth/kakao/callback', { code })
+        // Edge Function 호출: 카카오 OAuth 처리
+        const { data, error } = await supabase.functions.invoke('kakao-auth', {
+          body: {
+            code,
+            redirectUri: import.meta.env.VITE_KAKAO_REDIRECT_URI,
+          },
+        })
 
-        // 전체 응답 구조 로깅 (디버깅용)
-        console.log('카카오 로그인 응답:', response.data)
+        if (error) throw error
 
-        const { accessToken, refreshToken, user, isNewUser } = response.data.data
+        console.log('카카오 로그인 응답:', data)
 
-        // isNewUser 값 명시적 로깅
-        console.log('isNewUser 값:', isNewUser, '타입:', typeof isNewUser)
+        const { session, user, isNewUser } = data
 
-        localStorage.setItem('accessToken', accessToken)
-        localStorage.setItem('refreshToken', refreshToken)
+        // Supabase 세션 설정
+        if (session) {
+          await supabase.auth.setSession({
+            access_token: session.access_token,
+            refresh_token: session.refresh_token,
+          })
+        }
+
+        // user 정보를 localStorage에 저장 (표시용)
         localStorage.setItem('user', JSON.stringify(user))
+
+        console.log('isNewUser 값:', isNewUser, '타입:', typeof isNewUser)
 
         if (isNewUser) {
           console.log('신규 사용자 감지 → NameInputModal 표시')
@@ -47,8 +60,7 @@ function CallbackPage() {
         }
       } catch (err) {
         console.error('카카오 로그인 처리 실패:', err)
-        const message =
-          err.response?.data?.message || '로그인 처리 중 오류가 발생했습니다.'
+        const message = err.message || '로그인 처리 중 오류가 발생했습니다.'
         setErrorMessage(message)
         setTimeout(() => navigate('/login', { replace: true }), 2000)
       }

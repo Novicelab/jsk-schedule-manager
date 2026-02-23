@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { supabase } from '../lib/supabase'
 
 const KAKAO_AUTH_URL = `https://kauth.kakao.com/oauth/authorize?client_id=${
   import.meta.env.VITE_KAKAO_CLIENT_ID
@@ -12,10 +13,11 @@ function LoginPage() {
 
   useEffect(() => {
     // 이미 로그인된 상태면 메인으로 이동
-    const token = localStorage.getItem('accessToken')
-    if (token) {
-      navigate('/', { replace: true })
-    }
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        navigate('/', { replace: true })
+      }
+    })
   }, [navigate])
 
   const handleKakaoLogin = () => {

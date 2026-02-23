@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import apiClient from '../../api/client'
+import { supabase } from '../../lib/supabase'
 
 const PREFERENCE_ORDER = [
   'VACATION_CREATED',
@@ -34,11 +34,34 @@ function NotificationSettings() {
     setLoading(true)
     setError(null)
     try {
-      const response = await apiClient.get('/users/me/notification-preferences')
-      const data = response.data.data || []
+      // 현재 사용자 ID 조회
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      const { data: currentUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_id', authUser.id)
+        .single()
+
+      const { data, error: fetchError } = await supabase
+        .from('notification_preferences')
+        .select('*')
+        .eq('user_id', currentUser.id)
+
+      if (fetchError) throw fetchError
+
+      // key 형식으로 변환: schedule_type + '_' + action_type
+      const mapped = (data || []).map(p => ({
+        id: p.id,
+        key: `${p.schedule_type}_${p.action_type}`,
+        label: FALLBACK_LABELS[`${p.schedule_type}_${p.action_type}`] || `${p.schedule_type} ${p.action_type}`,
+        enabled: p.enabled,
+        scheduleType: p.schedule_type,
+        actionType: p.action_type,
+      }))
+
       // 고정된 순서로 정렬
       const sorted = PREFERENCE_ORDER.map((key) => {
-        const found = data.find((p) => p.key === key)
+        const found = mapped.find((p) => p.key === key)
         return found || { key, label: FALLBACK_LABELS[key], enabled: true }
       })
       setPreferences(sorted)
@@ -53,13 +76,26 @@ function NotificationSettings() {
   const handleToggle = async (key, currentEnabled) => {
     setUpdatingKey(key)
     try {
-      const response = await apiClient.put(
-        `/users/me/notification-preferences/${key}`,
-        { enabled: !currentEnabled }
-      )
-      const updated = response.data.data
+      const [scheduleType, actionType] = key.split('_')
+
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      const { data: currentUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_id', authUser.id)
+        .single()
+
+      const { error: updateError } = await supabase
+        .from('notification_preferences')
+        .update({ enabled: !currentEnabled })
+        .eq('user_id', currentUser.id)
+        .eq('schedule_type', scheduleType)
+        .eq('action_type', actionType)
+
+      if (updateError) throw updateError
+
       setPreferences((prev) =>
-        prev.map((p) => (p.key === key ? { ...p, enabled: updated.enabled } : p))
+        prev.map((p) => (p.key === key ? { ...p, enabled: !currentEnabled } : p))
       )
       setFeedbackKey(key)
       setTimeout(() => setFeedbackKey(null), 1500)

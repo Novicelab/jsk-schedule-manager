@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import apiClient from '../../api/client'
+import { supabase } from '../../lib/supabase'
 import './NameInputModal.css'
 
 function NameInputModal({ onComplete }) {
@@ -15,7 +15,6 @@ function NameInputModal({ onComplete }) {
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    // 유효성 검사
     if (!name.trim()) {
       setError('이름을 입력해주세요.')
       return
@@ -27,30 +26,37 @@ function NameInputModal({ onComplete }) {
 
     setSubmitting(true)
     try {
-      // 사용자 이름 업데이트
-      const response = await apiClient.put('/users/me', { name: name.trim() })
+      // 현재 Supabase Auth 사용자 조회
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+
+      // users 테이블 이름 업데이트
+      const { data, error: updateError } = await supabase
+        .from('users')
+        .update({ name: name.trim() })
+        .eq('auth_id', authUser.id)
+        .select()
+        .single()
+
+      if (updateError) throw updateError
 
       // localStorage의 user 객체 업데이트
       const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
       const updatedUser = {
         ...currentUser,
-        name: response.data.data.name
+        name: data.name,
       }
       localStorage.setItem('user', JSON.stringify(updatedUser))
 
-      // 완료 콜백
       onComplete()
     } catch (err) {
       console.error('이름 업데이트 실패:', err)
-      const message =
-        err.response?.data?.message || '이름 입력 중 오류가 발생했습니다.'
+      const message = err.message || '이름 입력 중 오류가 발생했습니다.'
       setError(message)
     } finally {
       setSubmitting(false)
     }
   }
 
-  // 배경 클릭 방지 (필수 입력이므로 닫기 불가)
   const handleBackgroundClick = (e) => {
     e.stopPropagation()
   }
