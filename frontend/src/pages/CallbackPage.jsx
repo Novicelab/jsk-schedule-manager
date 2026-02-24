@@ -49,34 +49,53 @@ function CallbackPage() {
         console.log('   - anonKey 길이:', anonKey?.length)
 
         let response
-        console.log('   - fetch 호출 시작...')
-        try {
-          response = await fetch(functionUrl, {
-            method: 'POST',
-            mode: 'cors',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': authHeader,
-            },
-            body: JSON.stringify(bodyData),
-          })
-          console.log('   - fetch 호출 완료')
-        } catch (fetchErr) {
-          console.error('   - fetch 실패:', fetchErr.message)
-          // Render에서 fetch 실패 시 재시도
-          console.log('   - 3초 후 재시도...')
-          await new Promise(resolve => setTimeout(resolve, 3000))
-          console.log('   - fetch 재시도 중...')
-          response = await fetch(functionUrl, {
-            method: 'POST',
-            mode: 'cors',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': authHeader,
-            },
-            body: JSON.stringify(bodyData),
-          })
-          console.log('   - fetch 재시도 완료')
+        let lastError
+        const maxRetries = 5
+
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+          try {
+            console.log(`   - fetch 호출 시작... (시도 ${attempt}/${maxRetries})`)
+
+            response = await fetch(functionUrl, {
+              method: 'POST',
+              mode: 'no-cors',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            }).then(async (res) => {
+              // no-cors 모드에서는 response body를 직접 읽을 수 없으므로
+              // 다시 cors 모드로 시도
+              if (!res.ok || res.type === 'opaque') {
+                console.log('   - no-cors 실패, cors 모드로 재시도...')
+                return fetch(functionUrl, {
+                  method: 'POST',
+                  mode: 'cors',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': authHeader,
+                  },
+                  body: JSON.stringify(bodyData),
+                })
+              }
+              return res
+            })
+
+            console.log(`   - fetch 호출 완료 (시도 ${attempt})`)
+            break // 성공하면 루프 탈출
+          } catch (fetchErr) {
+            lastError = fetchErr
+            console.error(`   - fetch 실패 (시도 ${attempt}/${maxRetries}):`, fetchErr.message)
+
+            if (attempt < maxRetries) {
+              const delay = attempt * 1000 // 1초, 2초, 3초, 4초, 5초
+              console.log(`   - ${delay}ms 후 재시도...`)
+              await new Promise(resolve => setTimeout(resolve, delay))
+            }
+          }
+        }
+
+        if (!response) {
+          throw lastError || new Error('모든 재시도 실패')
         }
 
         console.log('3. Edge Function 응답:')
