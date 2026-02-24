@@ -25,6 +25,9 @@ function CallbackPage() {
     const processCallback = async () => {
       try {
         console.log('=== 카카오 로그인 콜백 시작 ===')
+        console.log('0. 환경변수 확인:')
+        console.log('   - VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL)
+        console.log('   - VITE_SUPABASE_ANON_KEY:', import.meta.env.VITE_SUPABASE_ANON_KEY?.substring(0, 20) + '...')
         console.log('1. URL 파라미터 확인:')
         console.log('   - code:', code)
         console.log('   - redirectUri:', import.meta.env.VITE_KAKAO_REDIRECT_URI)
