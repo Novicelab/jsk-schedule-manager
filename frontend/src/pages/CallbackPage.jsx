@@ -32,18 +32,40 @@ function CallbackPage() {
         console.log('   - code:', code)
         console.log('   - redirectUri:', import.meta.env.VITE_KAKAO_REDIRECT_URI)
 
-        // Edge Function 호출: 카카오 OAuth 처리
+        // Edge Function 호출: 카카오 OAuth 처리 (직접 fetch 사용)
         console.log('2. Edge Function 호출 중...')
-        const { data, error } = await supabase.functions.invoke('kakao-auth', {
-          body: {
+        const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/kakao-auth`
+        console.log('   - URL:', functionUrl)
+
+        const response = await fetch(functionUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
             code,
             redirectUri: import.meta.env.VITE_KAKAO_REDIRECT_URI,
-          },
+          }),
         })
 
         console.log('3. Edge Function 응답:')
-        console.log('   - error:', error)
-        console.log('   - data:', data)
+        console.log('   - 상태 코드:', response.status)
+        console.log('   - 상태 텍스트:', response.statusText)
+
+        let data
+        try {
+          data = await response.json()
+        } catch (e) {
+          console.error('   - JSON 파싱 실패:', e)
+          data = null
+        }
+
+        console.log('   - 응답 데이터:', data)
+
+        if (!response.ok) {
+          throw new Error(data?.error || `HTTP ${response.status}: ${response.statusText}`)
+        }
 
         if (error) throw error
 
