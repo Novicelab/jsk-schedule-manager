@@ -49,10 +49,11 @@ function CallbackPage() {
         console.log('   - anonKey 길이:', anonKey?.length)
 
         let response
+        console.log('   - fetch 호출 시작...')
         try {
-          console.log('   - fetch 호출 시작...')
           response = await fetch(functionUrl, {
             method: 'POST',
+            mode: 'cors',
             headers: {
               'Content-Type': 'application/json',
               'Authorization': authHeader,
@@ -61,8 +62,21 @@ function CallbackPage() {
           })
           console.log('   - fetch 호출 완료')
         } catch (fetchErr) {
-          console.error('   - fetch 실패:', fetchErr)
-          throw fetchErr
+          console.error('   - fetch 실패:', fetchErr.message)
+          // Render에서 fetch 실패 시 재시도
+          console.log('   - 3초 후 재시도...')
+          await new Promise(resolve => setTimeout(resolve, 3000))
+          console.log('   - fetch 재시도 중...')
+          response = await fetch(functionUrl, {
+            method: 'POST',
+            mode: 'cors',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': authHeader,
+            },
+            body: JSON.stringify(bodyData),
+          })
+          console.log('   - fetch 재시도 완료')
         }
 
         console.log('3. Edge Function 응답:')
