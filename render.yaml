@@ -1,6 +1,6 @@
 services:
-  # ========== Frontend Only (Static Site) ==========
-  - type: static_site
+  # ========== Frontend Web Service (Node.js Server) ==========
+  - type: web_service
     name: jsk-schedule-frontend
     plan: free
     region: singapore
@@ -8,13 +8,7 @@ services:
     autoDeployTrigger: commit
 
     buildCommand: cd frontend && npm install && npm run build
-    publishPath: frontend/dist
-
-    # SPA routing: all paths → index.html
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
+    startCommand: npm run server
 
     # Environment variables
     envVars:
