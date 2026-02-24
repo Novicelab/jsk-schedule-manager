@@ -83,8 +83,6 @@ function CallbackPage() {
           throw new Error(data?.error || `HTTP ${response.status}: ${response.statusText}`)
         }
 
-        if (error) throw error
-
         console.log('4. 응답 데이터 구조 확인:')
         console.log('   - session:', data?.session)
         console.log('   - user:', data?.user)
