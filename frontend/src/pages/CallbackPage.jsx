@@ -48,14 +48,22 @@ function CallbackPage() {
         console.log('   - anonKey 존재:', !!anonKey)
         console.log('   - anonKey 길이:', anonKey?.length)
 
-        const response = await fetch(functionUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': authHeader,
-          },
-          body: JSON.stringify(bodyData),
-        })
+        let response
+        try {
+          console.log('   - fetch 호출 시작...')
+          response = await fetch(functionUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': authHeader,
+            },
+            body: JSON.stringify(bodyData),
+          })
+          console.log('   - fetch 호출 완료')
+        } catch (fetchErr) {
+          console.error('   - fetch 실패:', fetchErr)
+          throw fetchErr
+        }
 
         console.log('3. Edge Function 응답:')
         console.log('   - 상태 코드:', response.status)
