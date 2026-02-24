@@ -119,6 +119,10 @@
   - ✅ 프론트엔드 Axios → Supabase Client 전환 (12개 파일)
   - ✅ Render 2개 서비스 → 1개 Static Site 축소
   - ✅ Docker, Gradle, Spring 관련 파일 전체 삭제
+- [x] 에이전트 팀 구성 (2026-02-24): 자동 이슈 처리 시스템
+  - ✅ issue-resolution-team 생성 (Designer + Developer + QA 병렬)
+  - ✅ 에이전트 업데이트 (TypeScript/React/Supabase 기반)
+  - ✅ 자동 호출 트리거 설정 (버그, 에러, 배포, 보안 키워드)
 
 ---
 
@@ -140,9 +144,19 @@
 | 에이전트 | 모델 | 자동 호출 키워드 |
 |----------|------|-----------------|
 | `planner` | opus | 기획, 요구사항, 사용자 스토리, 기능 정의 |
-| `designer` | opus | 설계, 아키텍처, ERD, 클래스 다이어그램, API 설계 |
+| `designer` | opus | 설계, 아키텍처, ERD, 컴포넌트 다이어그램, API 설계 |
 | `developer` | sonnet | 구현, 코드 작성, 개발, 버그 수정, 리팩토링 |
 | `qa` | sonnet | 테스트, QA, 버그, 테스트 케이스, 품질 검토 |
+
+### 에이전트 팀 (자동 이슈 처리)
+
+여러 에이전트가 협력하여 자동으로 이슈를 처리하는 팀 구성입니다.
+
+| 팀 이름 | 구성 | 자동 호출 키워드 | 역할 |
+|--------|------|-----------------|------|
+| `issue-resolution-team` | Designer + Developer + QA (병렬) | "bug", "error", "failed", "deployment", "security", "vulnerability" | 배포 에러, 코드 버그, 성능/보안 이슈 자동 처리 및 배포 |
+
+**실행 흐름**: Designer 분석 → (Developer 수정 \|\| QA 검토) → 자동 배포
 
 ---
 

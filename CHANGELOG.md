@@ -4,6 +4,48 @@
 
 ---
 
+## [2026-02-24] 에이전트 팀 구성 및 자동 이슈 처리 시스템 구축
+
+### 배경
+- 프로젝트 이슈(배포 에러, 버그, 보안)를 수동으로만 처리
+- 여러 에이전트가 순차적으로만 작동
+- 자동으로 감지하고 병렬 처리할 수 있는 시스템 부재
+
+### 변경사항
+
+**새로운 에이전트 팀 구성:**
+- 팀명: `issue-resolution-team`
+- 구성: Designer + Developer + QA (병렬 처리)
+- 자동 호출 트리거: "bug", "error", "failed", "deployment", "security", "vulnerability"
+- 역할: 배포 에러, 코드 버그, 성능/보안 이슈 자동 분석 → 수정 → 검증 → 배포
+
+**실행 흐름:**
+1. Designer: 이슈 분석 및 전략 수립
+2. 병렬 처리:
+   - Developer: 코드 수정 및 로컬 테스트
+   - QA: 코드 품질 검토 및 테스트
+3. 최종 배포: 모든 작업 완료 후 자동 푸시
+
+**에이전트 업데이트:**
+- `developer.md`: Java/Spring Boot → TypeScript/React/Supabase 기반
+- `designer.md`: 레이어드 아키텍처 → SPA 아키텍처 기반
+- `qa.md`: JUnit → Jest + 브라우저 테스트 기반
+
+**파일 변경:**
+- 신규: `.claude/agents/team.md` - 팀 정의 및 협업 규칙
+- 수정: `.claude/agents/developer.md` - 코딩 컨벤션, 보안 정책 업데이트
+- 수정: `.claude/agents/designer.md` - 아키텍처 원칙 및 설계 패턴 업데이트
+- 수정: `.claude/agents/qa.md` - 테스트 원칙 및 QA 체크리스트 업데이트
+- 수정: `CLAUDE.md` - 에이전트 팀 섹션 추가, 진행 단계 업데이트
+
+### 장점
+- ✅ 이슈 자동 감지 및 즉각 처리
+- ✅ 개발 및 검증을 병렬로 진행 (속도 향상)
+- ✅ 사용자 개입 없이 자동 해결 및 배포
+- ✅ 일관된 코드 품질 및 보안 유지
+
+---
+
 ## [2026-02-23] Supabase 중심 구조 전환 (아키텍처 리팩토링)
 
 ### 배경
