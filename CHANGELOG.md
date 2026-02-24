@@ -4,6 +4,29 @@
 
 ---
 
+## [2026-02-24] 카카오 로그인 Edge Function 환경변수 설정 및 배포 (버그 수정)
+
+### 문제
+- 프로덕션 환경에서 "Failed to send a request to the Edge Function" 에러 발생
+- 카카오 로그인 기능 작동 안 함
+
+### 원인
+- Supabase Edge Function 환경변수 미설정
+  - KAKAO_CLIENT_ID, KAKAO_CLIENT_SECRET 누락
+  - SUPABASE_SERVICE_ROLE_KEY 등 미설정
+
+### 해결사항
+- Edge Function 환경변수 재설정
+  - KAKAO_CLIENT_ID, KAKAO_CLIENT_SECRET 설정
+  - SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_ANON_KEY 확인
+- kakao-auth, send-notification Edge Function 재배포
+- Render 환경변수는 이미 render.yaml에 정상 설정됨
+
+### 파일 변경
+- 추가 코드 변경 없음 (환경변수 및 배포만 수행)
+
+---
+
 ## [2026-02-24] 에이전트 팀 구성 및 자동 이슈 처리 시스템 구축
 
 ### 배경
