@@ -1,22 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 
+// Render 빌드 시 환경변수에 개행문자가 삽입될 수 있어 \s 전체 제거
 const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim()
-const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim()
+const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').replace(/\s/g, '')
 
-const debugFetch = (url, options) => {
-  try {
-    const headers = options?.headers || {}
-    const headerEntries = headers instanceof Headers
-      ? Object.fromEntries(headers.entries())
-      : headers
-    console.log('[Supabase fetch] URL:', String(url))
-    console.log('[Supabase fetch] Headers:', JSON.stringify(headerEntries))
-  } catch (e) {
-    console.log('[Supabase fetch] 헤더 로깅 실패:', e.message)
-  }
-  return fetch(url, options)
-}
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  global: { fetch: debugFetch },
-})
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
