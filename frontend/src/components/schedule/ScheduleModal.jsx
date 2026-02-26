@@ -200,7 +200,6 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
           body: { scheduleId: schedule.id, actionType: 'UPDATED', actorUserId: currentUser.id },
         }).catch(err => console.error('알림 발송 실패:', err))
       } else {
-        const now = new Date().toISOString()
         const { data: newSchedule, error } = await supabase
           .from('schedules')
           .insert({
@@ -211,8 +210,6 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
             end_at,
             all_day,
             created_by: currentUser.id,
-            created_at: now,
-            updated_at: now,
           })
           .select()
           .single()
