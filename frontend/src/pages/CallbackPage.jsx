@@ -58,26 +58,11 @@ function CallbackPage() {
 
             response = await fetch(functionUrl, {
               method: 'POST',
-              mode: 'no-cors',
               headers: {
                 'Content-Type': 'application/json',
+                'Authorization': authHeader,
               },
-            }).then(async (res) => {
-              // no-cors 모드에서는 response body를 직접 읽을 수 없으므로
-              // 다시 cors 모드로 시도
-              if (!res.ok || res.type === 'opaque') {
-                console.log('   - no-cors 실패, cors 모드로 재시도...')
-                return fetch(functionUrl, {
-                  method: 'POST',
-                  mode: 'cors',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': authHeader,
-                  },
-                  body: JSON.stringify(bodyData),
-                })
-              }
-              return res
+              body: JSON.stringify(bodyData),
             })
 
             console.log(`   - fetch 호출 완료 (시도 ${attempt})`)

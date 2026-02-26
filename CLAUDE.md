@@ -171,9 +171,43 @@ npm run dev
 ```
 
 **특징:**
-- 포트: 5173
+- 포트: 5173 (고정)
 - 자동 핫 리로드 (Vite)
 - Supabase에 직접 연결 (백엔드 불필요)
+
+### 로컬 서버 재시작 가이드
+
+**중요**: 환경 변수 또는 Edge Function 설정 변경 후에는 **항상 로컬 서버를 재시작**해야 변경사항이 반영됩니다.
+
+#### 절차
+1. **기존 서버 종료** (자동 강제 종료)
+   ```bash
+   # 포트 5173을 사용하는 프로세스를 자동으로 찾아 종료
+   lsof -i :5173 | grep LISTEN | awk '{print $2}' | xargs kill -9
+   ```
+
+2. **새 서버 시작**
+   ```bash
+   cd frontend
+   npm run dev
+   ```
+
+3. **포트 5173 고정**
+   - Vite가 5173에서 시작하지 못하면 5174, 5175... 로 포트 변경
+   - **항상 같은 포트(5173)에서 테스트하기 위해 위의 자동 종료 프로세스 필수**
+   - 환경 변수에 설정된 `VITE_KAKAO_REDIRECT_URI=http://localhost:5173/auth/callback` 과 일치해야 함
+
+#### 브라우저 캐시 초기화 (필요 시)
+```javascript
+// 개발자 도구 (F12) → Application → Storage
+// localStorage와 Cache Storage 전체 삭제
+localStorage.clear()
+```
+
+#### 빠른 재시작 명령어 (한 줄)
+```bash
+lsof -i :5173 2>/dev/null | grep -v COMMAND | awk '{print $2}' | xargs kill -9 2>/dev/null; sleep 1; cd frontend && npm run dev
+```
 
 ### 환경 변수 설정
 

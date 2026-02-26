@@ -4,6 +4,35 @@
 
 ---
 
+## [2026-02-26] 카카오 로그인 콜백 fetch 로직 간소화 (버그 수정)
+
+### 문제
+- 프로덕션 환경에서 카카오 로그인 콜백 시 401 Unauthorized 에러
+- Edge Function 호출이 계속 실패하며 5회 재시도 수행
+
+### 원인
+- CallbackPage.jsx에서 `no-cors` 모드 → `cors` 모드 전환 로직이 복잡함
+- 첫 번째 `no-cors` fetch 요청에 body가 없어서 Edge Function 에러 발생
+- 재시도 로직이 "Invalid value" 에러 유발
+
+### 해결사항
+- **no-cors 모드 제거** → 처음부터 CORS 모드로 직접 요청
+- 요청 헤더에 Authorization 토큰 추가
+- body에 code, redirectUri 포함
+- 재시도 로직 단순화 (복잡한 모드 전환 제거)
+
+### 파일 변경
+- `frontend/src/pages/CallbackPage.jsx`: fetch 로직 간소화 (line 51-81)
+  - Before: no-cors → cors 모드 전환 (33줄)
+  - After: 바로 cors 모드 요청 (13줄)
+
+### 테스트 결과
+- ✅ 로컬 환경에서 로그인 성공 (1차 시도에 200 OK)
+- ✅ Edge Function이 정상적으로 세션 발급
+- ✅ localStorage 저장 정상 작동
+
+---
+
 ## [2026-02-24] 카카오 로그인 Edge Function 환경변수 설정 및 배포 (버그 수정)
 
 ### 문제
