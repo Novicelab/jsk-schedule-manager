@@ -25,93 +25,49 @@ function CallbackPage() {
     const processCallback = async () => {
       try {
         console.log('=== 카카오 로그인 콜백 시작 ===')
-        console.log('0. 환경변수 확인:')
-        console.log('   - VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL)
-        console.log('   - VITE_SUPABASE_ANON_KEY:', import.meta.env.VITE_SUPABASE_ANON_KEY?.substring(0, 20) + '...')
-        console.log('1. URL 파라미터 확인:')
-        console.log('   - code:', code)
-        console.log('   - redirectUri:', import.meta.env.VITE_KAKAO_REDIRECT_URI)
+        const redirectUri = import.meta.env.VITE_KAKAO_REDIRECT_URI
 
-        // Edge Function 호출: 카카오 OAuth 처리 (직접 fetch 사용)
-        console.log('2. Edge Function 호출 중...')
-        const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim()
-        const anonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim()
-        const redirectUri = (import.meta.env.VITE_KAKAO_REDIRECT_URI || '').trim()
-
-        const functionUrl = `${supabaseUrl}/functions/v1/kakao-auth`
-        const authHeader = `Bearer ${anonKey}`
-        const bodyData = {
-          code,
-          redirectUri,
-        }
-
-        console.log('   - VITE_SUPABASE_URL:', supabaseUrl)
-        console.log('   - VITE_KAKAO_REDIRECT_URI:', redirectUri)
-        console.log('   - URL:', functionUrl)
-        console.log('   - Authorization 헤더:', authHeader.substring(0, 30) + '...')
-        console.log('   - Body code:', code?.substring(0, 20) + '...')
-        console.log('   - Body redirectUri:', redirectUri)
-        console.log('   - anonKey 존재:', !!anonKey)
-        console.log('   - anonKey 길이:', anonKey?.length)
-
-        const response = await fetch(functionUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': authHeader,
-          },
-          body: JSON.stringify(bodyData),
+        // Edge Function 호출: supabase.functions.invoke() 사용
+        // fetch 직접 호출 시 헤더 값에 개행문자 등이 포함되면
+        // "Failed to execute 'fetch' on 'Window': Invalid value" 에러 발생
+        console.log('Edge Function 호출 중...')
+        const { data, error: invokeError } = await supabase.functions.invoke('kakao-auth', {
+          body: { code, redirectUri },
         })
 
-        console.log('3. Edge Function 응답:')
-        console.log('   - 상태 코드:', response.status)
-
-        const data = await response.json()
-        console.log('   - 응답 데이터:', data)
-
-        if (!response.ok || data.error) {
-          throw new Error(data?.error || `Edge Function 오류 (${response.status})`)
+        if (invokeError) {
+          throw new Error(invokeError.message || 'Edge Function 호출 실패')
         }
 
-        console.log('4. 응답 데이터 구조 확인:')
-        console.log('   - session:', data?.session)
-        console.log('   - user:', data?.user)
-        console.log('   - isNewUser:', data?.isNewUser)
+        if (!data || data.error) {
+          throw new Error(data?.error || 'Edge Function 응답 오류')
+        }
+
+        console.log('Edge Function 응답 수신')
 
         const { session, user, isNewUser } = data
 
-        // Supabase 세션 설정
         if (!session) {
           throw new Error('세션 데이터를 받지 못했습니다. 다시 로그인해주세요.')
         }
 
-        console.log('5. Supabase 세션 설정 중...')
+        // Supabase 세션 설정
         await supabase.auth.setSession({
           access_token: session.access_token,
           refresh_token: session.refresh_token,
         })
-        console.log('   - 세션 설정 완료')
 
         // user 정보를 localStorage에 저장 (표시용)
-        console.log('6. localStorage에 사용자 정보 저장...')
         localStorage.setItem('user', JSON.stringify(user))
-        console.log('   - 저장 완료')
-
-        console.log('7. isNewUser 확인:', isNewUser, '타입:', typeof isNewUser)
 
         if (isNewUser) {
-          console.log('8. 신규 사용자 → NameInputModal 표시')
           setShowNameModal(true)
         } else {
-          console.log('8. 기존 사용자 → 메인 페이지로 이동')
           navigate('/', { replace: true })
         }
         console.log('=== 카카오 로그인 완료 ===')
       } catch (err) {
-        console.error('❌ 카카오 로그인 처리 실패:')
-        console.error('   - 에러 타입:', err.constructor.name)
-        console.error('   - 에러 메시지:', err.message)
-        console.error('   - 전체 에러:', err)
+        console.error('카카오 로그인 처리 실패:', err.message)
         const message = err.message || '로그인 처리 중 오류가 발생했습니다.'
         setErrorMessage(message)
         setTimeout(() => navigate('/login', { replace: true }), 2000)
