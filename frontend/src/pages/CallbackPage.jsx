@@ -108,16 +108,16 @@ function CallbackPage() {
         const { session, user, isNewUser } = data
 
         // Supabase 세션 설정
-        if (session) {
-          console.log('5. Supabase 세션 설정 중...')
-          await supabase.auth.setSession({
-            access_token: session.access_token,
-            refresh_token: session.refresh_token,
-          })
-          console.log('   - 세션 설정 완료')
-        } else {
-          console.warn('   - 세션 데이터 없음!')
+        if (!session) {
+          throw new Error('세션 데이터를 받지 못했습니다. 다시 로그인해주세요.')
         }
+
+        console.log('5. Supabase 세션 설정 중...')
+        await supabase.auth.setSession({
+          access_token: session.access_token,
+          refresh_token: session.refresh_token,
+        })
+        console.log('   - 세션 설정 완료')
 
         // user 정보를 localStorage에 저장 (표시용)
         console.log('6. localStorage에 사용자 정보 저장...')

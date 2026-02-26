@@ -180,13 +180,6 @@ serve(async (req) => {
     }
 
     // 6. Supabase Auth 로그인 (세션 발급)
-    const { data: signInData, error: signInError } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'magiclink',
-      email: authEmail,
-    })
-
-    // 직접 세션 생성을 위해 signInWithPassword 사용
-    // (Admin API의 generateLink 대신 실제 비밀번호 로그인)
     const supabaseClient = createClient(SUPABASE_URL, Deno.env.get('SUPABASE_ANON_KEY')!)
     const { data: sessionData, error: sessionError } = await supabaseClient.auth.signInWithPassword({
       email: authEmail,
