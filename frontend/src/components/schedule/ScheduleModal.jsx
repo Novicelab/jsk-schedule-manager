@@ -210,6 +210,7 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
             end_at,
             all_day,
             created_by: currentUser.id,
+            created_at: new Date().toISOString(),
           })
           .select()
           .single()
