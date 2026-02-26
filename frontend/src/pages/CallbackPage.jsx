@@ -54,50 +54,23 @@ function CallbackPage() {
         console.log('   - anonKey 존재:', !!anonKey)
         console.log('   - anonKey 길이:', anonKey?.length)
 
-        let data
-        let lastError
-        const maxRetries = 5
-
-        // Supabase Client의 functions.invoke 사용 (더 안정적)
-        for (let attempt = 1; attempt <= maxRetries; attempt++) {
-          try {
-            console.log(`   - Supabase Edge Function 호출 중... (시도 ${attempt}/${maxRetries})`)
-
-            const { data: responseData, error: invokeError } = await supabase.functions.invoke('kakao-auth', {
-              body: bodyData,
-            })
-
-            if (invokeError) {
-              throw invokeError
-            }
-
-            data = responseData
-            console.log(`   - Edge Function 호출 완료 (시도 ${attempt})`)
-            break // 성공하면 루프 탈출
-          } catch (invokeErr) {
-            lastError = invokeErr
-            console.error(`   - Edge Function 호출 실패 (시도 ${attempt}/${maxRetries}):`, invokeErr.message)
-
-            if (attempt < maxRetries) {
-              const delay = attempt * 1000
-              console.log(`   - ${delay}ms 후 재시도...`)
-              await new Promise(resolve => setTimeout(resolve, delay))
-            }
-          }
-        }
-
-        if (!data) {
-          throw lastError || new Error('모든 재시도 실패')
-        }
-
-        // 응답 데이터를 response 형태로 변환
-        const response = data
+        const response = await fetch(functionUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': authHeader,
+          },
+          body: JSON.stringify(bodyData),
+        })
 
         console.log('3. Edge Function 응답:')
-        console.log('   - 응답 데이터:', response)
+        console.log('   - 상태 코드:', response.status)
 
-        if (!response || response.error) {
-          throw new Error(response?.error || 'Edge Function 응답 오류')
+        const data = await response.json()
+        console.log('   - 응답 데이터:', data)
+
+        if (!response.ok || data.error) {
+          throw new Error(data?.error || `Edge Function 오류 (${response.status})`)
         }
 
         console.log('4. 응답 데이터 구조 확인:')
