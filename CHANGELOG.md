@@ -4,6 +4,31 @@
 
 ---
 
+## [2026-02-26] 카카오 로그인 "Failed to send a request to the Edge Function" 버그 수정
+
+### 문제
+- 프로덕션 환경에서 카카오 로그인 시 "Failed to send a request to the Edge Function" 에러
+- Network 탭에 kakao-auth 요청 자체가 없음 (HTTP 요청도 발생하지 않음)
+- 직접 fetch()로 Edge Function 호출 시 정상 동작
+
+### 원인 (심층 분석)
+- Render 대시보드에서 `VITE_SUPABASE_ANON_KEY` 수동 입력 시 **JWT 토큰 중간에 개행문자(`\n`) + 공백 삽입**
+- Vite 빌드 시 개행 포함 값을 template literal로 번들에 삽입 → `.trim()`으로 제거 불가 (앞뒤만 처리)
+- Supabase SDK 내부 `eA()` 함수에서 `Headers.set('apikey', key_with_newline)` → 브라우저 throw
+- SDK가 `FunctionsFetchError("Failed to send a request to the Edge Function")`로 래핑
+- fetch 인터셉터보다 먼저 에러 발생 → Network 탭에 요청 흔적 없음
+
+### 조치
+1. **임시 코드 수정**: `supabase.js` `.trim()` → `.replace(/\s/g, '')` (전체 whitespace 제거)
+2. **근본 수정**: Render 대시보드 `VITE_SUPABASE_ANON_KEY` 개행 없는 정상값으로 재설정
+3. **코드 원복**: `.replace(/\s/g, '')` → `.trim()` 복구
+
+### 파일 변경
+- `frontend/src/lib/supabase.js`: 임시 수정 후 원복 (최종 상태: `.trim()` 유지)
+- Render 대시보드: `VITE_SUPABASE_ANON_KEY` 값 재설정
+
+---
+
 ## [2026-02-26] 카카오 로그인 콜백 fetch 로직 간소화 (버그 수정)
 
 ### 문제

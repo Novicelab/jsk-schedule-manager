@@ -230,6 +230,26 @@ SUPABASE_SERVICE_ROLE_KEY=[Supabase Service Role Key]
 SUPABASE_ANON_KEY=[Supabase Anon Key]
 ```
 
+### 환경변수 관리 정책 ⚠️ 재발 방지
+
+> **주의**: Render 대시보드에서 직접 환경변수를 수정하면 `render.yaml` 값을 override하며,
+> 붙여넣기 과정에서 개행문자가 삽입될 수 있습니다.
+> 이 경우 Supabase SDK 헤더 오류(`Failed to send a request to the Edge Function`)를 유발합니다.
+
+**핵심 원칙: `render.yaml`이 단일 소스(Single Source of Truth)**
+
+| 상황 | 올바른 방법 |
+|------|-----------|
+| 환경변수 추가/수정 | `render.yaml` 수정 → `git push` → 자동 배포 |
+| 대시보드 직접 수정 불가피한 경우 | 텍스트 에디터에서 값 확인 후 **한 줄로** 붙여넣기 |
+| JWT 등 긴 문자열 입력 시 | 개행문자 포함 여부 반드시 확인 |
+
+**배포 후 스모크 테스트 (필수 확인)**
+- `VITE_*` 환경변수 변경 후 반드시 **카카오 로그인** 동작 확인
+- Network 탭에서 `kakao-auth` 요청 발생 여부 확인
+
+---
+
 ### Supabase Edge Functions 배포
 
 ```bash
