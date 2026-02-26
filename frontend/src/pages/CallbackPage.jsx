@@ -34,9 +34,9 @@ function CallbackPage() {
 
         // Edge Function 호출: 카카오 OAuth 처리 (직접 fetch 사용)
         console.log('2. Edge Function 호출 중...')
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-        const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
-        const redirectUri = import.meta.env.VITE_KAKAO_REDIRECT_URI
+        const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim()
+        const anonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim()
+        const redirectUri = (import.meta.env.VITE_KAKAO_REDIRECT_URI || '').trim()
 
         const functionUrl = `${supabaseUrl}/functions/v1/kakao-auth`
         const authHeader = `Bearer ${anonKey}`
