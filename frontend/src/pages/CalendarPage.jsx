@@ -11,8 +11,10 @@ import { supabase } from '../lib/supabase'
 
 // 일정 유형별 색상
 const SCHEDULE_COLORS = {
-  VACATION: '#27ae60',
-  WORK: '#2980b9',
+  VACATION_FULL: '#27ae60',    // 짙은 초록 (일반 휴가)
+  VACATION_HALF_AM: '#82d9a5', // 옅은 초록 (오전 반차)
+  VACATION_HALF_PM: '#82d9a5', // 옅은 초록 (오후 반차)
+  WORK: '#2980b9',             // 파란색
 }
 
 function CalendarPage() {
@@ -34,6 +36,15 @@ function CalendarPage() {
   const [clickedDateEvents, setClickedDateEvents] = useState([])
 
   const calendarRef = useRef(null)
+
+  // 색상 결정 함수
+  const getEventColor = (schedule) => {
+    if (schedule.type === 'VACATION') {
+      const key = `VACATION_${schedule.vacation_type || 'FULL'}`
+      return SCHEDULE_COLORS[key] || SCHEDULE_COLORS.VACATION_FULL
+    }
+    return SCHEDULE_COLORS[schedule.type] || '#7f8c8d'
+  }
 
   // 윈도우 리사이즈 감지
   useEffect(() => {
@@ -58,20 +69,24 @@ function CalendarPage() {
 
       if (error) throw error
 
-      const calendarEvents = (scheduleList || []).map((s) => ({
-        id: String(s.id),
-        title: s.title,
-        start: s.start_at,
-        end: s.end_at,
-        allDay: s.all_day,
-        backgroundColor: SCHEDULE_COLORS[s.type] || '#7f8c8d',
-        borderColor: SCHEDULE_COLORS[s.type] || '#7f8c8d',
-        extendedProps: {
-          type: s.type,
-          description: s.description,
-          createdBy: s.created_by,
-        },
-      }))
+      const calendarEvents = (scheduleList || []).map((s) => {
+        const color = getEventColor(s)
+        return {
+          id: String(s.id),
+          title: s.title,
+          start: s.start_at,
+          end: s.end_at,
+          allDay: s.all_day,
+          backgroundColor: color,
+          borderColor: color,
+          extendedProps: {
+            type: s.type,
+            vacationType: s.vacation_type,
+            description: s.description,
+            createdBy: s.created_by,
+          },
+        }
+      })
       setEvents(calendarEvents)
       setSchedulesError(null)
     } catch (err) {
@@ -133,6 +148,7 @@ function CalendarPage() {
           endAt: data.end_at,
           allDay: data.all_day,
           type: data.type,
+          vacationType: data.vacation_type,
           description: data.description,
           createdBy: data.created_by,
           createdByName: data.created_by_name,
@@ -183,9 +199,16 @@ function CalendarPage() {
             <span className="legend-item">
               <span
                 className="legend-dot"
-                style={{ backgroundColor: SCHEDULE_COLORS.VACATION }}
+                style={{ backgroundColor: SCHEDULE_COLORS.VACATION_FULL }}
               />
-              휴가
+              휴가 (일반)
+            </span>
+            <span className="legend-item">
+              <span
+                className="legend-dot"
+                style={{ backgroundColor: SCHEDULE_COLORS.VACATION_HALF_AM }}
+              />
+              휴가 (반차)
             </span>
             <span className="legend-item">
               <span
@@ -301,6 +324,7 @@ function CalendarPage() {
                             endAt: data.end_at,
                             allDay: data.all_day,
                             type: data.type,
+                            vacationType: data.vacation_type,
                             description: data.description,
                             createdBy: data.created_by,
                             createdByName: data.created_by_name,

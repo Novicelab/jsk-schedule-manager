@@ -4,6 +4,93 @@
 
 ---
 
+## [2026-02-27] 휴가 일정 유형(일반/오전반차/오후반차) 구분 기능 추가
+
+### 기능 요약
+- 휴가 일정에 유형(FULL/HALF_AM/HALF_PM) 구분 기능 추가
+- 업무 일정에서 미사용 '시작 시간' 필드 제거
+- 캘린더에 휴가 반차 색상 표시 (옅은 초록)
+
+### 변경 내용
+
+#### 1. Supabase DB 스키마
+- `schedules` 테이블에 `vacation_type` 컬럼 추가 (FULL/HALF_AM/HALF_PM)
+- DB 트리거 수정: `vacation_type` 기반 title 자동 생성
+  - FULL: `[이름] 휴가`
+  - HALF_AM: `[이름] 오전 반차`
+  - HALF_PM: `[이름] 오후 반차`
+- UPDATE 트리거 추가 (기존 INSERT만 처리 → INSERT + UPDATE 처리)
+
+#### 2. ScheduleModal.jsx
+- 상수 변경: `DURATIONS` 제거, `VACATION_TYPES` 추가
+- Form state: `startTime`, `duration` 제거 → `vacationType` 추가
+- VACATION 폼 구조 변경:
+  - 부제목 입력 필드 제거 (DB 트리거가 자동 생성)
+  - 휴가유형 라디오 버튼 추가 (일반/오전반차/오후반차)
+  - 반차 선택 시 종료 날짜 필드 숨김 (시작 날짜 = 종료 날짜)
+- WORK 폼 구조 변경:
+  - 시작 시간 필드 제거
+  - 소요 시간 필드 제거
+  - 날짜만 표시 (시작 ~ 종료)
+- handleSubmit() 수정:
+  - VACATION: `vacation_type` 포함하여 INSERT/UPDATE
+  - WORK: 간소화된 날짜 처리
+- validate() 함수 단순화 (WORK의 startTime/duration 검증 제거)
+
+#### 3. CalendarPage.jsx
+- 색상 정의 변경:
+  - `VACATION_FULL`: 짙은 초록 (#27ae60)
+  - `VACATION_HALF_AM/HALF_PM`: 옅은 초록 (#82d9a5)
+- `getEventColor()` 함수 추가 (vacation_type 기반 색상 결정)
+- calendarEvents 매핑에서 `getEventColor()` 적용
+- 캘린더 색상 범례 업데이트 (반차 추가)
+- selectedSchedule에 `vacationType` 필드 추가
+
+#### 4. ScheduleDetail.jsx
+- `VACATION_TYPE_LABEL` 상수 추가
+- 유형 배지에 휴가 유형 표시 (예: "휴가 (오전 반차)")
+
+### 파일 변경
+- `frontend/src/components/schedule/ScheduleModal.jsx` (±100 lines)
+- `frontend/src/pages/CalendarPage.jsx` (±30 lines)
+- `frontend/src/components/schedule/ScheduleDetail.jsx` (±10 lines)
+
+### 테스트 방법
+1. Supabase Table Editor에서 `vacation_type` 컬럼 확인
+2. 일정 생성 모달:
+   - VACATION: 유형 선택 박스 표시 확인
+   - 반차 선택 시 종료 날짜 필드 숨김 확인
+   - 저장 후 캘럼더에서 색상 차이 확인
+   - 저장 후 제목 자동 생성 확인 (`[이름] 오전 반차` 등)
+3. WORK 일정: 시작시간/소요시간 필드 미표시 확인
+4. 기존 일정 수정: `vacation_type` 정상 로드 확인
+
+---
+
+## [2026-02-27] 일정 생성 NOT NULL 제약 위반 버그 수정 (스키마 + 코드)
+
+### 문제
+- 일정 생성 시 `created_at`, `updated_at` NOT NULL 제약 위반 (400 Bad Request)
+
+### 원인
+- Supabase `schedules` 테이블의 타임스탐프 컬럼에 DEFAULT 값 미설정
+- 프론트엔드가 이 필드들을 전송하지 않아 DB 제약 위반
+
+### 조치
+1. **임시 프론트엔드 수정**: 타임스탐프를 명시적으로 제공 (INSERT에 `created_at`, `updated_at` 추가)
+2. **근본 스키마 수정**: Supabase에서 다음 SQL 실행
+   ```sql
+   ALTER TABLE schedules
+   ALTER COLUMN created_at SET DEFAULT CURRENT_TIMESTAMP,
+   ALTER COLUMN updated_at SET DEFAULT CURRENT_TIMESTAMP;
+   ```
+3. **코드 정리**: 스키마 DEFAULT 설정 완료로 프론트엔드 명시 제거 (DB 자동 처리)
+
+### 파일 변경
+- `frontend/src/components/schedule/ScheduleModal.jsx`: 타임스탐프 명시 추가 → 제거 (원복)
+
+---
+
 ## [2026-02-26] 카카오 로그인 "Failed to send a request to the Edge Function" 버그 수정
 
 ### 문제

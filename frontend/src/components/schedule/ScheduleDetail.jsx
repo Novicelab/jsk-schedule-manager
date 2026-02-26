@@ -7,6 +7,12 @@ const TYPE_LABEL = {
   WORK: '업무',
 }
 
+const VACATION_TYPE_LABEL = {
+  FULL: '일반',
+  HALF_AM: '오전 반차',
+  HALF_PM: '오후 반차',
+}
+
 function ScheduleDetail({ schedule, onEdit, onDeleted, onClose }) {
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState(null)
@@ -93,6 +99,9 @@ function ScheduleDetail({ schedule, onEdit, onDeleted, onClose }) {
             <span className="detail-label">유형</span>
             <span className={`detail-value type-badge type-${schedule.type?.toLowerCase()}`}>
               {TYPE_LABEL[schedule.type] || schedule.type}
+              {schedule.type === 'VACATION' && schedule.vacationType && (
+                <> ({VACATION_TYPE_LABEL[schedule.vacationType] || schedule.vacationType})</>
+              )}
             </span>
           </div>
 

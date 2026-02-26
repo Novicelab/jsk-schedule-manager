@@ -10,12 +10,10 @@ const SCHEDULE_TYPES = [
   { value: 'WORK', label: '업무' },
 ]
 
-const DURATIONS = [
-  { value: 30, label: '30분' },
-  { value: 60, label: '1시간' },
-  { value: 120, label: '2시간' },
-  { value: 240, label: '4시간' },
-  { value: 480, label: '8시간' },
+const VACATION_TYPES = [
+  { value: 'FULL', label: '일반' },
+  { value: 'HALF_AM', label: '오전 반차' },
+  { value: 'HALF_PM', label: '오후 반차' },
 ]
 
 function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
@@ -30,8 +28,7 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
     description: '',
     startDate: defaultDateObj,
     endDate: defaultDateObj,
-    startTime: '09:00',
-    duration: 60,
+    vacationType: 'FULL',
   })
   const [errors, setErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
@@ -43,26 +40,13 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
       const startAtDayjs = dayjs(schedule.startAt)
       const endAtDayjs = dayjs(schedule.endAt)
 
-      let calculatedDuration = 60
-      if (schedule.startAt && schedule.endAt) {
-        calculatedDuration = endAtDayjs.diff(startAtDayjs, 'minute')
-      }
-
-      // VACATION인 경우 "[이름] 부제목" 형식에서 부제목만 추출
-      let displayTitle = schedule.title || ''
-      if (schedule.type === 'VACATION' && displayTitle.includes(']')) {
-        const endBracketIndex = displayTitle.indexOf(']')
-        displayTitle = displayTitle.substring(endBracketIndex + 1).trim()
-      }
-
       setForm({
         type: schedule.type || 'WORK',
-        title: displayTitle,
+        title: schedule.type === 'WORK' ? (schedule.title || '') : '',
         description: schedule.description || '',
         startDate: startAtDayjs.toDate(),
         endDate: endAtDayjs.toDate(),
-        startTime: startAtDayjs.format('HH:mm'),
-        duration: calculatedDuration,
+        vacationType: schedule.vacationType || 'FULL',
       })
     }
   }, [isEdit, schedule])
@@ -129,16 +113,6 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
       } else if (form.title.trim().length > 100) {
         newErrors.title = '제목은 100자 이내로 입력해주세요.'
       }
-      if (!form.startTime) {
-        newErrors.startTime = '시작 시간은 필수입니다.'
-      }
-      if (!form.duration) {
-        newErrors.duration = '소요 시간은 필수입니다.'
-      }
-    } else if (form.type === 'VACATION') {
-      if (form.title.trim().length > 100) {
-        newErrors.title = '부제목은 100자 이내로 입력해주세요.'
-      }
     }
 
     return newErrors
@@ -156,20 +130,23 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
     setApiError(null)
 
     try {
-      let start_at, end_at, all_day, title
+      let start_at, end_at, all_day, title, vacation_type
 
       if (form.type === 'WORK') {
-        const startDateTime = dayjs(form.startDate).format('YYYY-MM-DD') + 'T' + form.startTime + ':00'
-        const endDateTime = dayjs(startDateTime).add(form.duration, 'minute').format('YYYY-MM-DDTHH:mm:ss')
-        start_at = startDateTime
-        end_at = endDateTime
-        all_day = false
-        title = form.title.trim()
-      } else {
         start_at = dayjs(form.startDate).format('YYYY-MM-DD') + 'T00:00:00'
         end_at = dayjs(form.endDate).format('YYYY-MM-DD') + 'T23:59:59'
         all_day = true
-        title = form.title.trim() // DB 트리거가 "[이름] 부제목" 형식으로 자동 설정
+        title = form.title.trim()
+        vacation_type = null
+      } else {
+        start_at = dayjs(form.startDate).format('YYYY-MM-DD') + 'T00:00:00'
+        // 반차인 경우 startDate와 endDate가 같음, 일반인 경우 endDate 사용
+        end_at = (form.vacationType === 'FULL')
+          ? dayjs(form.endDate).format('YYYY-MM-DD') + 'T23:59:59'
+          : dayjs(form.startDate).format('YYYY-MM-DD') + 'T23:59:59'
+        all_day = true
+        title = '' // DB 트리거가 vacation_type 기반으로 자동 생성
+        vacation_type = form.vacationType
       }
 
       // 현재 사용자 ID 조회
@@ -181,16 +158,20 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
         .single()
 
       if (isEdit) {
+        const updatePayload = {
+          title,
+          description: form.type === 'WORK' ? (form.description.trim() || null) : null,
+          type: form.type,
+          start_at,
+          end_at,
+          all_day,
+        }
+        if (form.type === 'VACATION') {
+          updatePayload.vacation_type = vacation_type
+        }
         const { error } = await supabase
           .from('schedules')
-          .update({
-            title,
-            description: form.type === 'WORK' ? (form.description.trim() || null) : null,
-            type: form.type,
-            start_at,
-            end_at,
-            all_day,
-          })
+          .update(updatePayload)
           .eq('id', schedule.id)
 
         if (error) throw error
@@ -200,17 +181,21 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
           body: { scheduleId: schedule.id, actionType: 'UPDATED', actorUserId: currentUser.id },
         }).catch(err => console.error('알림 발송 실패:', err))
       } else {
+        const insertPayload = {
+          title,
+          description: form.type === 'WORK' ? (form.description.trim() || null) : null,
+          type: form.type,
+          start_at,
+          end_at,
+          all_day,
+          created_by: currentUser.id,
+        }
+        if (form.type === 'VACATION') {
+          insertPayload.vacation_type = vacation_type
+        }
         const { data: newSchedule, error } = await supabase
           .from('schedules')
-          .insert({
-            title,
-            description: form.type === 'WORK' ? (form.description.trim() || null) : null,
-            type: form.type,
-            start_at,
-            end_at,
-            all_day,
-            created_by: currentUser.id,
-          })
+          .insert(insertPayload)
           .select()
           .single()
 
@@ -285,27 +270,38 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
           {form.type === 'VACATION' && (
             <>
               <p className="form-section-hint">
-                휴가 기간을 선택해주세요. 저장 시 제목은 [이름] 휴가 형식으로 자동 생성됩니다.
+                휴가 유형과 기간을 선택해주세요. 저장 시 제목은 자동으로 생성됩니다.
               </p>
 
               <div className="form-group">
-                <label htmlFor="vacation-title" className="form-label">
-                  부제목 <span className="optional">(선택)</span>
+                <label className="form-label">
+                  휴가 유형 <span className="required">*</span>
                 </label>
-                <input
-                  id="vacation-title"
-                  name="title"
-                  type="text"
-                  className={`form-input ${errors.title ? 'input-error' : ''}`}
-                  value={form.title}
-                  onChange={handleInputChange}
-                  placeholder="예: 오전 반차, 연차 등 (선택 입력)"
-                  maxLength={100}
-                />
-                <p className="form-hint">저장 시 [이름] 휴가 또는 [이름] 부제목 형식으로 자동 추가됩니다.</p>
-                {errors.title && (
-                  <span className="field-error">{errors.title}</span>
-                )}
+                <div className="type-box-group">
+                  {VACATION_TYPES.map((v) => (
+                    <label
+                      key={v.value}
+                      className={`type-box ${form.vacationType === v.value ? 'type-box-selected' : ''}`}
+                    >
+                      <input
+                        type="radio"
+                        name="vacationType"
+                        value={v.value}
+                        checked={form.vacationType === v.value}
+                        onChange={(e) => {
+                          setForm((prev) => ({
+                            ...prev,
+                            vacationType: e.target.value,
+                            // 반차인 경우 endDate를 startDate로 자동 설정
+                            endDate: e.target.value !== 'FULL' ? prev.startDate : prev.endDate,
+                          }))
+                        }}
+                        className="type-radio"
+                      />
+                      <span className="type-box-label">{v.label}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
 
               <div className="form-group">
@@ -322,16 +318,20 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
                       className={`form-input date-picker ${errors.startDate ? 'input-error' : ''}`}
                     />
                   </div>
-                  <span className="date-separator">→</span>
-                  <div className="date-picker-wrapper">
-                    <label className="date-label">종료</label>
-                    <DatePicker
-                      selected={form.endDate}
-                      onChange={handleEndDateChange}
-                      dateFormat="yyyy-MM-dd"
-                      className={`form-input date-picker ${errors.endDate ? 'input-error' : ''}`}
-                    />
-                  </div>
+                  {form.vacationType === 'FULL' && (
+                    <>
+                      <span className="date-separator">→</span>
+                      <div className="date-picker-wrapper">
+                        <label className="date-label">종료</label>
+                        <DatePicker
+                          selected={form.endDate}
+                          onChange={handleEndDateChange}
+                          dateFormat="yyyy-MM-dd"
+                          className={`form-input date-picker ${errors.endDate ? 'input-error' : ''}`}
+                        />
+                      </div>
+                    </>
+                  )}
                 </div>
                 {errors.startDate && (
                   <span className="field-error">{errors.startDate}</span>
@@ -411,47 +411,6 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
                 {errors.endDate && (
                   <span className="field-error">{errors.endDate}</span>
                 )}
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="startTime" className="form-label">
-                    시작 시간 <span className="required">*</span>
-                  </label>
-                  <input
-                    id="startTime"
-                    name="startTime"
-                    type="time"
-                    className={`form-input ${errors.startTime ? 'input-error' : ''}`}
-                    value={form.startTime}
-                    onChange={handleInputChange}
-                  />
-                  {errors.startTime && (
-                    <span className="field-error">{errors.startTime}</span>
-                  )}
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="duration" className="form-label">
-                    소요 시간 <span className="required">*</span>
-                  </label>
-                  <select
-                    id="duration"
-                    name="duration"
-                    className="form-input"
-                    value={form.duration}
-                    onChange={handleInputChange}
-                  >
-                    {DURATIONS.map((d) => (
-                      <option key={d.value} value={d.value}>
-                        {d.label}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.duration && (
-                    <span className="field-error">{errors.duration}</span>
-                  )}
-                </div>
               </div>
             </>
           )}
