@@ -1046,8 +1046,21 @@ select {
   color: #fff;
 }
 
+.mobile-event-content.vacation-event.vacation-FULL {
+  background-color: #27ae60;
+}
+
+.mobile-event-content.vacation-event.vacation-HALF_AM {
+  background-color: #82d9a5;
+}
+
+.mobile-event-content.vacation-event.vacation-HALF_PM {
+  background-color: #82d9a5;
+}
+
 .mobile-event-content.work-event {
   color: #fff;
+  background-color: #2980b9;
 }
 
 .event-name {
