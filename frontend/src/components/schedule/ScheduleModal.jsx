@@ -180,12 +180,18 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
 
         // 알림 발송 (Edge Function - 실패해도 계속 진행)
         try {
-          const response = await supabase.functions.invoke('send-notification', {
-            body: { scheduleId: schedule.id, actionType: 'UPDATED', actorUserId: currentUser.id },
+          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+          const response = await fetch(`${supabaseUrl}/functions/v1/send-notification`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ scheduleId: schedule.id, actionType: 'UPDATED', actorUserId: currentUser.id }),
           })
-          if (response.error) notifyFailed = true
-          if (!response.error) {
-            console.log('알림 발송 성공:', response.data)
+          const data = await response.json()
+          if (!response.ok || data.error) {
+            notifyFailed = true
+            console.warn('알림 발송 실패:', data)
+          } else {
+            console.log('알림 발송 성공:', data)
           }
         } catch (err) {
           console.warn('알림 발송 실패:', err)
@@ -214,12 +220,18 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
 
         // 알림 발송 (Edge Function - 실패해도 계속 진행)
         try {
-          const response = await supabase.functions.invoke('send-notification', {
-            body: { scheduleId: newSchedule.id, actionType: 'CREATED', actorUserId: currentUser.id },
+          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+          const response = await fetch(`${supabaseUrl}/functions/v1/send-notification`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ scheduleId: newSchedule.id, actionType: 'CREATED', actorUserId: currentUser.id }),
           })
-          if (response.error) notifyFailed = true
-          if (!response.error) {
-            console.log('알림 발송 성공:', response.data)
+          const data = await response.json()
+          if (!response.ok || data.error) {
+            notifyFailed = true
+            console.warn('알림 발송 실패:', data)
+          } else {
+            console.log('알림 발송 성공:', data)
           }
         } catch (err) {
           console.warn('알림 발송 실패:', err)
