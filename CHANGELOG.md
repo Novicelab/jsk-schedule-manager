@@ -4,40 +4,43 @@
 
 ---
 
-## [2026-02-27] send-notification Edge Function 401 에러 수정 (JWT 검증 우회)
+## [2026-02-27] send-notification Edge Function 401 에러 수정 (Supabase Client 인증 헤더)
 
 ### 문제
-- **증상**: 일정 등록 후 "POST send-notification 401 Unauthorized" 에러
-- **원인**: `supabase.functions.invoke()` 호출 시 SDK가 자동으로 JWT 헤더를 추가하여 config.toml의 `verify_jwt = false` 설정이 무시됨
+- **증상**: 일정 생성/수정/삭제 후 알림 발송 시 `POST send-notification 401 (Unauthorized - Missing authorization header)` 에러
+- **원인**: `fetch()` 직접 호출 시 Supabase Edge Function 라우팅 레이어에서 Authorization 헤더 검증
+  - `config.toml verify_jwt=false`는 JWT 검증만 비활성화하고 헤더 자체는 여전히 필수
+  - `kakao-auth` 함수는 `supabase.functions.invoke()`로 호출되어 Client가 자동으로 헤더 추가
 
 ### 해결
-**변경 방식**: `supabase.functions.invoke()` → 직접 `fetch()` 호출
-- JWT 헤더를 자동으로 추가하지 않음
-- `verify_jwt = false` 설정이 정상적으로 작동
+**변경 방식**: 직접 `fetch()` 호출 → `supabase.functions.invoke()` 방식으로 변경
+- Supabase Client가 자동으로 모든 인증 헤더 관리
+- CallbackPage의 kakao-auth 호출 패턴과 동일하게 일관성 확보
+- 토큰 노출 위험 제거
 
 **수정 파일**:
 - `frontend/src/components/schedule/ScheduleModal.jsx` (CREATED, UPDATED 액션)
 - `frontend/src/components/schedule/ScheduleDetail.jsx` (DELETED 액션)
 
-**코드 예시**:
+**코드 변경**:
 ```typescript
-// ❌ 문제 코드
-await supabase.functions.invoke('send-notification', {
-  body: { scheduleId, actionType, actorUserId },
-})
-
-// ✅ 수정 코드
+// ❌ 문제 코드 (fetch 직접 호출)
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 await fetch(`${supabaseUrl}/functions/v1/send-notification`, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ scheduleId, actionType, actorUserId }),
 })
+
+// ✅ 수정 코드 (Supabase Client 사용)
+const { data, error: invokeError } = await supabase.functions.invoke('send-notification', {
+  body: { scheduleId, actionType, actorUserId },
+})
 ```
 
 ### 결과
-- ✅ Render 자동 배포 대기 (Frontend 변경)
-- ✅ Edge Function 설정 정상화 예상
+- ✅ Render 자동 배포 완료 (Frontend 변경)
+- ✅ 일정 생성 → 알림 발송 성공 예상
 
 ---
 
