@@ -57,11 +57,15 @@ function CalendarPage() {
   // 이벤트 콘텐츠 렌더링 (모바일 최적화)
   const renderEventContent = (info) => {
     const { type, vacationType, createdByName } = info.event.extendedProps
+    const backgroundColor = info.event.backgroundColor || '#7f8c8d'
 
     if (type === 'VACATION') {
       const vacLabel = VACATION_TYPE_LABEL[vacationType] || '휴가'
       return (
-        <div className="mobile-event-content vacation-event">
+        <div
+          className="mobile-event-content vacation-event"
+          style={{ backgroundColor }}
+        >
           <div className="event-name">[{createdByName}]</div>
           <div className="event-type">{vacLabel}</div>
         </div>
@@ -70,7 +74,10 @@ function CalendarPage() {
 
     // WORK 타입
     return (
-      <div className="mobile-event-content work-event">
+      <div
+        className="mobile-event-content work-event"
+        style={{ backgroundColor }}
+      >
         <div className="event-title">{info.event.title}</div>
       </div>
     )
