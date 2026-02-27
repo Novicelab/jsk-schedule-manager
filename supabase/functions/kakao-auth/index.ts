@@ -167,7 +167,7 @@ serve(async (req) => {
       if (!user.auth_id) {
         const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
           email: authEmail,
-          password: authPassword,
+          password: newAuthPassword,
           email_confirm: true,
           user_metadata: { kakao_id: kakaoId, nickname: user.name },
         })
