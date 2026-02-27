@@ -66,30 +66,38 @@ serve(async (req) => {
       )
     }
 
-    // 4. 알림 설정 확인 후 발송
+    // 4. 알림 설정 일괄 조회 (N+1 쿼리 최적화)
     const scheduleType = schedule.type // VACATION or WORK
     const actionLabel = actionType === 'CREATED' ? '등록' :
                         actionType === 'UPDATED' ? '수정' : '삭제'
+
+    const userIds = users.map(u => u.id)
+    const { data: allPrefs = [] } = await supabase
+      .from('notification_preferences')
+      .select('user_id, enabled')
+      .in('user_id', userIds)
+      .eq('schedule_type', scheduleType)
+      .eq('action_type', actionType)
+
+    // user_id → enabled 매핑 (O(1) 조회용)
+    const prefMap = new Map(allPrefs.map(p => [p.user_id, p.enabled]))
 
     let sentCount = 0
     let failedCount = 0
 
     for (const user of users) {
-      // 알림 설정 확인
-      const { data: pref } = await supabase
-        .from('notification_preferences')
-        .select('enabled')
-        .eq('user_id', user.id)
-        .eq('schedule_type', scheduleType)
-        .eq('action_type', actionType)
-        .single()
+      // 알림 설정 확인 (매핑에서 조회, DB 쿼리 없음)
+      const isEnabled = prefMap.get(user.id) !== false // 설정 없으면 true (기본값)
+      if (!isEnabled) continue
 
-      if (pref && !pref.enabled) continue
-
-      // 메시지 생성
+      // 메시지 생성 (개선된 형식)
       const startDate = new Date(schedule.start_at).toLocaleDateString('ko-KR')
       const endDate = new Date(schedule.end_at).toLocaleDateString('ko-KR')
-      let message = `[일정 ${actionLabel}] ${schedule.title}\n일자: ${startDate} ~ ${endDate}`
+      let message = `📅 [일정 ${actionLabel}]\n`
+      message += `작성자: ${actor?.name || '작성자'}\n`
+      message += `제목: ${schedule.title}\n`
+      message += `일자: ${startDate}`
+      if (startDate !== endDate) message += ` ~ ${endDate}`
 
       if (!schedule.all_day) {
         const startTime = new Date(schedule.start_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
