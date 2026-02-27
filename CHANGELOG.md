@@ -4,6 +4,47 @@
 
 ---
 
+## [2026-02-27] kakao-auth 세션 응답 구조 버그 수정 (Critical - 최우선)
+
+### 문제
+- **증상**: 카카오 로그인 후 "세션 데이터를 받지 못했습니다" 에러 계속 발생
+- **원인**: kakao-auth Edge Function에서 Supabase SDK 응답 구조를 잘못 이해
+  ```typescript
+  // ❌ 잘못된 코드 (Line 228)
+  session: sessionData.session  // undefined!
+
+  // ✅ 올바른 코드
+  session: sessionData.data.session  // 실제 세션 구조
+  ```
+
+### Supabase SDK signInWithPassword() 반환 구조
+```typescript
+{
+  data: {
+    session: { access_token, refresh_token, ... },
+    user: { ... }
+  },
+  error: null | Error
+}
+```
+
+**주의**: 세션은 `sessionData.session`이 아니라 **`sessionData.data.session`**에 있음!
+
+### 해결
+**파일**: `supabase/functions/kakao-auth/index.ts`
+- Line 228: `session: sessionData.session` → `session: sessionData.data.session`
+- Edge Function 재배포 완료 (kakao-auth v9 ACTIVE)
+- Git commit & push 완료
+
+### 테스트 방법
+1. https://jsk-schedule-frontend.onrender.com 접속
+2. "카카오로 시작하기" 클릭
+3. 카카오 계정으로 로그인
+4. **예상**: 세션 발급 성공 → 메인 페이지/이름 입력 모달로 이동
+5. **오류 제거**: "세션 데이터를 받지 못했습니다" 에러 없음
+
+---
+
 ## [2026-02-27] Critical 버그: kakao-auth Edge Function 미정의 변수 사용으로 인한 세션 발급 실패 수정
 
 ### 문제 분석
