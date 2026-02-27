@@ -166,44 +166,47 @@ function CalendarPage() {
     }
   }, [isMobile, events])
 
+  // 일정 상세 정보 조회 (공통 로직)
+  const handleEventDetail = useCallback(async (scheduleId) => {
+    try {
+      const { data, error } = await supabase
+        .from('schedules_with_user')
+        .select('*')
+        .eq('id', scheduleId)
+        .single()
+
+      if (error) throw error
+
+      // 필드명 매핑 (snake_case → camelCase)
+      setSelectedSchedule({
+        id: data.id,
+        title: data.title,
+        startAt: data.start_at,
+        endAt: data.end_at,
+        allDay: data.all_day,
+        type: data.type,
+        vacationType: data.vacation_type,
+        description: data.description,
+        createdBy: data.created_by,
+        createdByName: data.created_by_name,
+        createdAt: data.created_at,
+        canEdit: data.can_edit,
+        canDelete: data.can_delete,
+      })
+      setShowScheduleDetail(true)
+    } catch (err) {
+      console.error('일정 상세 조회 실패:', err)
+      setSchedulesError('일정 상세 정보를 불러오지 못했습니다.')
+    }
+  }, [])
+
   // 이벤트 클릭 → 모바일: 무시, PC: 상세 모달 표시
   const handleEventClick = useCallback(
     async (info) => {
       if (isMobile) return
-
-      const scheduleId = info.event.id
-      try {
-        const { data, error } = await supabase
-          .from('schedules_with_user')
-          .select('*')
-          .eq('id', scheduleId)
-          .single()
-
-        if (error) throw error
-
-        // 필드명 매핑 (snake_case → camelCase)
-        setSelectedSchedule({
-          id: data.id,
-          title: data.title,
-          startAt: data.start_at,
-          endAt: data.end_at,
-          allDay: data.all_day,
-          type: data.type,
-          vacationType: data.vacation_type,
-          description: data.description,
-          createdBy: data.created_by,
-          createdByName: data.created_by_name,
-          createdAt: data.created_at,
-          canEdit: data.can_edit,
-          canDelete: data.can_delete,
-        })
-        setShowScheduleDetail(true)
-      } catch (err) {
-        console.error('일정 상세 조회 실패:', err)
-        setSchedulesError('일정 상세 정보를 불러오지 못했습니다.')
-      }
+      handleEventDetail(info.event.id)
     },
-    [isMobile]
+    [isMobile, handleEventDetail]
   )
 
   // 일정 저장 완료 후 목록 새로고침
@@ -287,7 +290,7 @@ function CalendarPage() {
             dateClick={handleDateClick}
             eventClick={handleEventClick}
             eventContent={isMobile ? renderEventContent : undefined}
-            dayMaxEvents={isMobile ? false : false}
+            dayMaxEvents={false}
             height="700px"
             selectable={true}
             editable={false}
@@ -345,38 +348,9 @@ function CalendarPage() {
                     <li
                       key={event.id}
                       className="date-event-item"
-                      onClick={async () => {
-                        try {
-                          const { data, error } = await supabase
-                            .from('schedules_with_user')
-                            .select('*')
-                            .eq('id', event.id)
-                            .single()
-
-                          if (error) throw error
-
-                          setSelectedSchedule({
-                            id: data.id,
-                            title: data.title,
-                            startAt: data.start_at,
-                            endAt: data.end_at,
-                            allDay: data.all_day,
-                            type: data.type,
-                            vacationType: data.vacation_type,
-                            description: data.description,
-                            createdBy: data.created_by,
-                            createdByName: data.created_by_name,
-                            createdAt: data.created_at,
-                            canEdit: data.can_edit,
-                            canDelete: data.can_delete,
-                          })
-                          setShowDatePopup(false)
-                          setShowScheduleDetail(true)
-                        } catch (err) {
-                          console.error('일정 상세 조회 실패:', err)
-                          setSchedulesError('일정 상세 정보를 불러오지 못했습니다.')
-                          setShowDatePopup(false)
-                        }
+                      onClick={() => {
+                        handleEventDetail(event.id)
+                        setShowDatePopup(false)
                       }}
                     >
                       <span
