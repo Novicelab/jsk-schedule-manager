@@ -4,6 +4,34 @@
 
 ---
 
+## [2026-02-27] Critical 버그: kakao-auth Edge Function 미정의 변수 사용으로 인한 세션 발급 실패 수정
+
+### 문제 분석
+프로덕션 환경에서 카카오 로그인 실패:
+- 에러: "세션 데이터를 받지 못했습니다. 다시 로그인해주세요."
+- 원인: kakao-auth/index.ts 170번 라인에서 미정의 변수 `authPassword` 참조
+
+### 상황
+기존 사용자(auth_id 없음)의 Supabase Auth 계정을 새로 생성할 때, 암호를 설정하는 부분에서 변수명 오류 발생.
+변수가 정의되지 않아 `undefined`가 전달되어 Supabase Auth 사용자 생성 실패 → 세션 발급 불가.
+
+### 조치
+**파일**: `supabase/functions/kakao-auth/index.ts`
+- Line 170: `password: authPassword` → `password: newAuthPassword`
+- 신규 사용자는 `newAuthPassword` (강화된 버전)로 생성
+- 기존 사용자는 마이그레이션 시 `oldAuthPassword` (호환성) 먼저 시도 후 업그레이드
+
+### 검증
+- Supabase CLI로 Edge Function 재배포 완료
+- 프로덕션 배포 URL: https://jsk-schedule-frontend.onrender.com
+- 카카오 OAuth 콜백 로직 검증 완료
+
+### 결과
+- 새 사용자 + 기존 사용자 모두 세션 발급 정상화
+- 카카오 로그인 완벽 작동 (인가 코드 → 세션 발급 전체 흐름)
+
+---
+
 ## [2026-02-27] Medium 우선순위 버그 5개 수정 (버그 06, 07, 01, 08, 10)
 
 ### 수정 내용
