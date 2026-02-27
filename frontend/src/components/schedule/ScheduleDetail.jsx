@@ -44,12 +44,8 @@ function ScheduleDetail({ schedule, onEdit, onDeleted, onClose }) {
         .eq('auth_id', authUser.id)
         .single()
 
-      const { data: { session } } = await supabase.auth.getSession()
       supabase.functions.invoke('send-notification', {
         body: { scheduleId: schedule.id, actionType: 'DELETED', actorUserId: currentUser?.id },
-        headers: {
-          Authorization: `Bearer ${session?.access_token || ''}`,
-        },
       }).catch(err => console.error('알림 발송 실패:', err))
 
       onDeleted()

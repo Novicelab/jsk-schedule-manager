@@ -180,12 +180,8 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
 
         // 알림 발송 (Edge Function - 실패해도 계속 진행)
         try {
-          const { data: { session } } = await supabase.auth.getSession()
           const { data, error: invokeError } = await supabase.functions.invoke('send-notification', {
             body: { scheduleId: schedule.id, actionType: 'UPDATED', actorUserId: currentUser.id },
-            headers: {
-              Authorization: `Bearer ${session?.access_token || ''}`,
-            },
           })
 
           if (invokeError || data.error) {
@@ -221,12 +217,8 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
 
         // 알림 발송 (Edge Function - 실패해도 계속 진행)
         try {
-          const { data: { session } } = await supabase.auth.getSession()
           const { data, error: invokeError } = await supabase.functions.invoke('send-notification', {
             body: { scheduleId: newSchedule.id, actionType: 'CREATED', actorUserId: currentUser.id },
-            headers: {
-              Authorization: `Bearer ${session?.access_token || ''}`,
-            },
           })
 
           if (invokeError || data.error) {

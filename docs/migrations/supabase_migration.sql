@@ -88,9 +88,11 @@ CREATE OR REPLACE FUNCTION auto_vacation_title()
 RETURNS TRIGGER AS $$
 BEGIN
   IF NEW.type = 'VACATION' THEN
+    -- vacation_type 기반으로 부제목 자동 결정 (INSERT 및 UPDATE 모두 처리)
     NEW.title := '[' || (SELECT name FROM users WHERE id = NEW.created_by) || '] ' ||
-                 CASE
-                   WHEN NEW.title IS NOT NULL AND NEW.title != '' THEN NEW.title
+                 CASE NEW.vacation_type
+                   WHEN 'HALF_AM' THEN '오전 반차'
+                   WHEN 'HALF_PM' THEN '오후 반차'
                    ELSE '휴가'
                  END;
   END IF;
@@ -98,11 +100,12 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- 기존 트리거가 있으면 삭제 후 재생성
+-- 기존 트리거가 있으면 삭제 후 재생성 (INSERT + UPDATE 모두 처리)
 DROP TRIGGER IF EXISTS trg_vacation_title ON schedules;
+DROP TRIGGER IF EXISTS trg_vacation_title_update ON schedules;
 
 CREATE TRIGGER trg_vacation_title
-  BEFORE INSERT ON schedules
+  BEFORE INSERT OR UPDATE ON schedules
   FOR EACH ROW EXECUTE FUNCTION auto_vacation_title();
 
 -- ============================================================
