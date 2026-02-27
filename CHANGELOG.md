@@ -4,6 +4,66 @@
 
 ---
 
+## [2026-02-28] 알림 백엔드 서버 추가 (Node.js/Express) - Alternative 3
+
+### 배경
+- Supabase Edge Function(Deno) 방식의 send-notification이 401 인증 오류를 반복적으로 유발
+- Edge Function JWT 검증 우회 방법이 복잡하고 불안정한 상태
+- 별도의 Node.js Express 백엔드로 알림 발송 로직을 분리하여 안정성 확보
+
+### 변경사항
+
+#### 신규: backend/ 디렉토리 (Node.js Express 서버)
+- `backend/server.js`: Express 초기화, CORS 설정, 헬스체크 엔드포인트
+- `backend/package.json`: express, cors, dotenv, @supabase/supabase-js, axios
+- `backend/.env.example`: 환경변수 템플릿
+- `backend/routes/notify.js`: `POST /api/notify` 엔드포인트
+  - Supabase Admin Client로 일정/사용자 조회
+  - notification_preferences 일괄 조회 (N+1 방지)
+  - 카카오 나에게 보내기 API 호출
+  - notifications 테이블에 발송 기록 저장
+- `backend/lib/supabase.js`: Supabase Admin Client (Service Role Key)
+- `backend/lib/kakao.js`: 카카오 API 호출 + 메시지 빌더
+- `backend/utils/validation.js`: 요청 바디 검증
+- `backend/utils/logger.js`: 환경별 로깅 유틸리티
+
+#### 수정: 프론트엔드 알림 호출 방식 변경
+- `frontend/src/components/schedule/ScheduleModal.jsx`
+  - CREATED, UPDATED: `supabase.functions.invoke()` → `fetch(VITE_BACKEND_URL/api/notify)`
+- `frontend/src/components/schedule/ScheduleDetail.jsx`
+  - DELETED: `supabase.functions.invoke()` → `fetch(VITE_BACKEND_URL/api/notify)`
+
+#### 수정: 환경 변수 추가
+- `frontend/.env`: `VITE_BACKEND_URL=http://localhost:3001` 추가
+- `render.yaml`: `VITE_BACKEND_URL=https://jsk-schedule-backend.onrender.com` 추가
+
+#### 신규: 배포 설정
+- `render-backend.yaml`: Render 백엔드 웹 서비스 정의
+
+#### 수정: .gitignore
+- `backend/node_modules/`, `backend/package-lock.json` 추가
+
+### 아키텍처 변경
+- Before: `React → supabase.functions.invoke('send-notification') → Edge Function (Deno)`
+- After: `React → fetch(VITE_BACKEND_URL/api/notify) → Node.js Express → Supabase Admin + Kakao API`
+
+### Render 배포 시 필요한 수동 설정
+Render Dashboard에서 새 웹 서비스(jsk-schedule-backend) 생성 후:
+- Root Directory: backend
+- Build Command: npm install
+- Start Command: npm start
+- 환경변수: `SUPABASE_SERVICE_ROLE_KEY` (Supabase Dashboard > Settings > API에서 복사)
+
+### 테스트 시나리오
+1. `backend/` 에서 `npm install && npm start` (포트 3001)
+2. `frontend/` 에서 `npm run dev` (포트 5173)
+3. 일정 생성 → `POST http://localhost:3001/api/notify` 확인
+4. 일정 수정 → 알림 발송 성공/실패 배너 확인
+5. 일정 삭제 → fire-and-forget 알림 발송 확인
+6. `notifications` 테이블 status='SUCCESS' 기록 확인
+
+---
+
 ## [2026-02-28] send-notification 401 에러 최종 해결 (Authorization 헤더 추가)
 
 ### 심층 원인 분석

@@ -1,0 +1,25 @@
+services:
+  # ========== Backend Web Service (Node.js Express) ==========
+  - type: web
+    name: jsk-schedule-backend
+    plan: free
+    region: singapore
+    branch: main
+    autoDeployTrigger: commit
+    rootDir: backend
+
+    buildCommand: npm install
+    startCommand: npm start
+
+    # Environment variables
+    # SUPABASE_SERVICE_ROLE_KEY는 Render Dashboard에서 수동 설정 필요 (보안상 파일에 기록 금지)
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3001"
+      - key: SUPABASE_URL
+        value: https://qphhpfolrbsyiyoevaoe.supabase.co
+      - key: ALLOWED_ORIGINS
+        value: https://jsk-schedule-frontend.onrender.com
+      # SUPABASE_SERVICE_ROLE_KEY는 Render Dashboard > Environment에서 직접 입력

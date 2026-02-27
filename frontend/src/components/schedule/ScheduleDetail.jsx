@@ -44,8 +44,15 @@ function ScheduleDetail({ schedule, onEdit, onDeleted, onClose }) {
         .eq('auth_id', authUser.id)
         .single()
 
-      supabase.functions.invoke('send-notification', {
-        body: { scheduleId: schedule.id, actionType: 'DELETED', actorUserId: currentUser?.id },
+      const backendUrl = (import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001').trim()
+      fetch(`${backendUrl}/api/notify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          scheduleId: schedule.id,
+          actionType: 'DELETED',
+          actorUserId: currentUser?.id,
+        }),
       }).catch(err => console.error('알림 발송 실패:', err))
 
       onDeleted()

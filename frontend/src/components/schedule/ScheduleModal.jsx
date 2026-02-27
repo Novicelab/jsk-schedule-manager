@@ -178,17 +178,21 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
 
         if (error) throw error
 
-        // 알림 발송 (Edge Function - 실패해도 계속 진행)
+        // 알림 발송 (백엔드 API - 실패해도 계속 진행)
         try {
-          const { data, error: invokeError } = await supabase.functions.invoke('send-notification', {
-            body: { scheduleId: schedule.id, actionType: 'UPDATED', actorUserId: currentUser.id },
+          const backendUrl = (import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001').trim()
+          const notifyRes = await fetch(`${backendUrl}/api/notify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              scheduleId: schedule.id,
+              actionType: 'UPDATED',
+              actorUserId: currentUser.id,
+            }),
           })
-
-          if (invokeError || data.error) {
+          if (!notifyRes.ok) {
             notifyFailed = true
-            console.warn('알림 발송 실패:', invokeError || data.error)
-          } else {
-            console.log('알림 발송 성공:', data)
+            console.warn('알림 발송 실패: HTTP', notifyRes.status)
           }
         } catch (err) {
           console.warn('알림 발송 실패:', err)
@@ -215,17 +219,21 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
 
         if (error) throw error
 
-        // 알림 발송 (Edge Function - 실패해도 계속 진행)
+        // 알림 발송 (백엔드 API - 실패해도 계속 진행)
         try {
-          const { data, error: invokeError } = await supabase.functions.invoke('send-notification', {
-            body: { scheduleId: newSchedule.id, actionType: 'CREATED', actorUserId: currentUser.id },
+          const backendUrl = (import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001').trim()
+          const notifyRes = await fetch(`${backendUrl}/api/notify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              scheduleId: newSchedule.id,
+              actionType: 'CREATED',
+              actorUserId: currentUser.id,
+            }),
           })
-
-          if (invokeError || data.error) {
+          if (!notifyRes.ok) {
             notifyFailed = true
-            console.warn('알림 발송 실패:', invokeError || data.error)
-          } else {
-            console.log('알림 발송 성공:', data)
+            console.warn('알림 발송 실패: HTTP', notifyRes.status)
           }
         } catch (err) {
           console.warn('알림 발송 실패:', err)
