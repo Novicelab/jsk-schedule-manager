@@ -176,10 +176,17 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
 
         if (error) throw error
 
-        // 알림 발송 (Edge Function)
-        supabase.functions.invoke('send-notification', {
-          body: { scheduleId: schedule.id, actionType: 'UPDATED', actorUserId: currentUser.id },
-        }).catch(err => console.error('알림 발송 실패:', err))
+        // 알림 발송 (Edge Function - 실패해도 계속 진행)
+        try {
+          const response = await supabase.functions.invoke('send-notification', {
+            body: { scheduleId: schedule.id, actionType: 'UPDATED', actorUserId: currentUser.id },
+          })
+          if (!response.error) {
+            console.log('알림 발송 성공:', response.data)
+          }
+        } catch (err) {
+          console.warn('알림 발송 실패 (무시됨):', err)
+        }
       } else {
         const insertPayload = {
           title,
@@ -201,10 +208,17 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
 
         if (error) throw error
 
-        // 알림 발송 (Edge Function)
-        supabase.functions.invoke('send-notification', {
-          body: { scheduleId: newSchedule.id, actionType: 'CREATED', actorUserId: currentUser.id },
-        }).catch(err => console.error('알림 발송 실패:', err))
+        // 알림 발송 (Edge Function - 실패해도 계속 진행)
+        try {
+          const response = await supabase.functions.invoke('send-notification', {
+            body: { scheduleId: newSchedule.id, actionType: 'CREATED', actorUserId: currentUser.id },
+          })
+          if (!response.error) {
+            console.log('알림 발송 성공:', response.data)
+          }
+        } catch (err) {
+          console.warn('알림 발송 실패 (무시됨):', err)
+        }
       }
       onSaved()
     } catch (err) {

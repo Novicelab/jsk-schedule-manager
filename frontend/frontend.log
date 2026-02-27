@@ -12,3 +12,9 @@ Port 3003 is in use, trying another one...
 
   [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m3004[22m/[39m
 [2m  [32m➜[39m  [1mNetwork[22m[2m: use [22m[1m--host[22m[2m to expose[22m
+[2mAM 12:30:11[22m [36m[1m[vite][22m[39m [32m.env changed, restarting server...[39m
+[2mAM 12:30:12[22m [36m[1m[vite][22m[39m server restarted.
+[2mAM 12:35:39[22m [36m[1m[vite][22m[39m [32m.env changed, restarting server...[39m
+[2mAM 12:35:39[22m [36m[1m[vite][22m[39m server restarted.
+[2mAM 12:37:45[22m [36m[1m[vite][22m[39m [32m.env changed, restarting server...[39m
+[2mAM 12:37:45[22m [36m[1m[vite][22m[39m server restarted.

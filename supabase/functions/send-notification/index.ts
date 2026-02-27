@@ -5,6 +5,7 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Content-Type': 'application/json',
 }
 
 interface NotificationPayload {
@@ -14,16 +15,44 @@ interface NotificationPayload {
 }
 
 serve(async (req) => {
+  // CORS preflight 응답
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', {
+      status: 200,
+      headers: corsHeaders
+    })
+  }
+
+  // JSON 파싱 전 요청 메서드 확인
+  if (req.method !== 'POST') {
+    return new Response(
+      JSON.stringify({ error: 'Method not allowed' }),
+      { status: 405, headers: corsHeaders }
+    )
   }
 
   try {
     const payload: NotificationPayload = await req.json()
     const { scheduleId, actionType, actorUserId } = payload
 
-    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
-    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    // 필수 필드 검증
+    if (!scheduleId || !actionType || !actorUserId) {
+      return new Response(
+        JSON.stringify({ error: 'Missing required fields: scheduleId, actionType, actorUserId' }),
+        { status: 400, headers: corsHeaders }
+      )
+    }
+
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('Missing environment variables')
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error' }),
+        { status: 500, headers: corsHeaders }
+      )
+    }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
       auth: { autoRefreshToken: false, persistSession: false }
@@ -40,7 +69,7 @@ serve(async (req) => {
       console.error('일정 조회 실패:', scheduleError)
       return new Response(
         JSON.stringify({ error: '일정을 찾을 수 없습니다.' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 404, headers: corsHeaders }
       )
     }
 
@@ -152,13 +181,13 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({ sent: sentCount, failed: failedCount }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 200, headers: corsHeaders }
     )
   } catch (error) {
     console.error('send-notification 에러:', error)
     return new Response(
-      JSON.stringify({ error: '알림 처리 중 오류가 발생했습니다.' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: '알림 처리 중 오류가 발생했습니다.', details: String(error) }),
+      { status: 500, headers: corsHeaders }
     )
   }
 })

@@ -1,0 +1,189 @@
+- generic [ref=e3]:
+  - navigation [ref=e4]:
+    - generic [ref=e5]: JSK 일정 관리
+    - list [ref=e6]:
+      - listitem [ref=e7]:
+        - link "캘린더" [ref=e8] [cursor=pointer]:
+          - /url: /
+    - generic [ref=e10]: 이상우 /
+    - generic [ref=e11]:
+      - button "설정" [ref=e12] [cursor=pointer]
+      - button "로그아웃" [ref=e13] [cursor=pointer]
+  - main [ref=e14]:
+    - generic [ref=e16]:
+      - generic [ref=e17]: 휴가 (일반)
+      - generic [ref=e19]: 휴가 (반차)
+      - generic [ref=e21]: 업무
+    - generic [ref=e24]:
+      - generic [ref=e25]:
+        - generic [ref=e27]:
+          - button "Previous 월" [ref=e28] [cursor=pointer]:
+            - img [ref=e29]: 
+          - button "Next 월" [ref=e30] [cursor=pointer]:
+            - img [ref=e31]: 
+        - heading "2026년 2월" [level=2] [ref=e33]
+        - generic [ref=e35]:
+          - button "월" [pressed] [ref=e36] [cursor=pointer]
+          - button "주" [ref=e37] [cursor=pointer]
+          - button "일" [ref=e38] [cursor=pointer]
+      - generic "2026년 2월" [ref=e39]:
+        - grid [ref=e41]:
+          - rowgroup [ref=e42]:
+            - row "일요일 월요일 화요일 수요일 목요일 금요일 토요일" [ref=e46]:
+              - columnheader "일요일" [ref=e47]:
+                - generic "일요일" [ref=e49]: 일
+              - columnheader "월요일" [ref=e50]:
+                - generic "월요일" [ref=e52]: 월
+              - columnheader "화요일" [ref=e53]:
+                - generic "화요일" [ref=e55]: 화
+              - columnheader "수요일" [ref=e56]:
+                - generic "수요일" [ref=e58]: 수
+              - columnheader "목요일" [ref=e59]:
+                - generic "목요일" [ref=e61]: 목
+              - columnheader "금요일" [ref=e62]:
+                - generic "금요일" [ref=e64]: 금
+              - columnheader "토요일" [ref=e65]:
+                - generic "토요일" [ref=e67]: 토
+          - rowgroup [ref=e68]:
+            - generic [ref=e71]:
+              - row "2026년 2월 1일 2026년 2월 2일 2026년 2월 3일 2026년 2월 4일 2026년 2월 5일 2026년 2월 6일 2026년 2월 7일" [ref=e73]:
+                - gridcell "2026년 2월 1일" [ref=e74]:
+                  - generic [ref=e75]:
+                    - generic "2026년 2월 1일" [ref=e77]: 1일
+                    - generic [ref=e394] [cursor=pointer]:
+                      - generic [ref=e395]: "[이상우]"
+                      - generic [ref=e396]: 휴가
+                - gridcell "2026년 2월 2일" [ref=e79]:
+                  - generic "2026년 2월 2일" [ref=e82]: 2일
+                - gridcell "2026년 2월 3일" [ref=e84]:
+                  - generic "2026년 2월 3일" [ref=e87]: 3일
+                - gridcell "2026년 2월 4일" [ref=e89]:
+                  - generic "2026년 2월 4일" [ref=e92]: 4일
+                - gridcell "2026년 2월 5일" [ref=e94]:
+                  - generic "2026년 2월 5일" [ref=e97]: 5일
+                - gridcell "2026년 2월 6일" [ref=e99]:
+                  - generic "2026년 2월 6일" [ref=e102]: 6일
+                - gridcell "2026년 2월 7일" [ref=e104]:
+                  - generic "2026년 2월 7일" [ref=e107]: 7일
+              - row "2026년 2월 8일 2026년 2월 9일 2026년 2월 10일 2026년 2월 11일 2026년 2월 12일 2026년 2월 13일 2026년 2월 14일" [ref=e109]:
+                - gridcell "2026년 2월 8일" [ref=e110]:
+                  - generic "2026년 2월 8일" [ref=e113]: 8일
+                - gridcell "2026년 2월 9일" [ref=e115]:
+                  - generic "2026년 2월 9일" [ref=e118]: 9일
+                - gridcell "2026년 2월 10일" [ref=e120]:
+                  - generic "2026년 2월 10일" [ref=e123]: 10일
+                - gridcell "2026년 2월 11일" [ref=e125]:
+                  - generic "2026년 2월 11일" [ref=e128]: 11일
+                - gridcell "2026년 2월 12일" [ref=e130]:
+                  - generic "2026년 2월 12일" [ref=e133]: 12일
+                - gridcell "2026년 2월 13일" [ref=e135]:
+                  - generic "2026년 2월 13일" [ref=e138]: 13일
+                - gridcell "2026년 2월 14일" [ref=e140]:
+                  - generic "2026년 2월 14일" [ref=e143]: 14일
+              - row "2026년 2월 15일 2026년 2월 16일 2026년 2월 17일 2026년 2월 18일 2026년 2월 19일 2026년 2월 20일 2026년 2월 21일" [ref=e145]:
+                - gridcell "2026년 2월 15일" [ref=e146]:
+                  - generic "2026년 2월 15일" [ref=e149]: 15일
+                - gridcell "2026년 2월 16일" [ref=e151]:
+                  - generic [ref=e152]:
+                    - generic "2026년 2월 16일" [ref=e154]: 16일
+                    - generic [ref=e397] [cursor=pointer]:
+                      - generic [ref=e398]: "[이상우]"
+                      - generic [ref=e399]: 오전 반차
+                - gridcell "2026년 2월 17일" [ref=e156]:
+                  - generic "2026년 2월 17일" [ref=e159]: 17일
+                - gridcell "2026년 2월 18일" [ref=e161]:
+                  - generic "2026년 2월 18일" [ref=e164]: 18일
+                - gridcell "2026년 2월 19일" [ref=e166]:
+                  - generic "2026년 2월 19일" [ref=e169]: 19일
+                - gridcell "2026년 2월 20일" [ref=e171]:
+                  - generic "2026년 2월 20일" [ref=e174]: 20일
+                - gridcell "2026년 2월 21일" [ref=e176]:
+                  - generic "2026년 2월 21일" [ref=e179]: 21일
+              - row "2026년 2월 22일 2026년 2월 23일 2026년 2월 24일 2026년 2월 25일 2026년 2월 26일 2026년 2월 27일 2026년 2월 28일" [ref=e181]:
+                - gridcell "2026년 2월 22일" [ref=e182]:
+                  - generic [ref=e183]:
+                    - generic "2026년 2월 22일" [ref=e185]: 22일
+                    - generic [ref=e186]:
+                      - generic [ref=e400] [cursor=pointer]:
+                        - generic [ref=e401]: "[이상우]"
+                        - generic [ref=e402]: 휴가
+                      - generic [ref=e403] [cursor=pointer]:
+                        - generic [ref=e404]: "[이상우]"
+                        - generic [ref=e405]: 휴가
+                      - generic [ref=e406] [cursor=pointer]:
+                        - generic [ref=e407]: "[이상우]"
+                        - generic [ref=e408]: 휴가
+                      - generic [ref=e409] [cursor=pointer]:
+                        - generic [ref=e410]: "[이상우]"
+                        - generic [ref=e411]: 휴가
+                      - generic [ref=e412] [cursor=pointer]:
+                        - generic [ref=e413]: "[이상우]"
+                        - generic [ref=e414]: 휴가
+                      - generic [ref=e416] [cursor=pointer]: ㅅㄷㄱㄴㅅㄴㄷ
+                - gridcell "2026년 2월 23일" [ref=e187]:
+                  - generic "2026년 2월 23일" [ref=e190]: 23일
+                - gridcell "2026년 2월 24일" [ref=e192]:
+                  - generic "2026년 2월 24일" [ref=e195]: 24일
+                - gridcell "2026년 2월 25일" [ref=e197]:
+                  - generic "2026년 2월 25일" [ref=e200]: 25일
+                - gridcell "2026년 2월 26일" [ref=e202]:
+                  - generic "2026년 2월 26일" [ref=e205]: 26일
+                - gridcell "2026년 2월 27일" [ref=e207]:
+                  - generic [ref=e208]:
+                    - generic "2026년 2월 27일" [ref=e210]: 27일
+                    - generic [ref=e211]:
+                      - generic [ref=e417] [cursor=pointer]:
+                        - generic [ref=e418]: "[이상우]"
+                        - generic [ref=e419]: 오전 반차
+                      - generic [ref=e420] [cursor=pointer]:
+                        - generic [ref=e421]: "[이상우]"
+                        - generic [ref=e422]: 오후 반차
+                      - generic [ref=e423] [cursor=pointer]:
+                        - generic [ref=e424]: "[이상우]"
+                        - generic [ref=e425]: 휴가
+                      - generic [ref=e426] [cursor=pointer]:
+                        - generic [ref=e427]: "[이상우]"
+                        - generic [ref=e428]: 휴가
+                      - generic [ref=e429] [cursor=pointer]:
+                        - generic [ref=e430]: "[이상우]"
+                        - generic [ref=e431]: 휴가
+                      - generic [ref=e433] [cursor=pointer]: test
+                      - generic [ref=e435] [cursor=pointer]: tttttt
+                - gridcell "2026년 2월 28일" [ref=e212]:
+                  - generic "2026년 2월 28일" [ref=e215]: 28일
+              - row "2026년 3월 1일 2026년 3월 2일 2026년 3월 3일 2026년 3월 4일 2026년 3월 5일 2026년 3월 6일 2026년 3월 7일" [ref=e217]:
+                - gridcell "2026년 3월 1일" [ref=e218]:
+                  - generic "2026년 3월 1일" [ref=e221]: 1일
+                - gridcell "2026년 3월 2일" [ref=e223]:
+                  - generic "2026년 3월 2일" [ref=e226]: 2일
+                - gridcell "2026년 3월 3일" [ref=e228]:
+                  - generic "2026년 3월 3일" [ref=e231]: 3일
+                - gridcell "2026년 3월 4일" [ref=e233]:
+                  - generic "2026년 3월 4일" [ref=e236]: 4일
+                - gridcell "2026년 3월 5일" [ref=e238]:
+                  - generic [ref=e239]:
+                    - generic "2026년 3월 5일" [ref=e241]: 5일
+                    - generic [ref=e436] [cursor=pointer]:
+                      - generic [ref=e437]: "[이상우]"
+                      - generic [ref=e438]: 휴가
+                - gridcell "2026년 3월 6일" [ref=e243]:
+                  - generic "2026년 3월 6일" [ref=e246]: 6일
+                - gridcell "2026년 3월 7일" [ref=e248]:
+                  - generic "2026년 3월 7일" [ref=e251]: 7일
+              - row "2026년 3월 8일 2026년 3월 9일 2026년 3월 10일 2026년 3월 11일 2026년 3월 12일 2026년 3월 13일 2026년 3월 14일" [ref=e253]:
+                - gridcell "2026년 3월 8일" [ref=e254]:
+                  - generic "2026년 3월 8일" [ref=e257]: 8일
+                - gridcell "2026년 3월 9일" [ref=e259]:
+                  - generic "2026년 3월 9일" [ref=e262]: 9일
+                - gridcell "2026년 3월 10일" [ref=e264]:
+                  - generic "2026년 3월 10일" [ref=e267]: 10일
+                - gridcell "2026년 3월 11일" [ref=e269]:
+                  - generic "2026년 3월 11일" [ref=e272]: 11일
+                - gridcell "2026년 3월 12일" [ref=e274]:
+                  - generic "2026년 3월 12일" [ref=e277]: 12일
+                - gridcell "2026년 3월 13일" [ref=e279]:
+                  - generic [ref=e280]:
+                    - generic "2026년 3월 13일" [ref=e282]: 13일
+                    - generic [ref=e440] [cursor=pointer]: ㅛㅛㅛㅛ
+                - gridcell "2026년 3월 14일" [ref=e284]:
+                  - generic "2026년 3월 14일" [ref=e287]: 14일
