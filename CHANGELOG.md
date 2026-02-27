@@ -4,6 +4,47 @@
 
 ---
 
+## [2026-02-28] send-notification 401 에러 최종 해결 (Authorization 헤더 추가)
+
+### 심층 원인 분석
+- **문제**: Supabase API Gateway 레벨에서 Authorization 헤더를 **필수로 검증**
+- **오해**: `config.toml verify_jwt=false`가 헤더 자체를 불필요하게 한다고 생각함
+- **실제**: `verify_jwt=false`는 JWT 파싱만 비활성화, 헤더는 여전히 필요
+
+### 해결책
+**프론트엔드에서 세션 토큰을 Authorization 헤더에 명시적으로 추가**
+
+```typescript
+// 수정 전
+const { data, error } = await supabase.functions.invoke('send-notification', {
+  body: { scheduleId, actionType, actorUserId },
+})
+
+// 수정 후 ✅
+const { data: { session } } = await supabase.auth.getSession()
+const { data, error } = await supabase.functions.invoke('send-notification', {
+  body: { scheduleId, actionType, actorUserId },
+  headers: {
+    Authorization: `Bearer ${session?.access_token || ''}`,
+  },
+})
+```
+
+### 수정 파일
+- `frontend/src/components/schedule/ScheduleModal.jsx` (CREATED, UPDATED)
+- `frontend/src/components/schedule/ScheduleDetail.jsx` (DELETED)
+
+### 배포 상태
+- ✅ Code 변경 완료
+- ✅ Git commit & push 완료
+- ✅ Render 자동 배포 진행 중
+
+### 예상 결과
+- 일정 생성/수정/삭제 후 알림 발송 성공
+- `notifications` 테이블에 `status='SUCCESS'` 기록
+
+---
+
 ## [2026-02-27] send-notification Edge Function 401 에러 수정 (Supabase Client 인증 헤더)
 
 ### 문제
