@@ -36,6 +36,7 @@ function CalendarPage() {
   const [clickedDateEvents, setClickedDateEvents] = useState([])
 
   const calendarRef = useRef(null)
+  const resizeTimeoutRef = useRef(null)
 
   // 색상 결정 함수
   const getEventColor = (schedule) => {
@@ -75,11 +76,20 @@ function CalendarPage() {
     )
   }
 
-  // 윈도우 리사이즈 감지
+  // 윈도우 리사이즈 감지 (debounced)
   useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768)
+    const handleResize = () => {
+      if (resizeTimeoutRef.current) clearTimeout(resizeTimeoutRef.current)
+      resizeTimeoutRef.current = setTimeout(() => {
+        setIsMobile(window.innerWidth < 768)
+      }, 150)
+    }
+
     window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
+    return () => {
+      window.removeEventListener('resize', handleResize)
+      if (resizeTimeoutRef.current) clearTimeout(resizeTimeoutRef.current)
+    }
   }, [])
 
   // 일정 목록 로드
