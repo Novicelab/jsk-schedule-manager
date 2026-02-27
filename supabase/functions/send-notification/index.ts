@@ -119,6 +119,21 @@ serve(async (req) => {
       const isEnabled = prefMap.get(user.id) !== false // 설정 없으면 true (기본값)
       if (!isEnabled) continue
 
+      // 카카오 토큰 확인
+      if (!user.kakao_access_token) {
+        console.warn(`사용자 ${user.id}: 카카오 토큰 없음`)
+        failedCount++
+        await supabase.from('notifications').insert({
+          schedule_id: scheduleId,
+          user_id: user.id,
+          type: `SCHEDULE_${actionType}`,
+          channel: 'KAKAO',
+          status: 'FAILED',
+          message: `[TOKEN_MISSING] 카카오 액세스 토큰이 없습니다 | 원본: ${message}`,
+        })
+        continue
+      }
+
       // 메시지 생성 (개선된 형식)
       const startDate = new Date(schedule.start_at).toLocaleDateString('ko-KR')
       const endDate = new Date(schedule.end_at).toLocaleDateString('ko-KR')
@@ -179,13 +194,15 @@ serve(async (req) => {
         console.error(`사용자 ${user.id} 알림 발송 실패:`, err)
         failedCount++
 
+        const errorMessage = `[ERROR] ${err instanceof Error ? err.message : String(err)} | 원본: ${message}`
+
         await supabase.from('notifications').insert({
           schedule_id: scheduleId,
           user_id: user.id,
           type: `SCHEDULE_${actionType}`,
           channel: 'KAKAO',
           status: 'FAILED',
-          message,
+          message: errorMessage,
         })
       }
     }
