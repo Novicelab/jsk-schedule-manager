@@ -71,12 +71,41 @@
 - `supabase/functions/send-notification/index.ts`: 카카오 에러 상세 기록 (16줄)
 - `supabase/functions/kakao-auth/index.ts`: 비밀번호 강화 + 마이그레이션 (40줄)
 
-### 배포 필요
-- Edge Functions 2개 재배포 필수:
-  ```bash
-  supabase functions deploy send-notification --project-ref qphhpfolrbsyiyoevaoe
-  supabase functions deploy kakao-auth --project-ref qphhpfolrbsyiyoevaoe
-  ```
+### 배포 상태
+- ✅ Edge Functions 2개 배포 완료:
+  - `send-notification`: v9 (ACTIVE)
+  - `kakao-auth`: v7 (ACTIVE)
+- ✅ 프론트엔드 변경사항 배포 완료 (Render)
+- ✅ 모든 버그 수정 검증 완료
+
+---
+
+## [2026-02-27] Edge Function JWT 검증 설정 수정 (배포 후 핸들링)
+
+### 문제 및 해결
+
+**에러 1: send-notification 401 Unauthorized**
+- **증상**: 일정 등록 후 카카오 알림 발송 실패 (401 에러)
+- **원인**: JWT 검증 설정이 배포 시 적용되지 않음
+- **해결**: `npx supabase functions deploy send-notification --project-ref qphhpfolrbsyiyoevaoe` 재배포
+
+**에러 2: kakao-auth 로그인 실패**
+- **증상**: 카카오 로그인 실패 ("세션 데이터를 받지 못했습니다")
+- **원인**: `supabase/functions/kakao-auth/` 디렉토리에 `config.toml` 파일 누락
+  - JWT 검증이 기본값(enabled)으로 적용됨 → 모든 요청이 401 실패
+- **해결 단계**:
+  1. `supabase/functions/kakao-auth/config.toml` 신규 생성 (내용: `verify_jwt = false`)
+  2. `npx supabase functions deploy kakao-auth --project-ref qphhpfolrbsyiyoevaoe` 재배포
+  3. git commit 및 push
+
+### 파일 변경
+- ✅ `supabase/functions/kakao-auth/config.toml`: 신규 생성
+- ✅ `supabase/functions/send-notification/config.toml`: 기존 유지 (이미 설정됨)
+
+### 최종 상태
+- ✅ send-notification: v9 ACTIVE (JWT 검증 비활성화)
+- ✅ kakao-auth: v7 ACTIVE (JWT 검증 비활성화)
+- ✅ 프론트엔드 + Edge Functions 모든 변경 배포 완료
 
 ---
 
