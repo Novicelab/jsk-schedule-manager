@@ -1028,22 +1028,65 @@ select {
 }
 
 /* ============================================
-   Mobile Calendar - Event Squares
+   Mobile Calendar - Event Content
    ============================================ */
-.mobile-event-square {
-  width: 6px;
-  height: 6px;
-  border-radius: 1px;
-  display: block;
+.mobile-event-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 3px 4px;
+  overflow: hidden;
+  font-size: 11px;
 }
 
-/* 모바일: 이벤트를 정사각형으로 순차 배치 (■■■■ / ■■) */
+.mobile-event-content.vacation-event {
+  color: #fff;
+}
+
+.mobile-event-content.work-event {
+  color: #fff;
+}
+
+.event-name {
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  line-height: 1.1;
+}
+
+.event-type {
+  font-size: 10px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  line-height: 1.1;
+}
+
+.event-title {
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  line-height: 1.2;
+}
+
+/* 모바일: 이벤트를 텍스트로 표시 */
 @media (max-width: 767px) {
   .calendar-container .fc-daygrid-day-events {
     display: flex;
-    flex-wrap: wrap;
-    gap: 1px;
-    padding: 1px 2px;
+    flex-direction: column;
+    gap: 2px;
+    padding: 2px 3px;
     min-height: auto !important;
   }
 
@@ -1051,17 +1094,23 @@ select {
     margin: 0 !important;
     position: relative !important;
     top: auto !important;
-    width: auto;
+    width: 100%;
     flex-shrink: 0;
   }
 
   .calendar-container .fc-daygrid-event {
     margin: 0 !important;
     padding: 0 !important;
-    border: none !important;
-    background: transparent !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    background: inherit !important;
     box-shadow: none !important;
-    border-radius: 0 !important;
+    border-radius: 3px !important;
+    height: auto;
+    min-height: 28px;
+  }
+
+  .calendar-container .fc-daygrid-event:hover {
+    opacity: 0.9;
   }
 
   /* +more 링크 숨김 */
@@ -1072,6 +1121,33 @@ select {
   /* 이벤트 미러/하이라이트 제거 */
   .calendar-container .fc-event-main {
     padding: 0;
+    height: 100%;
+    display: flex;
+    align-items: center;
+  }
+
+  .calendar-container .fc-event-title {
+    padding: 0;
+    width: 100%;
+  }
+}
+
+/* 초소형 화면 (iPhone SE 등) */
+@media (max-width: 375px) {
+  .event-name {
+    font-size: 10px;
+  }
+
+  .event-type {
+    font-size: 9px;
+  }
+
+  .event-title {
+    font-size: 10px;
+  }
+
+  .calendar-container .fc-daygrid-event {
+    min-height: 24px !important;
   }
 }
 

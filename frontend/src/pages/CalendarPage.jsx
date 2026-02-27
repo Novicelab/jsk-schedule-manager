@@ -46,6 +46,35 @@ function CalendarPage() {
     return SCHEDULE_COLORS[schedule.type] || '#7f8c8d'
   }
 
+  // 휴가 타입 라벨
+  const VACATION_TYPE_LABEL = {
+    FULL: '휴가',
+    HALF_AM: '오전 반차',
+    HALF_PM: '오후 반차',
+  }
+
+  // 이벤트 콘텐츠 렌더링 (모바일 최적화)
+  const renderEventContent = (info) => {
+    const { type, vacationType, createdByName } = info.event.extendedProps
+
+    if (type === 'VACATION') {
+      const vacLabel = VACATION_TYPE_LABEL[vacationType] || '휴가'
+      return (
+        <div className="mobile-event-content vacation-event">
+          <div className="event-name">[{createdByName}]</div>
+          <div className="event-type">{vacLabel}</div>
+        </div>
+      )
+    }
+
+    // WORK 타입
+    return (
+      <div className="mobile-event-content work-event">
+        <div className="event-title">{info.event.title}</div>
+      </div>
+    )
+  }
+
   // 윈도우 리사이즈 감지
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768)
@@ -84,6 +113,7 @@ function CalendarPage() {
             vacationType: s.vacation_type,
             description: s.description,
             createdBy: s.created_by,
+            createdByName: s.created_by_name,
           },
         }
       })
@@ -245,10 +275,7 @@ function CalendarPage() {
             datesSet={handleDatesSet}
             dateClick={handleDateClick}
             eventClick={handleEventClick}
-            eventContent={isMobile ? (info) => (
-              <div className="mobile-event-square"
-                   style={{ backgroundColor: info.backgroundColor }} />
-            ) : undefined}
+            eventContent={isMobile ? renderEventContent : undefined}
             dayMaxEvents={isMobile ? false : false}
             height="700px"
             selectable={true}
