@@ -1,4 +1,3 @@
-// 2026-02-28: config.toml 배포 강제 재배포
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -6,55 +5,29 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Content-Type': 'application/json',
-}
-
-interface NotificationPayload {
-  scheduleId: number
-  actionType: 'CREATED' | 'UPDATED' | 'DELETED'
-  actorUserId: number
 }
 
 serve(async (req) => {
-  // CORS preflight 응답
+  // CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response('ok', {
-      status: 200,
-      headers: corsHeaders
-    })
-  }
-
-  // JSON 파싱 전 요청 메서드 확인
-  if (req.method !== 'POST') {
-    return new Response(
-      JSON.stringify({ error: 'Method not allowed' }),
-      { status: 405, headers: corsHeaders }
-    )
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const payload: NotificationPayload = await req.json()
-    const { scheduleId, actionType, actorUserId } = payload
+    const { scheduleId, actionType, actorUserId } = await req.json()
 
-    // 필수 필드 검증
     if (!scheduleId || !actionType || !actorUserId) {
       return new Response(
-        JSON.stringify({ error: 'Missing required fields: scheduleId, actionType, actorUserId' }),
-        { status: 400, headers: corsHeaders }
+        JSON.stringify({ error: '필수 필드가 누락되었습니다.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
-    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    // 환경변수
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
-    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-      console.error('Missing environment variables')
-      return new Response(
-        JSON.stringify({ error: 'Server configuration error' }),
-        { status: 500, headers: corsHeaders }
-      )
-    }
-
+    // Supabase Admin Client
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
       auth: { autoRefreshToken: false, persistSession: false }
     })
@@ -70,11 +43,11 @@ serve(async (req) => {
       console.error('일정 조회 실패:', scheduleError)
       return new Response(
         JSON.stringify({ error: '일정을 찾을 수 없습니다.' }),
-        { status: 404, headers: corsHeaders }
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // 2. 작성자 정보 조회
+    // 2. 작성자(배우자) 정보 조회
     const { data: actor } = await supabase
       .from('users')
       .select('name')
@@ -91,7 +64,7 @@ serve(async (req) => {
 
     if (!users || users.length === 0) {
       return new Response(
-        JSON.stringify({ message: '알림 대상 사용자가 없습니다.' }),
+        JSON.stringify({ sent: 0, failed: 0, message: '알림 대상 사용자가 없습니다.' }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -115,31 +88,17 @@ serve(async (req) => {
     let sentCount = 0
     let failedCount = 0
 
+    // 5. 각 사용자에게 알림 발송
     for (const user of users) {
-      // 알림 설정 확인 (매핑에서 조회, DB 쿼리 없음)
+      // 알림 설정 확인
       const isEnabled = prefMap.get(user.id) !== false // 설정 없으면 true (기본값)
       if (!isEnabled) continue
 
-      // 카카오 토큰 확인
-      if (!user.kakao_access_token) {
-        console.warn(`사용자 ${user.id}: 카카오 토큰 없음`)
-        failedCount++
-        await supabase.from('notifications').insert({
-          schedule_id: scheduleId,
-          user_id: user.id,
-          type: `SCHEDULE_${actionType}`,
-          channel: 'KAKAO',
-          status: 'FAILED',
-          message: `[TOKEN_MISSING] 카카오 액세스 토큰이 없습니다 | 원본: ${message}`,
-        })
-        continue
-      }
-
-      // 메시지 생성 (개선된 형식)
+      // 메시지 생성
       const startDate = new Date(schedule.start_at).toLocaleDateString('ko-KR')
       const endDate = new Date(schedule.end_at).toLocaleDateString('ko-KR')
       let message = `📅 [일정 ${actionLabel}]\n`
-      message += `작성자: ${actor?.name || '작성자'}\n`
+      message += `작성자: ${actorName}\n`
       message += `제목: ${schedule.title}\n`
       message += `일자: ${startDate}`
       if (startDate !== endDate) message += ` ~ ${endDate}`
@@ -150,7 +109,7 @@ serve(async (req) => {
         message += `\n시간: ${startTime} ~ ${endTime}`
       }
 
-      // 카카오 나에게 보내기 API
+      // 카카오 나에게 보내기 API 호출
       try {
         const templateObject = JSON.stringify({
           object_type: 'text',
@@ -208,15 +167,16 @@ serve(async (req) => {
       }
     }
 
+    // 6. 응답 반환
     return new Response(
       JSON.stringify({ sent: sentCount, failed: failedCount }),
-      { status: 200, headers: corsHeaders }
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {
     console.error('send-notification 에러:', error)
     return new Response(
-      JSON.stringify({ error: '알림 처리 중 오류가 발생했습니다.', details: String(error) }),
-      { status: 500, headers: corsHeaders }
+      JSON.stringify({ error: '알림 처리 중 오류가 발생했습니다.' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
 })
