@@ -180,16 +180,13 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
 
         // 알림 발송 (Edge Function - 실패해도 계속 진행)
         try {
-          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-          const response = await fetch(`${supabaseUrl}/functions/v1/send-notification`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ scheduleId: schedule.id, actionType: 'UPDATED', actorUserId: currentUser.id }),
+          const { data, error: invokeError } = await supabase.functions.invoke('send-notification', {
+            body: { scheduleId: schedule.id, actionType: 'UPDATED', actorUserId: currentUser.id },
           })
-          const data = await response.json()
-          if (!response.ok || data.error) {
+
+          if (invokeError || data.error) {
             notifyFailed = true
-            console.warn('알림 발송 실패:', data)
+            console.warn('알림 발송 실패:', invokeError || data.error)
           } else {
             console.log('알림 발송 성공:', data)
           }
@@ -220,16 +217,13 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
 
         // 알림 발송 (Edge Function - 실패해도 계속 진행)
         try {
-          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-          const response = await fetch(`${supabaseUrl}/functions/v1/send-notification`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ scheduleId: newSchedule.id, actionType: 'CREATED', actorUserId: currentUser.id }),
+          const { data, error: invokeError } = await supabase.functions.invoke('send-notification', {
+            body: { scheduleId: newSchedule.id, actionType: 'CREATED', actorUserId: currentUser.id },
           })
-          const data = await response.json()
-          if (!response.ok || data.error) {
+
+          if (invokeError || data.error) {
             notifyFailed = true
-            console.warn('알림 발송 실패:', data)
+            console.warn('알림 발송 실패:', invokeError || data.error)
           } else {
             console.log('알림 발송 성공:', data)
           }
