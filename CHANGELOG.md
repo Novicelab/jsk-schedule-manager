@@ -4,6 +4,43 @@
 
 ---
 
+## [2026-02-27] send-notification Edge Function 401 에러 수정 (JWT 검증 우회)
+
+### 문제
+- **증상**: 일정 등록 후 "POST send-notification 401 Unauthorized" 에러
+- **원인**: `supabase.functions.invoke()` 호출 시 SDK가 자동으로 JWT 헤더를 추가하여 config.toml의 `verify_jwt = false` 설정이 무시됨
+
+### 해결
+**변경 방식**: `supabase.functions.invoke()` → 직접 `fetch()` 호출
+- JWT 헤더를 자동으로 추가하지 않음
+- `verify_jwt = false` 설정이 정상적으로 작동
+
+**수정 파일**:
+- `frontend/src/components/schedule/ScheduleModal.jsx` (CREATED, UPDATED 액션)
+- `frontend/src/components/schedule/ScheduleDetail.jsx` (DELETED 액션)
+
+**코드 예시**:
+```typescript
+// ❌ 문제 코드
+await supabase.functions.invoke('send-notification', {
+  body: { scheduleId, actionType, actorUserId },
+})
+
+// ✅ 수정 코드
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+await fetch(`${supabaseUrl}/functions/v1/send-notification`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ scheduleId, actionType, actorUserId }),
+})
+```
+
+### 결과
+- ✅ Render 자동 배포 대기 (Frontend 변경)
+- ✅ Edge Function 설정 정상화 예상
+
+---
+
 ## [2026-02-27] kakao-auth 세션 응답 구조 버그 수정 (Critical - 최우선)
 
 ### 문제
