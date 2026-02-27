@@ -11,6 +11,14 @@ const PrivateRoute = ({ children }) => {
       setSession(session)
       setLoading(false)
     })
+
+    // 세션 변경 감지 (로그아웃, 토큰 만료 등)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+      setLoading(false)
+    })
+
+    return () => subscription.unsubscribe()
   }, [])
 
   if (loading) {

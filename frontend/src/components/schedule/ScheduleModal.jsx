@@ -33,6 +33,7 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
   const [errors, setErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
   const [apiError, setApiError] = useState(null)
+  const [notifyWarning, setNotifyWarning] = useState(false)
 
   // 수정 모드일 때 기존 데이터 주입
   useEffect(() => {
@@ -131,6 +132,7 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
 
     try {
       let start_at, end_at, all_day, title, vacation_type
+      let notifyFailed = false
 
       if (form.type === 'WORK') {
         start_at = dayjs(form.startDate).format('YYYY-MM-DD') + 'T00:00:00'
@@ -181,11 +183,13 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
           const response = await supabase.functions.invoke('send-notification', {
             body: { scheduleId: schedule.id, actionType: 'UPDATED', actorUserId: currentUser.id },
           })
+          if (response.error) notifyFailed = true
           if (!response.error) {
             console.log('알림 발송 성공:', response.data)
           }
         } catch (err) {
-          console.warn('알림 발송 실패 (무시됨):', err)
+          console.warn('알림 발송 실패:', err)
+          notifyFailed = true
         }
       } else {
         const insertPayload = {
@@ -213,14 +217,23 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
           const response = await supabase.functions.invoke('send-notification', {
             body: { scheduleId: newSchedule.id, actionType: 'CREATED', actorUserId: currentUser.id },
           })
+          if (response.error) notifyFailed = true
           if (!response.error) {
             console.log('알림 발송 성공:', response.data)
           }
         } catch (err) {
-          console.warn('알림 발송 실패 (무시됨):', err)
+          console.warn('알림 발송 실패:', err)
+          notifyFailed = true
         }
       }
-      onSaved()
+
+      // 알림 실패 시 경고 표시하고 2초 후 onSaved() 호출, 성공 시 즉시 호출
+      if (notifyFailed) {
+        setNotifyWarning(true)
+        setTimeout(() => onSaved(), 2000)
+      } else {
+        onSaved()
+      }
     } catch (err) {
       console.error('일정 저장 실패:', err)
       const message = err.message || '일정 저장 중 오류가 발생했습니다.'
@@ -253,6 +266,7 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
         </div>
 
         {apiError && <div className="error-banner">{apiError}</div>}
+        {notifyWarning && <div className="warning-banner">일정이 저장되었습니다. 카카오 알림 발송에 실패했습니다.</div>}
 
         <form onSubmit={handleSubmit} className="modal-form" noValidate>
           {/* Step 1: 유형 선택 */}

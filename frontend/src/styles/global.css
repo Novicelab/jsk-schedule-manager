@@ -819,6 +819,16 @@ select {
   margin-bottom: 14px;
 }
 
+.warning-banner {
+  background-color: #fffbf0;
+  border: 1px solid #fcd34d;
+  border-radius: 6px;
+  color: #f59e0b;
+  padding: 10px 14px;
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+
 .error-text {
   color: #e74c3c;
   font-size: 13px;

@@ -88,9 +88,12 @@ serve(async (req) => {
     let isNewUser = false
     let supabaseSession
 
-    // Supabase Auth용 이메일/비밀번호 (결정적)
+    // Supabase Auth용 이메일/비밀번호 (결정적, 강화된 버전)
     const authEmail = `kakao_${kakaoId}@kakao.local`
-    const authPassword = `kakao_${kakaoId}_${KAKAO_CLIENT_SECRET.substring(0, 8)}`
+    const SERVICE_KEY_SUFFIX = SUPABASE_SERVICE_ROLE_KEY.slice(-12)
+    const newAuthPassword = `kakao_${kakaoId}_${KAKAO_CLIENT_SECRET}_${SERVICE_KEY_SUFFIX}`
+    // 기존 사용자 호환성: 마이그레이션 시 사용
+    const oldAuthPassword = `kakao_${kakaoId}_${KAKAO_CLIENT_SECRET.substring(0, 8)}`
 
     if (!existingUser) {
       // 5a. 신규 사용자: Supabase Auth 계정 생성
@@ -98,7 +101,7 @@ serve(async (req) => {
 
       const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
         email: authEmail,
-        password: authPassword,
+        password: newAuthPassword,
         email_confirm: true,
         user_metadata: { kakao_id: kakaoId, nickname },
       })
@@ -179,15 +182,40 @@ serve(async (req) => {
       }
     }
 
-    // 6. Supabase Auth 로그인 (세션 발급)
+    // 6. Supabase Auth 로그인 (세션 발급) + 마이그레이션
     const supabaseClient = createClient(SUPABASE_URL, Deno.env.get('SUPABASE_ANON_KEY')!)
-    const { data: sessionData, error: sessionError } = await supabaseClient.auth.signInWithPassword({
+
+    // 새 비밀번호로 먼저 시도
+    let sessionData = await supabaseClient.auth.signInWithPassword({
       email: authEmail,
-      password: authPassword,
+      password: newAuthPassword,
     })
 
-    if (sessionError) {
-      console.error('Supabase 로그인 실패:', sessionError)
+    // 실패 시 기존 비밀번호로 재시도 (마이그레이션)
+    if (sessionData.error && !isNewUser) {
+      console.warn('새 비밀번호 로그인 실패, 기존 비밀번호로 재시도:', sessionData.error)
+      sessionData = await supabaseClient.auth.signInWithPassword({
+        email: authEmail,
+        password: oldAuthPassword,
+      })
+
+      // 기존 비밀번호로 성공했다면 새 비밀번호로 자동 업그레이드
+      if (!sessionData.error && sessionData.data.user) {
+        console.log('기존 사용자 자동 마이그레이션 시작:', sessionData.data.user.id)
+        try {
+          await supabaseAdmin.auth.admin.updateUserById(sessionData.data.user.id, {
+            password: newAuthPassword,
+          })
+          console.log('기존 사용자 비밀번호 업그레이드 완료')
+        } catch (migrationError) {
+          console.warn('비밀번호 업그레이드 실패 (로그인은 진행):', migrationError)
+          // 마이그레이션 실패해도 로그인은 진행
+        }
+      }
+    }
+
+    if (sessionData.error) {
+      console.error('Supabase 로그인 실패:', sessionData.error)
       return new Response(
         JSON.stringify({ error: '로그인 처리에 실패했습니다.' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

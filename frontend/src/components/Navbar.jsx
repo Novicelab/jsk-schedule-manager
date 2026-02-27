@@ -1,12 +1,22 @@
 import { NavLink, useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
 function Navbar() {
   const navigate = useNavigate()
 
-  // localStorage에서 user 정보 읽기
-  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  // localStorage에서 user 정보 읽기 및 실시간 동기화
+  const [user, setUser] = useState(() => JSON.parse(localStorage.getItem('user') || '{}'))
   const displayInfo = user.name ? `${user.name} / ${user.email || ''}` : ''
+
+  // storage 변경 감지하여 user 업데이트
+  useEffect(() => {
+    const handleStorage = () => {
+      setUser(JSON.parse(localStorage.getItem('user') || '{}'))
+    }
+    window.addEventListener('storage', handleStorage)
+    return () => window.removeEventListener('storage', handleStorage)
+  }, [])
 
   const handleLogout = async () => {
     try {

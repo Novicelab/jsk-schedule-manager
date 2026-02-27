@@ -4,6 +4,110 @@
 
 ---
 
+## [2026-02-27] Medium 우선순위 버그 5개 수정 (버그 06, 07, 01, 08, 10)
+
+### 수정 내용
+
+#### 버그 06: Navbar 사용자 정보 실시간 미동기화
+**문제**: 컴포넌트 바디에서 `localStorage.getItem()` 직접 호출 → useState 없어서 갱신 안 됨
+
+**조치**:
+- `useState` 추가: user 정보를 state로 관리
+- `useEffect`에서 `storage` 이벤트 리스너 추가 → 다른 탭에서 변경 시 즉시 동기화
+- NameInputModal에서 이름 입력 후 Navbar에서 즉시 반영 확인
+
+**파일**: `frontend/src/components/Navbar.jsx`
+
+#### 버그 07: PrivateRoute 세션 만료 미감지
+**문제**: `useEffect`에서 최초 1회만 `getSession()` 호출 → 이후 세션 만료 감지 불가
+
+**조치**:
+- `supabase.auth.onAuthStateChange()` 구독 추가
+- 로그아웃, 토큰 만료 시 즉시 `/login` 페이지로 이동
+
+**파일**: `frontend/src/components/PrivateRoute.jsx`
+
+#### 버그 01: 알림 실패 시 사용자 피드백 없음
+**문제**: CRUD 완료 후 알림 발송 실패해도 console.warn만 기록 → 사용자 미인식
+
+**조치**:
+- `notifyWarning` state 추가
+- 알림 실패 시 노란 경고 배너 표시: "일정이 저장되었습니다. 카카오 알림 발송에 실패했습니다."
+- 경고 시 2초 후 자동으로 모달 종료 (비침습적)
+
+**파일**:
+- `frontend/src/components/schedule/ScheduleModal.jsx`
+- `frontend/src/styles/global.css` (`.warning-banner` 스타일 추가)
+
+#### 버그 08: 카카오 토큰 만료 시 에러 원인 불명확
+**문제**: 카카오 API 실패 시 단순 "FAILED" 기록 → 원인 파악 어려움
+
+**조치**:
+- 카카오 응답 바디 파싱 후 에러 코드 + 메시지 기록
+- notifications 테이블의 message 컬럼에 에러 원인 상세 저장
+- 형식: `[KAKAO_ERROR 401] invalid_token | 원본: {원본메시지}`
+
+**파일**: `supabase/functions/send-notification/index.ts`
+
+#### 버그 10: 결정론적 Auth 비밀번호 (보안)
+**문제**: `authPassword = kakao_{id}_{KAKAO_CLIENT_SECRET[:8]}`
+- 카카오 ID는 공개 정보, 시크릿 앞 8자는 예측 가능성 있음
+
+**조치** (마이그레이션 패턴, 로그인 중단 없음):
+- 새 비밀번호: `kakao_{id}_{KAKAO_CLIENT_SECRET}_{SERVICE_KEY_SUFFIX[-12:]}`
+- 신규 사용자: 새 비밀번호로 생성
+- 기존 사용자: 다음 로그인 시 자동 업그레이드
+  1. 새 비밀번호로 로그인 시도
+  2. 실패 시 기존 비밀번호로 재시도
+  3. 성공 후 `updateUserById()`로 새 비밀번호로 자동 변경
+
+**파일**: `supabase/functions/kakao-auth/index.ts`
+
+### 파일 변경 요약
+- `frontend/src/components/Navbar.jsx`: useState + storage listener (5줄)
+- `frontend/src/components/PrivateRoute.jsx`: onAuthStateChange (10줄)
+- `frontend/src/components/schedule/ScheduleModal.jsx`: notifyWarning 로직 (15줄)
+- `frontend/src/styles/global.css`: warning-banner 스타일 (8줄)
+- `supabase/functions/send-notification/index.ts`: 카카오 에러 상세 기록 (16줄)
+- `supabase/functions/kakao-auth/index.ts`: 비밀번호 강화 + 마이그레이션 (40줄)
+
+### 배포 필요
+- Edge Functions 2개 재배포 필수:
+  ```bash
+  supabase functions deploy send-notification --project-ref qphhpfolrbsyiyoevaoe
+  supabase functions deploy kakao-auth --project-ref qphhpfolrbsyiyoevaoe
+  ```
+
+---
+
+## [2026-02-27] 버그 수정: 휴가 일정 수정 시 제목 빈 칸 저장 (Bug-03)
+
+### 문제
+- 기존 휴가 일정을 수정할 때 캘린더에서 제목이 사라지는 현상 발생
+
+### 원인
+- `trg_vacation_title` 트리거가 `BEFORE INSERT`에만 적용되어 있어 UPDATE 시 `auto_vacation_title()` 함수가 실행되지 않음
+- `ScheduleModal.jsx`의 `handleSubmit()`에서 VACATION 타입 수정 시 `title = ''`(빈 문자열)을 UPDATE 페이로드에 포함
+- 결과적으로 UPDATE 시 빈 제목이 DB에 그대로 저장됨
+
+### 조치
+1. `auto_vacation_title()` 함수 로직 수정: `NEW.title` 값 기반 분기 → `NEW.vacation_type` 기반 분기로 변경
+   - HALF_AM → `오전 반차`, HALF_PM → `오후 반차`, 그 외 → `휴가`
+2. `trg_vacation_title` 트리거를 `BEFORE INSERT OR UPDATE`로 교체 (기존: `BEFORE INSERT`)
+3. Supabase SQL Editor에서 직접 실행 (프로덕션 DB 적용)
+
+### 파일 변경
+- `docs/migrations/supabase_migration.sql`
+  - `auto_vacation_title()` 함수: `NEW.title` 분기 → `NEW.vacation_type` CASE 분기로 교체
+  - 트리거 이벤트: `BEFORE INSERT` → `BEFORE INSERT OR UPDATE`
+
+### 테스트 케이스
+1. 기존 VACATION + FULL 일정 수정 (날짜 변경) → 제목 `[이름] 휴가` 유지 확인
+2. 기존 VACATION + HALF_AM 일정 수정 → 제목 `[이름] 오전 반차` 유지 확인
+3. 기존 VACATION + HALF_PM 일정 수정 → 제목 `[이름] 오후 반차` 유지 확인
+
+---
+
 ## [2026-02-27] 휴가 일정 유형(일반/오전반차/오후반차) 구분 기능 추가
 
 ### 기능 요약

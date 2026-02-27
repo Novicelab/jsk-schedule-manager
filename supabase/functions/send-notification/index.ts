@@ -151,6 +151,17 @@ serve(async (req) => {
           body: `template_object=${encodeURIComponent(templateObject)}`,
         })
 
+        // 카카오 응답 파싱 및 에러 원인 기록
+        let notifMessage = message
+        if (!kakaoResponse.ok) {
+          try {
+            const kakaoResult = await kakaoResponse.json()
+            notifMessage = `[KAKAO_ERROR ${kakaoResponse.status}] ${kakaoResult.msg || kakaoResult.error_description || 'unknown'} | 원본: ${message}`
+          } catch {
+            notifMessage = `[KAKAO_ERROR ${kakaoResponse.status}] HTTP Error | 원본: ${message}`
+          }
+        }
+
         // 알림 기록 저장
         await supabase.from('notifications').insert({
           schedule_id: scheduleId,
@@ -158,7 +169,7 @@ serve(async (req) => {
           type: `SCHEDULE_${actionType}`,
           channel: 'KAKAO',
           status: kakaoResponse.ok ? 'SUCCESS' : 'FAILED',
-          message,
+          message: notifMessage,
           sent_at: kakaoResponse.ok ? new Date().toISOString() : null,
         })
 
