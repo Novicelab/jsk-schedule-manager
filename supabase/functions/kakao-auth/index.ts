@@ -225,7 +225,7 @@ serve(async (req) => {
     // 7. 응답 반환
     return new Response(
       JSON.stringify({
-        session: sessionData.session,
+        session: sessionData.data.session,
         user: {
           id: user.id,
           kakaoId: user.kakao_id,
