@@ -14,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    const { userId, name, kakaoId } = await req.json()
+    const { userId, name, kakaoId, authId } = await req.json()
 
     // Authorization 헤더 검증
     const authHeader = req.headers.get('authorization')
@@ -84,13 +84,18 @@ serve(async (req) => {
       currentName: existingUser.name
     })
 
-    // 이름 업데이트 (Service Role로 RLS 정책 우회)
+    // 이름 + auth_id 업데이트 (Service Role로 RLS 정책 우회)
+    const updatePayload: Record<string, unknown> = {
+      name: name.trim(),
+      updated_at: new Date().toISOString()
+    }
+    if (authId) {
+      updatePayload.auth_id = authId
+    }
+
     const { data: updatedUser, error: updateError } = await supabaseAdmin
       .from('users')
-      .update({
-        name: name.trim(),
-        updated_at: new Date().toISOString()
-      })
+      .update(updatePayload)
       .eq('id', userId)
       .select()
       .single()

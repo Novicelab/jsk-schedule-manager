@@ -358,7 +358,19 @@ serve(async (req) => {
       )
     }
 
-    // 7. 응답 반환
+    // 7. auth_id 동기화: 로그인 성공 시 항상 Supabase Auth UUID로 업데이트
+    // (회원가입 과정 실패나 422 충돌로 auth_id가 비어있을 수 있음)
+    const supabaseAuthUserId = sessionData.data.user?.id
+    if (supabaseAuthUserId && user.auth_id !== supabaseAuthUserId) {
+      console.log('auth_id 동기화:', { userId: user.id, oldAuthId: user.auth_id, newAuthId: supabaseAuthUserId })
+      await supabaseAdmin
+        .from('users')
+        .update({ auth_id: supabaseAuthUserId })
+        .eq('id', user.id)
+      user.auth_id = supabaseAuthUserId
+    }
+
+    // 8. 응답 반환
     // isNewUser는 user.name 상태로 결정 (name이 '__PENDING__'이면 신규 사용자)
     const finalIsNewUser = user.name === '__PENDING__'
 

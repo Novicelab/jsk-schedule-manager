@@ -77,6 +77,7 @@ function NameInputModal({ onComplete }) {
             userId: currentUser.id,
             name: name.trim(),
             kakaoId: currentUser.kakaoId,
+            authId: sessionData.session.user.id,
           }),
         }
       )
