@@ -75,6 +75,7 @@ router.post('/', async (req, res) => {
 
     let sentCount = 0
     let failedCount = 0
+    const failureDetails = []
 
     // 6. 각 사용자에게 카카오 알림 발송 및 기록
     for (const user of users) {
@@ -103,20 +104,20 @@ router.post('/', async (req, res) => {
         sentCount++
       } else {
         failedCount++
+        failureDetails.push({
+          user_id: user.id,
+          error: result.error,
+          statusCode: result.statusCode
+        })
         logger.warn('카카오 알림 발송 실패', { userId: user.id, error: result.error })
       }
     }
 
-    logger.info('알림 발송 완료', { sent: sentCount, failed: failedCount })
-    // 디버깅: 상세한 에러 메시지 반환
-    const failureDetails = failedCount > 0
-      ? await supabaseAdmin.from('notifications').select('user_id, status, message').eq('schedule_id', scheduleId).order('created_at', { ascending: false }).limit(failedCount)
-      : { data: [] }
-
+    logger.info('알림 발송 완료', { sent: sentCount, failed: failedCount, failures: failureDetails })
     return res.json({
       sent: sentCount,
       failed: failedCount,
-      failureDetails: failureDetails.data || []
+      failureDetails: failureDetails
     })
   } catch (err) {
     logger.error('알림 처리 중 예외 발생', err.message)
