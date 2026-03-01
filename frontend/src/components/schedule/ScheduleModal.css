@@ -38,8 +38,8 @@
 
 .date-picker:focus {
   outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  border-color: #9c27b0;
+  box-shadow: 0 0 0 3px rgba(156, 39, 176, 0.1);
 }
 
 .date-picker.input-error {
@@ -86,34 +86,34 @@
 }
 
 :global(.react-datepicker__day:hover) {
-  background-color: #e0e7ff;
+  background-color: #f3e5f5;
   border-radius: 2px;
 }
 
 :global(.react-datepicker__day--selected) {
-  background-color: #2563eb;
+  background-color: #9c27b0;
   color: white;
 }
 
 :global(.react-datepicker__day--keyboard-selected) {
-  background-color: #93c5fd;
+  background-color: #ce93d8;
 }
 
 :global(.react-datepicker__day--in-selecting-range) {
-  background-color: #dbeafe;
+  background-color: #f3e5f5;
 }
 
 :global(.react-datepicker__day--in-range) {
-  background-color: #dbeafe;
+  background-color: #f3e5f5;
 }
 
 :global(.react-datepicker__day--range-start) {
-  background-color: #2563eb;
+  background-color: #9c27b0;
   color: white;
 }
 
 :global(.react-datepicker__day--range-end) {
-  background-color: #2563eb;
+  background-color: #9c27b0;
   color: white;
 }
 
@@ -146,11 +146,11 @@
 .schedule-hint {
   margin: 0 0 8px;
   font-size: 0.85rem;
-  color: #0891b2;
-  background-color: #ecf0f1;
+  color: #7b1fa2;
+  background-color: #f3e5f5;
   padding: 8px 10px;
   border-radius: 4px;
-  border-left: 3px solid #0891b2;
+  border-left: 3px solid #9c27b0;
 }
 
 /* Type Selection Box Group */
@@ -174,21 +174,21 @@
 }
 
 .type-box:hover {
-  border-color: #2563eb;
-  background-color: #f0f4ff;
+  border-color: #9c27b0;
+  background-color: #f9f0fc;
 }
 
 .type-box-selected {
-  border-color: #2563eb;
-  background-color: #eff6ff;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  border-color: #9c27b0;
+  background-color: #f3e5f5;
+  box-shadow: 0 0 0 3px rgba(156, 39, 176, 0.1);
 }
 
 .type-radio {
   width: 20px;
   height: 20px;
   cursor: pointer;
-  accent-color: #2563eb;
+  accent-color: #9c27b0;
   flex-shrink: 0;
 }
 
@@ -199,7 +199,7 @@
 }
 
 .type-box-selected .type-box-label {
-  color: #2563eb;
+  color: #9c27b0;
 }
 
 /* Form Section Hint */
@@ -210,7 +210,7 @@
   background-color: #f9fafb;
   padding: 12px;
   border-radius: 6px;
-  border-left: 3px solid #0891b2;
+  border-left: 3px solid #9c27b0;
   line-height: 1.5;
 }
 

@@ -85,8 +85,8 @@
 
 .name-input:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #9c27b0;
+  box-shadow: 0 0 0 3px rgba(156, 39, 176, 0.1);
 }
 
 .name-input.input-error {
@@ -113,7 +113,7 @@
   font-size: 14px;
   font-weight: 600;
   color: white;
-  background-color: #3b82f6;
+  background-color: #9c27b0;
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -121,8 +121,8 @@
 }
 
 .btn-submit:hover:not(:disabled) {
-  background-color: #2563eb;
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+  background-color: #7b1fa2;
+  box-shadow: 0 2px 8px rgba(156, 39, 176, 0.3);
 }
 
 .btn-submit:disabled {
