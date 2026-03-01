@@ -4,6 +4,61 @@
 
 ---
 
+## [2026-03-02] 카카오 알림 발송 실패 해결 - Token Refresh + result_code 검증
+
+### 배경
+- 일정 등록/수정/삭제 시 알림 `{"sent":1,"failed":0}` 반환되나 실제 카카오톡 알림 미도착
+- 기존 코드: `kakaoResponse.ok` (HTTP 상태)만 확인, 실제 전송 성공 여부 미검증
+- Kakao access token 6시간 만료 후 갱신 메커니즘 없음
+
+### 변경사항
+
+#### DB 스키마 변경
+- `users` 테이블에 컬럼 추가:
+  - `kakao_refresh_token TEXT`: 카카오 refresh token (60일 유효)
+  - `kakao_token_expires_at TIMESTAMPTZ`: access token 만료 시각
+
+#### kakao-auth 개선
+- `supabase/functions/kakao-auth/index.ts`
+  - 로그인 시 `kakao_refresh_token`, `kakao_token_expires_at` DB 저장
+  - 신규/기존/복구 경로 모두 적용 (4개 insert/update 구문)
+
+#### send-notification 개선
+- `supabase/functions/send-notification/index.ts`
+  - 알림 발송 전 토큰 만료 확인 → 만료 5분 이내 자동 refresh
+  - Kakao token refresh API 호출 후 새 토큰 DB 업데이트
+  - `result_code === 0` 기반 실제 성공 여부 판별 (기존: HTTP ok만 확인)
+  - 실패 시 `result_code`, `msg` 포함한 상세 에러 메시지 notifications 테이블 저장
+
+### 기술 세부사항
+
+**근본 원인**:
+1. 기존 Kakao access token에 `talk_message` scope 미적용 (이전 로그인 토큰)
+2. Access token 6시간 만료 후 갱신 없이 계속 사용
+3. HTTP 200 성공으로 오인 → 실제 전송 실패 미감지
+
+**해결 방안**:
+- 재로그인으로 `talk_message` scope 포함된 신규 토큰 발급
+- refresh_token으로 자동 갱신 (만료 5분 전 선제적 갱신)
+- result_code 검증으로 정확한 성공/실패 판별
+
+### 검증 항목
+- [x] DB 컬럼 추가 완료 (Supabase SQL Editor)
+- [x] kakao-auth refresh_token 저장 로직 구현 및 배포
+- [x] send-notification token refresh + result_code 검증 구현 및 배포
+- [x] 재로그인 후 일정 등록 → 카카오톡 알림 수신 확인 ✅
+
+### 파일 변경
+- `supabase/functions/kakao-auth/index.ts`: refresh_token 저장 추가
+- `supabase/functions/send-notification/index.ts`: token refresh + result_code 검증 추가
+- `git commit`: 175c5d9
+
+### 배포 현황
+- Supabase Edge Function: ✅ kakao-auth, send-notification 배포 완료
+- DB 마이그레이션: ✅ kakao_refresh_token, kakao_token_expires_at 컬럼 추가
+
+---
+
 ## [2026-03-01] 신규 사용자 이름 저장 에러(PGRST116) 해결 - RLS 정책 및 세션 관리
 
 ### 배경
