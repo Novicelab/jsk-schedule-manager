@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Navigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import LoadingPopup from './LoadingPopup'
 
 const PrivateRoute = ({ children }) => {
   const [loading, setLoading] = useState(true)
@@ -22,11 +23,7 @@ const PrivateRoute = ({ children }) => {
   }, [])
 
   if (loading) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        로딩 중...
-      </div>
-    )
+    return <LoadingPopup isOpen={true} message="세션 확인 중..." />
   }
 
   return session ? children : <Navigate to="/login" replace />

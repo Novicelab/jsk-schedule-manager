@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import NameInputModal from '../components/auth/NameInputModal'
+import LoadingPopup from '../components/LoadingPopup'
 
 function CallbackPage() {
   const navigate = useNavigate()
@@ -97,11 +98,7 @@ function CallbackPage() {
   }
 
   return (
-    <div className="callback-page">
-      <div className="callback-card">
-        <p className="callback-loading">로그인 처리 중입니다...</p>
-      </div>
-    </div>
+    <LoadingPopup isOpen={true} message="로그인 처리 중입니다..." />
   )
 }
 

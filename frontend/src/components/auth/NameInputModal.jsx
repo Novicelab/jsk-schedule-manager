@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
+import LoadingPopup from '../LoadingPopup'
 import './NameInputModal.css'
 
 function NameInputModal({ onComplete }) {
@@ -62,8 +63,10 @@ function NameInputModal({ onComplete }) {
   }
 
   return (
-    <div className="name-modal-overlay" onClick={handleBackgroundClick}>
-      <div className="name-modal-content">
+    <>
+      <LoadingPopup isOpen={submitting} message="이름 저장 중..." />
+      <div className="name-modal-overlay" onClick={handleBackgroundClick}>
+        <div className="name-modal-content">
         <div className="name-modal-header">
           <h2>이름을 입력해주세요</h2>
         </div>
@@ -102,6 +105,7 @@ function NameInputModal({ onComplete }) {
         </div>
       </div>
     </div>
+    </>
   )
 }
 

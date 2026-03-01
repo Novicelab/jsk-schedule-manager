@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import dayjs from 'dayjs'
 import { supabase } from '../../lib/supabase'
+import LoadingPopup from '../LoadingPopup'
 
 const TYPE_LABEL = {
   VACATION: '휴가',
@@ -73,14 +74,16 @@ function ScheduleDetail({ schedule, onEdit, onDeleted, onClose }) {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div
-        className="modal-content"
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="schedule-detail-title"
-      >
+    <>
+      <LoadingPopup isOpen={deleting} message="일정 삭제 중..." />
+      <div className="modal-overlay" onClick={onClose}>
+        <div
+          className="modal-content"
+          onClick={(e) => e.stopPropagation()}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="schedule-detail-title"
+        >
         <div className="modal-header">
           <h2 id="schedule-detail-title" className="modal-title">
             일정 상세
@@ -181,6 +184,7 @@ function ScheduleDetail({ schedule, onEdit, onDeleted, onClose }) {
         </div>
       </div>
     </div>
+    </>
   )
 }
 

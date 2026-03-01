@@ -172,7 +172,11 @@
       "WebFetch(domain:supabase.com)",
       "Bash(echo Attempting alternative installation...:*)",
       "Bash(export:*)",
-      "Bash(export PATH=\"/c/Users/ACER/.deno/bin:$PATH\" && deno run -A https://deno.land/x/supabase/cli.ts --version 2>&1)"
+      "Bash(export PATH=\"/c/Users/ACER/.deno/bin:$PATH\" && deno run -A https://deno.land/x/supabase/cli.ts --version 2>&1)",
+      "Bash(env:*)",
+      "WebFetch(domain:api-docs.render.com)",
+      "Bash(echo Render Services 확인 중...:*)",
+      "Bash(echo Render Services 조회...:*)"
     ]
   }
 }

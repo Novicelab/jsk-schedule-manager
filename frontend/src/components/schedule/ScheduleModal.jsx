@@ -3,6 +3,7 @@ import dayjs from 'dayjs'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 import { supabase } from '../../lib/supabase'
+import LoadingPopup from '../LoadingPopup'
 import './ScheduleModal.css'
 
 const SCHEDULE_TYPES = [
@@ -258,14 +259,16 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div
-        className="modal-content"
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="schedule-modal-title"
-      >
+    <>
+      <LoadingPopup isOpen={submitting} message={isEdit ? '일정 수정 중...' : '일정 생성 중...'} />
+      <div className="modal-overlay" onClick={onClose}>
+        <div
+          className="modal-content"
+          onClick={(e) => e.stopPropagation()}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="schedule-modal-title"
+        >
         <div className="modal-header">
           <h2 id="schedule-modal-title" className="modal-title">
             {isEdit ? '일정 수정' : '일정 생성'}
@@ -477,6 +480,7 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
         </form>
       </div>
     </div>
+    </>
   )
 }
 
