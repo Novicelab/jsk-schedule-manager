@@ -152,13 +152,8 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
         vacation_type = form.vacationType
       }
 
-      // 현재 사용자 ID 조회
-      const { data: { user: authUser } } = await supabase.auth.getUser()
-      const { data: currentUser } = await supabase
-        .from('users')
-        .select('id')
-        .eq('auth_id', authUser.id)
-        .single()
+      // localStorage에서 현재 사용자 ID 조회 (auth_id 대신 직접 사용)
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
 
       if (isEdit) {
         const updatePayload = {
