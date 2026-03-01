@@ -16,6 +16,21 @@ serve(async (req) => {
   try {
     const { userId, name, kakaoId } = await req.json()
 
+    // Authorization 헤더 검증
+    const authHeader = req.headers.get('authorization')
+    const token = authHeader?.replace('Bearer ', '')
+
+    console.log('update-user-name 요청 시작:', {
+      userId,
+      name,
+      kakaoId,
+      authHeader: {
+        hasHeader: !!authHeader,
+        hasToken: !!token,
+        headerValue: authHeader ? '있음' : '없음'
+      }
+    })
+
     if (!userId || !name) {
       return new Response(
         JSON.stringify({ error: '사용자 ID와 이름이 필요합니다.' }),
@@ -29,12 +44,6 @@ serve(async (req) => {
 
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
       auth: { autoRefreshToken: false, persistSession: false }
-    })
-
-    console.log('update-user-name 요청:', {
-      userId,
-      name,
-      kakaoId
     })
 
     // 사용자 존재 여부 확인
