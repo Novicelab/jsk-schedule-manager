@@ -128,6 +128,13 @@
   - ✅ Dimmed 배경 (rgba(0,0,0,0.5)) + 애니메이션 스피너 UI
   - ✅ 비동기 작업 전반 적용 (로그인, 세션 확인, 일정 CRUD, 이름 저장)
   - ✅ 프론트엔드 자동 배포 완료
+- [x] RLS 정책 및 세션 관리 개선 (2026-03-01): 신규 사용자 이름 저장 에러 해결
+  - ✅ update-user-name Edge Function 생성 (Service Role로 RLS 우회)
+  - ✅ NameInputModal 세션 검증 및 Edge Function 통합
+  - ✅ CallbackPage 세션 로드 검증 (최대 5초 대기)
+  - ✅ kakao-auth 디버깅 로깅 강화
+  - ✅ Edge Function 배포 완료 (qphhpfolrbsyiyoevaoe)
+  - ✅ 전체 흐름 git commit & push 완료
 
 ---
 

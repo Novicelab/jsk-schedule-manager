@@ -4,6 +4,74 @@
 
 ---
 
+## [2026-03-01] 신규 사용자 이름 저장 에러(PGRST116) 해결 - RLS 정책 및 세션 관리
+
+### 배경
+- 신규 사용자 카카오 로그인 후 이름 저장 시 PGRST116 에러 발생 (0 rows 반환)
+- 원인: RLS 정책이 브라우저 클라이언트의 UPDATE 요청을 차단
+- 세션 로드 타이밍 이슈: CallbackPage에서 세션 설정 후 NameInputModal이 즉시 UPDATE 시도
+
+### 변경사항
+
+#### 신규 Edge Function: update-user-name
+- `supabase/functions/update-user-name/index.ts` (신규 파일)
+  - Service Role Key를 사용하여 RLS 정책 우회
+  - 사용자 존재 여부 검증 후 이름 업데이트
+  - 상세한 에러 로깅 및 사용자 정보 반환
+  - 배포 완료 (Supabase Edge Functions)
+
+#### NameInputModal 개선
+- `frontend/src/components/auth/NameInputModal.jsx`
+  - 세션 검증 추가 (supabase.auth.getSession())
+  - update-user-name Edge Function 호출로 RLS 정책 준수
+  - 포괄적인 에러 처리 및 상세 콘솔 로깅
+
+#### CallbackPage 세션 관리 강화
+- `frontend/src/pages/CallbackPage.jsx`
+  - 세션 로드 검증 로직 추가 (최대 5초 대기)
+  - auth.getSession() 호출로 세션 완전 확인
+  - NameInputModal 렌더링 전 세션 준비 완료 확인
+
+#### kakao-auth 디버깅 로깅
+- `supabase/functions/kakao-auth/index.ts`
+  - 신규 사용자 생성 완료 시 상세 정보 로깅
+  - user.id, auth_id의 타입 및 값 기록
+  - 향후 데이터 타입 불일치 이슈 조기 감지
+
+### 기술 세부사항
+
+**근본 원인 분석**:
+1. RLS 정책 `users_update_own`은 auth_id = auth.uid() 검증
+2. 브라우저 클라이언트(Anon Key)가 UPDATE 하려면 세션이 완전히 로드되어야 함
+3. CallbackPage의 세션 설정과 NameInputModal의 UPDATE 시도 사이 타이밍 간격
+
+**해결 방안**:
+- Edge Function (Service Role)은 RLS 정책 제약 없음
+- 세션 검증으로 타이밍 이슈 해결
+- 클라이언트는 Edge Function만 호출 (RLS 준수)
+
+### 검증 항목
+- [x] update-user-name Edge Function 배포 완료
+- [x] NameInputModal 세션 검증 및 Edge Function 호출 로직 구현
+- [x] CallbackPage 세션 로드 검증 로직 구현
+- [x] kakao-auth 디버깅 로깅 강화
+- [x] 코드 변경사항 git commit 완료
+- [x] 배포 서버 업데이트 확인
+
+### 파일 변경
+- `supabase/functions/update-user-name/index.ts`: +112 lines (신규)
+- `supabase/functions/kakao-auth/index.ts`: +14 lines
+- `frontend/src/components/auth/NameInputModal.jsx`: +45 -35 lines
+- `frontend/src/pages/CallbackPage.jsx`: +28 lines
+- `git commit`: cb7eafc
+
+### 배포 현황
+- Supabase Edge Function: ✅ update-user-name 배포 완료
+- Frontend: ✅ Render 자동 배포 완료
+- Git: ✅ main 브랜치 푸시 완료
+
+---
+
 ## [2026-03-01] Kakao OAuth 422 Conflict 에러 해결 - 사용자 로그인 복구
 
 ### 배경
