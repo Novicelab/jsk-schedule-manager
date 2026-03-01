@@ -53,6 +53,9 @@ serve(async (req) => {
 
     const tokenData = await tokenResponse.json()
     const kakaoAccessToken = tokenData.access_token
+    const kakaoRefreshToken = tokenData.refresh_token || null
+    const expiresIn = tokenData.expires_in || 21600 // 기본 6시간
+    const kakaoTokenExpiresAt = new Date(Date.now() + expiresIn * 1000).toISOString()
 
     // 2. 카카오 사용자 정보 조회
     const userInfoResponse = await fetch('https://kapi.kakao.com/v2/user/me', {
@@ -131,6 +134,8 @@ serve(async (req) => {
               email: email,
               profile_image_url: profileImageUrl,
               kakao_access_token: kakaoAccessToken,
+              kakao_refresh_token: kakaoRefreshToken,
+              kakao_token_expires_at: kakaoTokenExpiresAt,
               auth_id: authId,
               role: 'USER',
               created_at: new Date().toISOString(),
@@ -194,6 +199,8 @@ serve(async (req) => {
             email: email,
             profile_image_url: profileImageUrl,
             kakao_access_token: kakaoAccessToken,
+            kakao_refresh_token: kakaoRefreshToken,
+            kakao_token_expires_at: kakaoTokenExpiresAt,
             auth_id: authData!.user.id,
             role: 'USER',
             created_at: new Date().toISOString(),
@@ -214,6 +221,8 @@ serve(async (req) => {
               email: email,
               profile_image_url: profileImageUrl,
               kakao_access_token: kakaoAccessToken,
+              kakao_refresh_token: kakaoRefreshToken,
+              kakao_token_expires_at: kakaoTokenExpiresAt,
               auth_id: authData!.user.id,
               role: 'USER',
               created_at: new Date().toISOString(),
@@ -284,6 +293,8 @@ serve(async (req) => {
         .from('users')
         .update({
           kakao_access_token: kakaoAccessToken,
+          kakao_refresh_token: kakaoRefreshToken,
+          kakao_token_expires_at: kakaoTokenExpiresAt,
           profile_image_url: profileImageUrl,
         })
         .eq('kakao_id', kakaoId)

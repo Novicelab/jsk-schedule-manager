@@ -59,7 +59,7 @@ serve(async (req) => {
     // 3. 알림 대상 사용자 조회 (카카오 토큰이 있는 모든 사용자)
     const { data: users } = await supabase
       .from('users')
-      .select('id, kakao_access_token')
+      .select('id, kakao_access_token, kakao_refresh_token, kakao_token_expires_at')
       .not('kakao_access_token', 'is', null)
 
     if (!users || users.length === 0) {
@@ -88,11 +88,53 @@ serve(async (req) => {
     let sentCount = 0
     let failedCount = 0
 
+    const KAKAO_CLIENT_ID = Deno.env.get('KAKAO_CLIENT_ID')!
+    const KAKAO_CLIENT_SECRET = Deno.env.get('KAKAO_CLIENT_SECRET')!
+
+    // 카카오 토큰 갱신 헬퍼
+    const refreshKakaoToken = async (refreshToken: string) => {
+      const res = await fetch('https://kauth.kakao.com/oauth/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          grant_type: 'refresh_token',
+          client_id: KAKAO_CLIENT_ID,
+          client_secret: KAKAO_CLIENT_SECRET,
+          refresh_token: refreshToken,
+        }),
+      })
+      if (!res.ok) return null
+      return await res.json()
+    }
+
     // 5. 각 사용자에게 알림 발송
     for (const user of users) {
       // 알림 설정 확인
       const isEnabled = prefMap.get(user.id) !== false // 설정 없으면 true (기본값)
       if (!isEnabled) continue
+
+      // 토큰 만료 확인 및 갱신 (만료 5분 전 이내면 갱신)
+      let accessToken = user.kakao_access_token
+      if (user.kakao_token_expires_at) {
+        const expiresAt = new Date(user.kakao_token_expires_at).getTime()
+        const now = Date.now()
+        if (expiresAt - now < 5 * 60 * 1000 && user.kakao_refresh_token) {
+          console.log(`토큰 만료 임박, 갱신 시도 (user: ${user.id})`)
+          const refreshed = await refreshKakaoToken(user.kakao_refresh_token)
+          if (refreshed?.access_token) {
+            accessToken = refreshed.access_token
+            const newExpiresAt = new Date(Date.now() + (refreshed.expires_in || 21600) * 1000).toISOString()
+            await supabase.from('users').update({
+              kakao_access_token: accessToken,
+              kakao_token_expires_at: newExpiresAt,
+              ...(refreshed.refresh_token ? { kakao_refresh_token: refreshed.refresh_token } : {}),
+            }).eq('id', user.id)
+            console.log(`토큰 갱신 완료 (user: ${user.id})`)
+          } else {
+            console.error(`토큰 갱신 실패 (user: ${user.id})`)
+          }
+        }
+      }
 
       // 메시지 생성
       const startDate = new Date(schedule.start_at).toLocaleDateString('ko-KR')
@@ -121,20 +163,32 @@ serve(async (req) => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
-            Authorization: `Bearer ${user.kakao_access_token}`,
+            Authorization: `Bearer ${accessToken}`,
           },
           body: `template_object=${encodeURIComponent(templateObject)}`,
         })
 
-        // 카카오 응답 파싱 및 에러 원인 기록
+        // 카카오 응답 파싱 (성공/실패 모두)
+        let kakaoResult: Record<string, unknown> = {}
+        try {
+          kakaoResult = await kakaoResponse.json()
+        } catch {
+          kakaoResult = {}
+        }
+
+        console.log(`카카오 API 응답 (user: ${user.id}):`, {
+          status: kakaoResponse.status,
+          ok: kakaoResponse.ok,
+          result: kakaoResult,
+        })
+
+        // result_code 0 = 성공, 나머지 = 실패
+        const isSuccess = kakaoResponse.ok && kakaoResult.result_code === 0
+
         let notifMessage = message
-        if (!kakaoResponse.ok) {
-          try {
-            const kakaoResult = await kakaoResponse.json()
-            notifMessage = `[KAKAO_ERROR ${kakaoResponse.status}] ${kakaoResult.msg || kakaoResult.error_description || 'unknown'} | 원본: ${message}`
-          } catch {
-            notifMessage = `[KAKAO_ERROR ${kakaoResponse.status}] HTTP Error | 원본: ${message}`
-          }
+        if (!isSuccess) {
+          notifMessage = `[KAKAO_ERROR status:${kakaoResponse.status} result_code:${kakaoResult.result_code ?? 'N/A'} msg:${kakaoResult.msg ?? kakaoResult.error_description ?? 'unknown'}] | 원본: ${message}`
+          console.error(`카카오 발송 실패 (user: ${user.id}):`, notifMessage)
         }
 
         // 알림 기록 저장
@@ -143,12 +197,12 @@ serve(async (req) => {
           user_id: user.id,
           type: `SCHEDULE_${actionType}`,
           channel: 'KAKAO',
-          status: kakaoResponse.ok ? 'SUCCESS' : 'FAILED',
+          status: isSuccess ? 'SUCCESS' : 'FAILED',
           message: notifMessage,
-          sent_at: kakaoResponse.ok ? new Date().toISOString() : null,
+          sent_at: isSuccess ? new Date().toISOString() : null,
         })
 
-        if (kakaoResponse.ok) sentCount++
+        if (isSuccess) sentCount++
         else failedCount++
       } catch (err) {
         console.error(`사용자 ${user.id} 알림 발송 실패:`, err)
