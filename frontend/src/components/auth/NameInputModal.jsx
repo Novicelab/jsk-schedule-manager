@@ -29,6 +29,12 @@ function NameInputModal({ onComplete }) {
     try {
       // localStorage에서 사용자 정보 조회
       const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
+      console.log('NameInputModal - 저장할 사용자 정보:', {
+        userId: currentUser.id,
+        name: name.trim(),
+        fullUser: currentUser
+      })
+
       if (!currentUser.id) {
         throw new Error('사용자 정보를 찾을 수 없습니다. 다시 로그인해주세요.')
       }
@@ -40,6 +46,11 @@ function NameInputModal({ onComplete }) {
         .eq('id', currentUser.id)
         .select()
         .single()
+
+      console.log('NameInputModal - UPDATE 결과:', {
+        data,
+        error: updateError
+      })
 
       if (updateError) throw updateError
 

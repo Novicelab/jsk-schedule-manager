@@ -44,13 +44,20 @@ function CallbackPage() {
           throw new Error(data?.error || 'Edge Function 응답 오류')
         }
 
-        console.log('Edge Function 응답 수신')
+        console.log('Edge Function 응답 수신:', { data })
 
         const { session, user, isNewUser } = data
 
         if (!session) {
           throw new Error('세션 데이터를 받지 못했습니다. 다시 로그인해주세요.')
         }
+
+        console.log('카카오 로그인 - 사용자 정보 확인:', {
+          userId: user?.id,
+          userName: user?.name,
+          isNewUser,
+          fullUser: user
+        })
 
         // Supabase 세션 설정
         await supabase.auth.setSession({
@@ -60,6 +67,7 @@ function CallbackPage() {
 
         // user 정보를 localStorage에 저장 (표시용)
         localStorage.setItem('user', JSON.stringify(user))
+        console.log('localStorage에 사용자 정보 저장 완료:', user)
 
         if (isNewUser) {
           setShowNameModal(true)
