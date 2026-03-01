@@ -4,6 +4,65 @@
 
 ---
 
+## [2026-03-01] 로딩 팝업 추가 - UX 개선
+
+### 배경
+- 비동기 작업(로그인, 일정 생성/수정/삭제 등) 중 사용자 피드백 부족
+- 로딩 상태를 명확하게 표시하여 사용자 경험 개선 필요
+
+### 변경사항
+
+#### 신규: LoadingPopup 컴포넌트
+- `frontend/src/components/LoadingPopup.jsx`: 재사용 가능한 로딩 팝업 컴포넌트
+  - Dimmed 배경 (rgba(0,0,0,0.5))
+  - 애니메이션 스피너 (회전)
+  - 커스텀 메시지 표시
+  - z-index: 1000 (모든 컨텐츠 위에 표시)
+
+#### 수정: 스타일시트
+- `frontend/src/styles/global.css`: 로딩 팝업 CSS 추가
+  - `.loading-popup-overlay`: 전체 화면 오버레이
+  - `.loading-popup-content`: 팝업 박스 (중앙 정렬)
+  - `.loading-spinner`: 회전하는 스피너 (애니메이션)
+  - `.loading-message`: 메시지 텍스트
+
+#### 수정: 컴포넌트들
+- `frontend/src/components/schedule/ScheduleModal.jsx`
+  - 일정 생성/수정 중 로딩 팝업 표시
+  - 메시지: "일정 생성 중..." / "일정 수정 중..."
+
+- `frontend/src/components/schedule/ScheduleDetail.jsx`
+  - 일정 삭제 중 로딩 팝업 표시
+  - 메시지: "일정 삭제 중..."
+
+- `frontend/src/components/PrivateRoute.jsx`
+  - 세션 확인 중 개선된 로딩 화면
+  - 메시지: "세션 확인 중..."
+  - 기존 인라인 "로딩 중..." 텍스트 대체
+
+- `frontend/src/pages/CallbackPage.jsx`
+  - 카카오 로그인 콜백 처리 중 로딩 팝업 표시
+  - 메시지: "로그인 처리 중입니다..."
+
+- `frontend/src/components/auth/NameInputModal.jsx`
+  - 사용자 이름 저장 중 로딩 팝업 표시
+  - 메시지: "이름 저장 중..."
+
+### 로딩 표시 적용 작업 목록
+- [x] 로그인 (CallbackPage)
+- [x] 세션 확인 (PrivateRoute)
+- [x] 일정 생성 (ScheduleModal)
+- [x] 일정 수정 (ScheduleModal)
+- [x] 일정 삭제 (ScheduleDetail)
+- [x] 사용자 이름 업데이트 (NameInputModal)
+
+### 기술 사항
+- 스피너 애니메이션: `@keyframes spin` (0.8초 선형 회전)
+- Dimmed 배경: 반투명 검은색으로 사용자 상호작용 불가능
+- Z-index: 1000 (모달 및 기타 컨텐츠 위에 표시)
+
+---
+
 ## [2026-02-28] 알림 백엔드 서버 추가 (Node.js/Express) - Alternative 3
 
 ### 배경
