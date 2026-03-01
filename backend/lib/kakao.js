@@ -19,6 +19,9 @@ async function sendKakaoMessage(accessToken, message) {
   })
 
   try {
+    console.log(`[KAKAO_DEBUG] 요청 시작: ${KAKAO_MEMO_API_URL}`)
+    console.log(`[KAKAO_DEBUG] 토큰 길이: ${accessToken?.length}`)
+
     const response = await axios.post(
       KAKAO_MEMO_API_URL,
       `template_object=${encodeURIComponent(templateObject)}`,
@@ -32,19 +35,26 @@ async function sendKakaoMessage(accessToken, message) {
       }
     )
 
+    console.log(`[KAKAO_DEBUG] 응답 상태: ${response.status}`)
+    console.log(`[KAKAO_DEBUG] 응답 데이터:`, JSON.stringify(response.data))
+
     if (response.status === 200) {
+      console.log('[KAKAO_SUCCESS] 카카오 메시지 발송 성공')
       return { success: true, statusCode: response.status }
     }
 
     const errorMsg =
       response.data?.msg ||
       response.data?.error_description ||
+      response.data?.error ||
       'unknown error'
 
     logger.warn('카카오 API 오류 응답', {
       status: response.status,
       error: errorMsg,
+      fullData: response.data,
     })
+    console.log(`[KAKAO_ERROR] 상태: ${response.status}, 메시지: ${errorMsg}`)
 
     return {
       success: false,
@@ -52,6 +62,7 @@ async function sendKakaoMessage(accessToken, message) {
       error: `[KAKAO_ERROR ${response.status}] ${errorMsg}`,
     }
   } catch (err) {
+    console.error('[KAKAO_EXCEPTION] API 호출 실패:', err.message)
     logger.error('카카오 API 호출 실패', err.message)
     return {
       success: false,
