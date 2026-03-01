@@ -107,54 +107,120 @@ serve(async (req) => {
       })
 
       if (authError) {
-        console.error('Supabase Auth 사용자 생성 실패:', authError)
-        return new Response(
-          JSON.stringify({ error: '사용자 생성에 실패했습니다.' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
+        // 422 Conflict: 이메일이 이미 등록됨 (Auth만 있고 users는 없는 경우)
+        if (authError.status === 422) {
+          console.warn('Auth 사용자 중복 감지, 기존 사용자로 처리:', {
+            email: authEmail,
+            kakaoId: kakaoId
+          })
 
-      // public.users 테이블에 사용자 추가
-      const { data: newUser, error: insertError } = await supabaseAdmin
-        .from('users')
-        .insert({
-          kakao_id: kakaoId,
-          name: '__PENDING__',
-          email: email,
-          profile_image_url: profileImageUrl,
-          kakao_access_token: kakaoAccessToken,
-          auth_id: authData.user.id,
-          role: 'USER',
-        })
-        .select()
-        .single()
+          // Auth 사용자는 이미 있으므로, users 테이블에 복구 로직
+          isNewUser = false
 
-      if (insertError) {
-        console.error('사용자 DB 추가 실패:', insertError)
-        return new Response(
-          JSON.stringify({ error: '사용자 정보 저장에 실패했습니다.' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
+          const { data: updatedUser } = await supabaseAdmin
+            .from('users')
+            .upsert({
+              kakao_id: kakaoId,
+              name: '__PENDING__',
+              email: email,
+              profile_image_url: profileImageUrl,
+              kakao_access_token: kakaoAccessToken,
+              role: 'USER',
+            }, { onConflict: 'kakao_id' })
+            .select()
+            .single()
 
-      user = newUser
+          if (updatedUser) {
+            user = updatedUser
+            console.log('users 테이블 복구 완료:', user.id)
+          } else {
+            console.error('users 테이블 upsert 실패')
+            return new Response(
+              JSON.stringify({ error: '사용자 정보 저장에 실패했습니다.' }),
+              { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            )
+          }
+        } else {
+          // 다른 Auth 에러
+          console.error('Supabase Auth 사용자 생성 실패:', {
+            message: authError.message,
+            status: authError.status,
+            details: JSON.stringify(authError)
+          })
+          return new Response(
+            JSON.stringify({
+              error: '사용자 생성에 실패했습니다.',
+              details: authError.message,
+              debug: {
+                email: authEmail,
+                errorStatus: authError.status
+              }
+            }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+      } else {
+        // Auth 생성 성공: users 테이블에 추가
+        const { data: newUser, error: insertError } = await supabaseAdmin
+          .from('users')
+          .insert({
+            kakao_id: kakaoId,
+            name: '__PENDING__',
+            email: email,
+            profile_image_url: profileImageUrl,
+            kakao_access_token: kakaoAccessToken,
+            auth_id: authData!.user.id,
+            role: 'USER',
+          })
+          .select()
+          .single()
 
-      // 알림 설정 기본값 생성 (실패해도 로그인 진행)
-      const defaultPreferences = [
-        { user_id: user.id, schedule_type: 'VACATION', action_type: 'CREATED', enabled: true },
-        { user_id: user.id, schedule_type: 'VACATION', action_type: 'UPDATED', enabled: true },
-        { user_id: user.id, schedule_type: 'VACATION', action_type: 'DELETED', enabled: true },
-        { user_id: user.id, schedule_type: 'WORK', action_type: 'CREATED', enabled: true },
-        { user_id: user.id, schedule_type: 'WORK', action_type: 'UPDATED', enabled: true },
-        { user_id: user.id, schedule_type: 'WORK', action_type: 'DELETED', enabled: true },
-      ]
+        if (insertError) {
+          console.error('사용자 DB 추가 실패:', insertError)
+          // Auth는 이미 생성되었으므로, users 테이블에 upsert로 복구 시도
+          console.warn('users 테이블 upsert 시도 중...')
+          const { data: upsertedUser } = await supabaseAdmin
+            .from('users')
+            .upsert({
+              kakao_id: kakaoId,
+              name: '__PENDING__',
+              email: email,
+              profile_image_url: profileImageUrl,
+              kakao_access_token: kakaoAccessToken,
+              auth_id: authData!.user.id,
+              role: 'USER',
+            }, { onConflict: 'kakao_id' })
+            .select()
+            .single()
 
-      try {
-        await supabaseAdmin.from('notification_preferences').insert(defaultPreferences)
-        console.log('알림 설정 기본값 생성 완료:', user.id)
-      } catch (prefError) {
-        console.warn('알림 설정 생성 실패 (로그인은 진행):', prefError)
-        // 알림 설정 없이도 로그인 진행 가능
+          if (!upsertedUser) {
+            return new Response(
+              JSON.stringify({ error: '사용자 정보 저장에 실패했습니다.' }),
+              { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            )
+          }
+          user = upsertedUser
+        } else {
+          user = newUser
+        }
+
+        // 알림 설정 기본값 생성 (실패해도 로그인 진행)
+        const defaultPreferences = [
+          { user_id: user.id, schedule_type: 'VACATION', action_type: 'CREATED', enabled: true },
+          { user_id: user.id, schedule_type: 'VACATION', action_type: 'UPDATED', enabled: true },
+          { user_id: user.id, schedule_type: 'VACATION', action_type: 'DELETED', enabled: true },
+          { user_id: user.id, schedule_type: 'WORK', action_type: 'CREATED', enabled: true },
+          { user_id: user.id, schedule_type: 'WORK', action_type: 'UPDATED', enabled: true },
+          { user_id: user.id, schedule_type: 'WORK', action_type: 'DELETED', enabled: true },
+        ]
+
+        try {
+          await supabaseAdmin.from('notification_preferences').insert(defaultPreferences)
+          console.log('알림 설정 기본값 생성 완료:', user.id)
+        } catch (prefError) {
+          console.warn('알림 설정 생성 실패 (로그인은 진행):', prefError)
+          // 알림 설정 없이도 로그인 진행 가능
+        }
       }
     } else {
       // 5b. 기존 사용자: 카카오 토큰 업데이트
@@ -185,6 +251,13 @@ serve(async (req) => {
             .update({ auth_id: authData.user.id })
             .eq('id', user.id)
           user.auth_id = authData.user.id
+        } else if (authError?.status === 422) {
+          // 422: 이메일이 이미 등록됨 (이전 시도의 잔존 사용자)
+          console.warn('기존 사용자 Auth 중복 감지, users 테이블과 매핑:', {
+            userId: user.id,
+            email: authEmail
+          })
+          // 이 경우 auth_id 없이 계속 진행 (로그인은 가능)
         }
       }
     }
