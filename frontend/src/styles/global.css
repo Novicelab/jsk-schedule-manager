@@ -202,56 +202,7 @@ select {
   background-color: #c0392b;
 }
 
-/* ============================================
-   Login Page
-   ============================================ */
-.login-page {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
-}
-
-.login-card {
-  background: #fff;
-  border-radius: 12px;
-  padding: 48px 40px;
-  width: 360px;
-  text-align: center;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
-}
-
-.login-title {
-  font-size: 24px;
-  font-weight: 700;
-  color: #2c3e50;
-  margin-bottom: 8px;
-}
-
-.login-subtitle {
-  font-size: 13px;
-  color: #7f8c8d;
-  margin-bottom: 36px;
-}
-
-.btn-kakao {
-  display: block;
-  width: 100%;
-  padding: 14px;
-  background-color: #fee500;
-  color: #3c1e1e;
-  border: none;
-  border-radius: 8px;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background-color 0.15s;
-}
-
-.btn-kakao:hover {
-  background-color: #f5da00;
-}
+/* Login Page styles → LoginPage.css */
 
 /* ============================================
    Callback Page
@@ -905,6 +856,50 @@ select {
   border-radius: 10px;
   padding: 24px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.mypage-withdraw-section {
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-withdraw {
+  padding: 8px 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  background: transparent;
+  color: #999;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-withdraw:hover:not(:disabled) {
+  border-color: #e74c3c;
+  color: #e74c3c;
+}
+
+.btn-withdraw-confirm {
+  border-color: #e74c3c;
+  color: #e74c3c;
+  font-weight: 600;
+}
+
+.btn-withdraw-cancel {
+  padding: 8px 14px;
+  border: 1px solid #ced6e0;
+  border-radius: 6px;
+  background: #fff;
+  color: #555;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.btn-withdraw-cancel:hover {
+  background-color: #f0f2f5;
 }
 
 /* ============================================

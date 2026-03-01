@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
@@ -49,20 +49,7 @@ function Navbar() {
 
   return (
     <nav className="navbar">
-      <div className="navbar-brand">JSK 일정 관리</div>
-      <ul className="navbar-menu">
-        <li>
-          <NavLink
-            to="/"
-            end
-            className={({ isActive }) =>
-              isActive ? 'nav-link nav-link-active' : 'nav-link'
-            }
-          >
-            캘린더
-          </NavLink>
-        </li>
-      </ul>
+      <div className="navbar-brand">간호부 일정 관리</div>
       <div className="navbar-center">
         {displayInfo && <span className="navbar-user-info">{displayInfo}</span>}
       </div>

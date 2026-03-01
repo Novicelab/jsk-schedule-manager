@@ -140,7 +140,7 @@ serve(async (req) => {
       const startDate = new Date(schedule.start_at).toLocaleDateString('ko-KR')
       const endDate = new Date(schedule.end_at).toLocaleDateString('ko-KR')
       let message = `📅 [일정 ${actionLabel}]\n`
-      message += `작성자: ${actorName}\n`
+      if (scheduleType !== 'VACATION') message += `작성자: ${actorName}\n`
       message += `제목: ${schedule.title}\n`
       message += `일자: ${startDate}`
       if (startDate !== endDate) message += ` ~ ${endDate}`

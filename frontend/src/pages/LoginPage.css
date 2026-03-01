@@ -1,0 +1,155 @@
+/* ============================================
+   Login Page - 간호부 일정 관리 시스템
+   타겟: 30대 여성 / 소프트 핑크·라벤더 계열
+   ============================================ */
+
+.login-page {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #fce4ec 0%, #f8bbd9 30%, #e1bee7 65%, #d1c4e9 100%);
+  overflow: hidden;
+}
+
+/* 배경 떠다니는 원형 */
+.login-bg-circle {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.35;
+  animation: floatCircle 8s ease-in-out infinite;
+}
+
+.circle-1 {
+  width: 320px;
+  height: 320px;
+  background: radial-gradient(circle, #f48fb1, #f06292);
+  top: -80px;
+  left: -80px;
+  animation-delay: 0s;
+}
+
+.circle-2 {
+  width: 220px;
+  height: 220px;
+  background: radial-gradient(circle, #ce93d8, #ab47bc);
+  bottom: -60px;
+  right: -60px;
+  animation-delay: 2s;
+}
+
+.circle-3 {
+  width: 160px;
+  height: 160px;
+  background: radial-gradient(circle, #f8bbd9, #f48fb1);
+  top: 60%;
+  left: 5%;
+  animation-delay: 4s;
+}
+
+.circle-4 {
+  width: 100px;
+  height: 100px;
+  background: radial-gradient(circle, #b39ddb, #9575cd);
+  top: 15%;
+  right: 10%;
+  animation-delay: 1.5s;
+}
+
+@keyframes floatCircle {
+  0%   { transform: translateY(0px) scale(1); }
+  50%  { transform: translateY(-20px) scale(1.04); }
+  100% { transform: translateY(0px) scale(1); }
+}
+
+/* 카드 */
+.login-card {
+  position: relative;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 24px;
+  padding: 52px 44px;
+  width: 360px;
+  text-align: center;
+  box-shadow:
+    0 8px 32px rgba(233, 30, 99, 0.12),
+    0 2px 8px rgba(0, 0, 0, 0.06);
+  animation: fadeSlideUp 0.6s ease both;
+}
+
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* 아이콘 */
+.login-icon {
+  font-size: 40px;
+  margin-bottom: 16px;
+  animation: bloom 1s ease both 0.3s;
+}
+
+@keyframes bloom {
+  from { opacity: 0; transform: scale(0.6); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* 타이틀 */
+.login-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #6a1b9a;
+  margin-bottom: 8px;
+  line-height: 1.3;
+  letter-spacing: -0.5px;
+}
+
+/* 서브타이틀 */
+.login-subtitle {
+  display: inline-block;
+  font-size: 12px;
+  color: #ad1457;
+  background: #fce4ec;
+  border-radius: 20px;
+  padding: 3px 12px;
+  margin-bottom: 36px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+/* 카카오 버튼 */
+.btn-kakao {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px;
+  background-color: #fee500;
+  color: #3c1e1e;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s, transform 0.1s, box-shadow 0.15s;
+  box-shadow: 0 2px 8px rgba(254, 229, 0, 0.4);
+}
+
+.btn-kakao:hover {
+  background-color: #f5da00;
+  box-shadow: 0 4px 16px rgba(254, 229, 0, 0.5);
+  transform: translateY(-1px);
+}
+
+.btn-kakao:active {
+  transform: translateY(0);
+}
+
+.btn-kakao-icon {
+  font-size: 18px;
+}

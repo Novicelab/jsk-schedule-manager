@@ -177,6 +177,10 @@ function CalendarPage() {
 
       if (error) throw error
 
+      // 내 일정 여부: localStorage의 user.id와 created_by 비교
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
+      const isMySchedule = data.created_by === currentUser.id
+
       // 필드명 매핑 (snake_case → camelCase)
       setSelectedSchedule({
         id: data.id,
@@ -190,8 +194,8 @@ function CalendarPage() {
         createdBy: data.created_by,
         createdByName: data.created_by_name,
         createdAt: data.created_at,
-        canEdit: data.can_edit,
-        canDelete: data.can_delete,
+        canEdit: isMySchedule,
+        canDelete: isMySchedule,
       })
       setShowScheduleDetail(true)
     } catch (err) {

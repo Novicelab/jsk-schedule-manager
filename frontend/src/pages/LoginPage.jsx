@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import './LoginPage.css'
 
 const KAKAO_AUTH_URL = `https://kauth.kakao.com/oauth/authorize?client_id=${
   import.meta.env.VITE_KAKAO_CLIENT_ID
@@ -12,7 +13,6 @@ function LoginPage() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    // 이미 로그인된 상태면 메인으로 이동
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         navigate('/', { replace: true })
@@ -26,10 +26,18 @@ function LoginPage() {
 
   return (
     <div className="login-page">
+      {/* 배경 떠다니는 원형 */}
+      <div className="login-bg-circle circle-1" />
+      <div className="login-bg-circle circle-2" />
+      <div className="login-bg-circle circle-3" />
+      <div className="login-bg-circle circle-4" />
+
       <div className="login-card">
-        <h1 className="login-title">JSK 일정 관리</h1>
-        <p className="login-subtitle">팀 중심의 스마트한 일정 관리 서비스</p>
+        <div className="login-icon">🌸</div>
+        <h1 className="login-title">간호부 일정 관리 시스템</h1>
+        <p className="login-subtitle">베타서비스 중</p>
         <button className="btn-kakao" onClick={handleKakaoLogin}>
+          <span className="btn-kakao-icon">💬</span>
           카카오로 시작하기
         </button>
       </div>
