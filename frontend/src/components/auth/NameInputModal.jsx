@@ -27,14 +27,17 @@ function NameInputModal({ onComplete }) {
 
     setSubmitting(true)
     try {
-      // 현재 Supabase Auth 사용자 조회
-      const { data: { user: authUser } } = await supabase.auth.getUser()
+      // localStorage에서 사용자 정보 조회
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
+      if (!currentUser.id) {
+        throw new Error('사용자 정보를 찾을 수 없습니다. 다시 로그인해주세요.')
+      }
 
-      // users 테이블 이름 업데이트
+      // users 테이블 이름 업데이트 (user.id로 조회)
       const { data, error: updateError } = await supabase
         .from('users')
-        .update({ name: name.trim() })
-        .eq('auth_id', authUser.id)
+        .update({ name: name.trim(), updated_at: new Date().toISOString() })
+        .eq('id', currentUser.id)
         .select()
         .single()
 
