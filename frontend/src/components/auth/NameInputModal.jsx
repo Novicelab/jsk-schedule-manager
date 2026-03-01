@@ -68,9 +68,6 @@ function NameInputModal({ onComplete }) {
           userId: currentUser.id,
           name: name.trim(),
           kakaoId: currentUser.kakaoId
-        },
-        headers: {
-          Authorization: `Bearer ${sessionData.session.access_token}`
         }
       })
 
