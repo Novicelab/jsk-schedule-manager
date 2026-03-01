@@ -100,6 +100,12 @@ function NameInputModal({ onComplete }) {
       localStorage.setItem('user', JSON.stringify(updatedUser))
       console.log('이름 업데이트 완료:', updatedUser)
 
+      // CustomEvent 발행: 같은 탭 내 다른 컴포넌트(예: Navbar)에 알림
+      window.dispatchEvent(new CustomEvent('userUpdated', {
+        detail: { user: updatedUser }
+      }))
+      console.log('User 업데이트 이벤트 발행:', updatedUser)
+
       onComplete()
     } catch (err) {
       console.error('이름 업데이트 실패:', err)

@@ -11,11 +11,25 @@ function Navbar() {
 
   // storage 변경 감지하여 user 업데이트
   useEffect(() => {
+    // 1. 다른 탭에서의 localStorage 변경 감지 (기존)
     const handleStorage = () => {
+      console.log('Storage 이벤트 감지 (다른 탭)')
       setUser(JSON.parse(localStorage.getItem('user') || '{}'))
     }
     window.addEventListener('storage', handleStorage)
-    return () => window.removeEventListener('storage', handleStorage)
+
+    // 2. 같은 탭 내 userUpdated CustomEvent 감지 (신규)
+    const handleUserUpdated = (event) => {
+      console.log('CustomEvent 감지 (같은 탭):', event.detail)
+      setUser(event.detail.user)
+    }
+    window.addEventListener('userUpdated', handleUserUpdated)
+
+    // 클린업
+    return () => {
+      window.removeEventListener('storage', handleStorage)
+      window.removeEventListener('userUpdated', handleUserUpdated)
+    }
   }, [])
 
   const handleLogout = async () => {
