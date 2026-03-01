@@ -4,6 +4,52 @@
 
 ---
 
+## [2026-03-01] Kakao OAuth 422 Conflict 에러 해결 - 사용자 로그인 복구
+
+### 배경
+- 신규 사용자 카카오 로그인 시 intermittent 500 에러 발생
+- 원인: Auth 사용자 생성은 성공했지만 users 테이블 삽입 실패 시 422 Conflict 발생
+- 시나리오: 첫 시도 실패 → 두 번째 시도 시 같은 이메일로 Auth 중복 생성 불가
+
+### 변경사항
+
+#### 신규 사용자 로그인 422 에러 처리
+- `supabase/functions/kakao-auth/index.ts` (라인 111-145)
+  - 422 status 감지 시 이메일 중복으로 판단
+  - `isNewUser = false`로 변경하여 기존 사용자 모드 전환
+  - users 테이블 upsert로 복구 (onConflict: 'kakao_id')
+  - 로그: "Auth 사용자 중복 감지, 기존 사용자로 처리"
+
+#### users 테이블 삽입 실패 복구
+- `supabase/functions/kakao-auth/index.ts` (라인 168-216)
+  - Auth 생성 후 users insert 실패 시 upsert 자동 재시도
+  - 실패 로그: "사용자 DB 추가 실패" → "users 테이블 upsert 시도"
+  - auth_id 매핑 완료 보장
+
+#### 기존 사용자 Auth 연동 422 처리
+- `supabase/functions/kakao-auth/index.ts` (라인 257-264)
+  - auth_id 없는 기존 사용자가 Auth 생성 시 422 발생 시 continue
+  - 로그: "기존 사용자 Auth 중복 감지, users 테이블과 매핑"
+  - auth_id 없어도 로그인 가능하도록 permissive 처리
+
+### 검증 항목
+- [x] 신규 사용자 첫 로그인 성공 (Auth + users + notification_preferences 생성)
+- [x] 같은 사용자 재로그인 성공 (isNewUser=false, users 업데이트)
+- [x] 422 에러 복구 (upsert로 users 테이블 자동 동기화)
+- [x] users ↔ auth.users 매핑 일관성 확보
+- [x] Edge Function 배포 완료
+
+### 파일 변경
+- `supabase/functions/kakao-auth/index.ts`: +118 -45 lines
+- `git commit`: 331fbe4
+
+### 기술 세부사항
+- upsert 방식: `onConflict: 'kakao_id'` (UPSERT로 기존 레코드 업데이트)
+- 에러 핸들링: 3단계 (422 처리 → 다른 에러 → 계속 진행)
+- 로그 레벨: warn (복구 시도), error (최종 실패)
+
+---
+
 ## [2026-03-01] Medium 버그 5건 수정 완료
 
 ### 배경
