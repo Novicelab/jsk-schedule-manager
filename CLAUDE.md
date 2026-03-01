@@ -271,6 +271,193 @@ supabase functions deploy send-notification --project-ref qphhpfolrbsyiyoevaoe
 
 ---
 
+## 외부 서비스 연동 - CLI 확인 & 작업 가이드
+
+**원칙**: 작업 수행 전 항상 CLI 설치, 로그인, 환경변수 상태를 확인하고, **가능할 경우 직접 실행**합니다.
+
+### 1. Supabase CLI 확인 및 작업
+
+**설치 확인**
+```bash
+supabase --version
+# supabase-cli 1.x.x 이상이면 OK
+```
+
+**로그인 상태 확인**
+```bash
+supabase projects list
+# 프로젝트 목록 나타나면 인증 완료
+```
+
+**프로젝트 연결 확인**
+```bash
+# 현재 작업 디렉토리에 supabase 설정이 있는지 확인
+cat supabase/.env.local  # 로컬 환경변수 확인
+```
+
+**직접 실행할 수 있는 작업**
+| 작업 | 명령어 |
+|------|--------|
+| Edge Functions 배포 | `supabase functions deploy [함수명] --project-ref qphhpfolrbsyiyoevaoe` |
+| 마이그레이션 실행 | `supabase db push` (로컬에서) |
+| 환경변수 조회 | `supabase secrets list --project-ref qphhpfolrbsyiyoevaoe` |
+| 환경변수 설정 | `supabase secrets set KEY=VALUE --project-ref qphhpfolrbsyiyoevaoe` |
+| 함수 로그 조회 | `supabase functions get-logs kakao-auth --project-ref qphhpfolrbsyiyoevaoe` |
+
+**판단 기준**
+- ✅ 직접 실행: CLI 설치 및 로그인 완료 + 프로젝트 ref 확인됨
+- ❌ 수동 작업: Dashboard에서만 가능한 작업 (RLS 정책, 테이블 구조 변경 등)
+
+---
+
+### 2. Render API 확인 및 작업
+
+**API 토큰 확인**
+```bash
+# Render Dashboard → Account Settings → API Tokens
+# env에 설정되어 있는지 확인
+echo $RENDER_API_TOKEN
+```
+
+**배포 상태 확인**
+```bash
+# curl로 마지막 배포 상태 조회
+curl -s -H "Authorization: Bearer $RENDER_API_TOKEN" \
+  https://api.render.com/v1/services/jsk-schedule-frontend/latest-deployment | jq '.status'
+# SUCCEEDED, IN_PROGRESS, FAILED 중 하나
+```
+
+**환경변수 확인 (render.yaml 기준)**
+```bash
+# render.yaml의 env 섹션 확인
+cat render.yaml | grep -A 20 "env:"
+```
+
+**직접 실행할 수 있는 작업**
+| 작업 | 방법 |
+|------|------|
+| 배포 상태 조회 | Render Dashboard 또는 위의 curl 명령 |
+| 환경변수 수정 | `render.yaml` 파일 수정 → `git push` (자동 배포) |
+| 수동 배포 트리거 | Render Dashboard (CLI 없음) |
+| 로그 조회 | Render Dashboard |
+
+**판단 기준**
+- ✅ 직접 실행: `render.yaml` 수정 가능 (로컬 파일) → git push
+- ✅ 직접 실행: 배포 상태 조회 가능 (API 토큰 있을 때)
+- ❌ 수동 작업: 수동 배포, 리소스 변경 등 (Dashboard 필수)
+
+---
+
+### 3. GitHub CLI 확인 및 작업
+
+**설치 확인**
+```bash
+gh --version
+# gh version X.X.X (2024년 이후 버전 권장)
+```
+
+**로그인 상태 확인**
+```bash
+gh auth status
+# Logged in to github.com as [username]
+```
+
+**Repository 권한 확인**
+```bash
+gh repo view --json nameWithOwner,owner,isPrivate
+# 푸시 권한 있는지 확인
+```
+
+**직접 실행할 수 있는 작업**
+| 작업 | 명령어 |
+|------|--------|
+| Commit & Push | `git commit -m "..."` → `git push` |
+| PR 생성 | `gh pr create --title "..." --body "..."` |
+| Issue 조회 | `gh issue list` |
+| PR 상태 확인 | `gh pr view [PR-Number]` |
+| 배포 상태 조회 | `gh run list --limit 5` (Actions) |
+
+**판단 기준**
+- ✅ 직접 실행: `git push` 권한 확인 완료
+- ✅ 직접 실행: PR/Issue 조회, 생성 가능
+- ❌ 수동 작업: PR Merge, Branch 보호 설정 등 (권한 필요)
+
+---
+
+### 4. Kakao API 확인 및 작업
+
+**클라이언트 ID 확인**
+```bash
+# 환경변수에서 확인
+echo $VITE_KAKAO_CLIENT_ID
+# 240f33554023d9ab4957b2d638fb0d71 (프론트엔드)
+
+echo $KAKAO_CLIENT_ID
+# Supabase Edge Functions 환경변수에서 설정
+```
+
+**OAuth 설정 확인**
+```bash
+# Kakao Developers Console → [앱 이름] → 플랫폼
+# 리다이렉트 URI: http://localhost:5173/auth/callback (로컬)
+#             https://jsk-schedule-frontend.onrender.com/auth/callback (배포)
+```
+
+**알림톡 권한 확인**
+```bash
+# Kakao Developers Console → [앱 이름] → 제품
+# 비즈니스 앱 (구: 플러스친구) → 알림톡 권한 활성화 여부 확인
+```
+
+**직접 실행할 수 있는 작업**
+| 작업 | 방법 |
+|------|------|
+| OAuth 테스트 | 로컬에서 로그인 시도 (localhost:5173) |
+| 알림톡 발송 테스트 | `send-notification` Edge Function 호출 |
+| 환경변수 검증 | Supabase Dashboard → Edge Functions → 환경변수 |
+
+**판단 기준**
+- ✅ 직접 실행: OAuth/알림톡 로그 확인 (Edge Function 로그)
+- ❌ 수동 작업: Kakao Developers 콘솔 설정 변경 (권한 필수)
+
+---
+
+### 5. 통합 확인 플로우 (작업 시작 전 필수)
+
+매 작업마다 아래 체크리스트 확인:
+
+```bash
+#!/bin/bash
+echo "=== 외부 서비스 CLI 확인 ==="
+
+# 1. Supabase
+echo "1. Supabase CLI:"
+supabase projects list > /dev/null 2>&1 && echo "  ✅ 로그인됨" || echo "  ❌ 미로그인 (supabase login 필요)"
+
+# 2. GitHub
+echo "2. GitHub CLI:"
+gh auth status | grep -q "Logged in" && echo "  ✅ 로그인됨" || echo "  ❌ 미로그인 (gh auth login 필요)"
+
+# 3. 환경변수 (로컬)
+echo "3. 환경변수:"
+[ -f frontend/.env ] && echo "  ✅ frontend/.env 있음" || echo "  ❌ frontend/.env 없음"
+[ -f supabase/.env.local ] && echo "  ✅ supabase/.env.local 있음" || echo "  ❌ supabase/.env.local 없음"
+
+# 4. Node 버전
+echo "4. Node.js:"
+node --version && npm --version
+```
+
+**직접 작업 가능 판단 기준**
+- [ ] Supabase CLI 로그인됨
+- [ ] GitHub CLI 로그인됨 (푸시 작업 필요 시)
+- [ ] 환경변수 파일 존재
+- [ ] Node.js 18+ 설치됨
+
+모두 확인되면 ✅ **직접 작업 실행 가능**
+
+---
+
 # 개발 프로세스
 
 ## 워크플로우
