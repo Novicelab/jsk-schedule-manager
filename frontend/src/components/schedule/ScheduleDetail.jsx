@@ -59,12 +59,7 @@ function ScheduleDetail({ schedule, onEdit, onDeleted, onClose }) {
       if (error) throw error
 
       // 알림 발송 (Supabase Edge Function, fire-and-forget)
-      const { data: { user: authUser } } = await supabase.auth.getUser()
-      const { data: currentUser } = await supabase
-        .from('users')
-        .select('id')
-        .eq('auth_id', authUser.id)
-        .single()
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
 
       try {
         const { error: notifyError } = await supabase.functions.invoke('send-notification', {

@@ -34,13 +34,8 @@ function NotificationSettings() {
     setLoading(true)
     setError(null)
     try {
-      // 현재 사용자 ID 조회
-      const { data: { user: authUser } } = await supabase.auth.getUser()
-      const { data: currentUser } = await supabase
-        .from('users')
-        .select('id')
-        .eq('auth_id', authUser.id)
-        .single()
+      // localStorage에서 현재 사용자 ID 조회
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
 
       const { data, error: fetchError } = await supabase
         .from('notification_preferences')
@@ -78,12 +73,7 @@ function NotificationSettings() {
     try {
       const [scheduleType, actionType] = key.split('_')
 
-      const { data: { user: authUser } } = await supabase.auth.getUser()
-      const { data: currentUser } = await supabase
-        .from('users')
-        .select('id')
-        .eq('auth_id', authUser.id)
-        .single()
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
 
       const { error: updateError } = await supabase
         .from('notification_preferences')
