@@ -4,6 +4,32 @@
 
 ---
 
+## [2026-03-01] Kakao 알림톡 권한 추가 - 알림 기능 복구
+
+### 배경
+- 카카오 알림톡 API 호출 시 [KAKAO_ERROR 403] insufficient scopes 에러
+- 원인: LoginPage의 Kakao OAuth URL에 talk_message scope 누락
+- 결과: 사용자의 Kakao 토큰이 알림톡 발송 권한을 가지지 않음
+
+### 변경사항
+
+#### 수정: Kakao OAuth 인증 URL
+- `frontend/src/pages/LoginPage.jsx` (line 9)
+  - 기존: `&response_type=code`
+  - 수정: `&response_type=code&scope=talk_message`
+  - 효과: 로그인 시 Kakao 동의 화면에서 "카카오톡 메시지 전송 권한" 요청
+
+### 검증 단계
+1. **재로그인 필요**: 기존 사용자는 새로운 권한으로 재로그인 필수
+2. **동의 화면 확인**: 로그인 중 "카카오톡 메시지 전송" 권한 동의 화면 출현 확인
+3. **알림톡 테스트**: 일정 생성/수정/삭제 후 카카오톡 알림 도착 여부 확인
+
+### 비고
+- 기존 토큰은 새로운 scope를 반영하지 않으므로 사용자 재로그인 필요
+- 새로 로그인한 사용자는 자동으로 알림톡 권한이 포함된 토큰 발급
+
+---
+
 ## [2026-03-01] 로딩 팝업 추가 - UX 개선
 
 ### 배경
