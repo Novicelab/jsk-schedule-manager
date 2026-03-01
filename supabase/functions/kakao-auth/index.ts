@@ -266,6 +266,17 @@ serve(async (req) => {
           console.warn('알림 설정 생성 실패 (로그인은 진행):', prefError)
           // 알림 설정 없이도 로그인 진행 가능
         }
+
+        // 신규 사용자 생성 완료 로깅
+        console.log('신규 사용자 생성 완료 - 상세 정보:', {
+          userId: user.id,
+          authId: user.auth_id,
+          kakaoId: user.kakao_id,
+          userName: user.name,
+          userEmail: user.email,
+          userIdType: typeof user.id,
+          authIdType: typeof user.auth_id
+        })
       }
     } else {
       // 5b. 기존 사용자: 카카오 토큰 업데이트

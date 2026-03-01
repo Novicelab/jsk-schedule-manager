@@ -39,28 +39,53 @@ function NameInputModal({ onComplete }) {
         throw new Error('사용자 정보를 찾을 수 없습니다. 다시 로그인해주세요.')
       }
 
-      // users 테이블 이름 업데이트 (user.id로 조회)
-      const { data, error: updateError } = await supabase
-        .from('users')
-        .update({ name: name.trim(), updated_at: new Date().toISOString() })
-        .eq('id', currentUser.id)
-        .select()
-        .single()
-
-      console.log('NameInputModal - UPDATE 결과:', {
-        data,
-        error: updateError
+      // 세션 검증: 현재 로그인 상태 확인
+      const { data: sessionData } = await supabase.auth.getSession()
+      console.log('NameInputModal - 세션 상태:', {
+        hasSession: !!sessionData.session,
+        userId: sessionData.session?.user?.id
       })
 
-      if (updateError) throw updateError
+      if (!sessionData.session) {
+        throw new Error('세션이 만료되었습니다. 다시 로그인해주세요.')
+      }
+
+      // RLS 정책 우회: Edge Function을 통해 이름 업데이트
+      // (Service Role Key로 실행되므로 RLS 정책 제약 없음)
+      console.log('update-user-name Edge Function 호출 중...')
+      const { data: updateData, error: invokeError } = await supabase.functions.invoke('update-user-name', {
+        body: {
+          userId: currentUser.id,
+          name: name.trim(),
+          kakaoId: currentUser.kakaoId
+        }
+      })
+
+      console.log('update-user-name 응답:', {
+        data: updateData,
+        error: invokeError
+      })
+
+      if (invokeError) {
+        console.error('Edge Function 호출 실패:', invokeError)
+        throw invokeError
+      }
+
+      if (updateData?.error) {
+        throw new Error(updateData.error)
+      }
+
+      if (!updateData?.user) {
+        throw new Error('사용자 정보 업데이트 실패')
+      }
 
       // localStorage의 user 객체 업데이트
-      const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
       const updatedUser = {
         ...currentUser,
-        name: data.name,
+        name: updateData.user.name,
       }
       localStorage.setItem('user', JSON.stringify(updatedUser))
+      console.log('이름 업데이트 완료:', updatedUser)
 
       onComplete()
     } catch (err) {
