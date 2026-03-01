@@ -41,18 +41,28 @@ function NameInputModal({ onComplete }) {
 
       // 세션 검증: 현재 로그인 상태 확인
       const { data: sessionData } = await supabase.auth.getSession()
-      console.log('NameInputModal - 세션 상태:', {
+      console.log('NameInputModal - 세션 상태 (호출 전):', {
         hasSession: !!sessionData.session,
-        userId: sessionData.session?.user?.id
+        userId: sessionData.session?.user?.id,
+        token: sessionData.session?.access_token ? '있음' : '없음'
       })
 
-      if (!sessionData.session) {
+      if (!sessionData.session || !sessionData.session.access_token) {
         throw new Error('세션이 만료되었습니다. 다시 로그인해주세요.')
       }
 
+      // 약간의 딜레이를 추가하여 세션이 완전히 로드되도록 대기
+      console.log('세션 안정화 대기 중 (500ms)...')
+      await new Promise(resolve => setTimeout(resolve, 500))
+
       // RLS 정책 우회: Edge Function을 통해 이름 업데이트
       // (Service Role Key로 실행되므로 RLS 정책 제약 없음)
-      console.log('update-user-name Edge Function 호출 중...')
+      console.log('update-user-name Edge Function 호출 중...', {
+        userId: currentUser.id,
+        name: name.trim(),
+        accessToken: sessionData.session.access_token ? '있음' : '없음'
+      })
+
       const { data: updateData, error: invokeError } = await supabase.functions.invoke('update-user-name', {
         body: {
           userId: currentUser.id,

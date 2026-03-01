@@ -65,27 +65,29 @@ function CallbackPage() {
           refresh_token: session.refresh_token,
         })
 
-        // 세션 완전 로드 대기 (최대 5초)
+        // 세션 완전 로드 대기 (최대 10초)
         let sessionLoaded = false
         let attempts = 0
-        const maxAttempts = 50 // 5초 (100ms * 50)
+        const maxAttempts = 100 // 10초 (100ms * 100)
 
         while (!sessionLoaded && attempts < maxAttempts) {
           const { data: currentSession } = await supabase.auth.getSession()
-          if (currentSession.session?.user?.id) {
+          if (currentSession.session?.user?.id && currentSession.session?.access_token) {
             console.log('세션 로드 완료:', {
               authUserId: currentSession.session.user.id,
+              hasAccessToken: !!currentSession.session.access_token,
               attempts: attempts + 1
             })
             sessionLoaded = true
           } else {
+            console.log('세션 대기 중...', { attempt: attempts + 1, maxAttempts })
             await new Promise(resolve => setTimeout(resolve, 100))
             attempts++
           }
         }
 
         if (!sessionLoaded) {
-          console.warn('세션 로드 타임아웃 (5초), 계속 진행')
+          console.warn('세션 로드 타임아웃 (10초), 계속 진행')
         }
 
         // user 정보를 localStorage에 저장 (표시용)
