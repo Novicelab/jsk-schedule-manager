@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import dayjs from 'dayjs'
 import { supabase } from '../../lib/supabase'
+import { getBackendUrl } from '../../lib/config'
 import LoadingPopup from '../LoadingPopup'
 
 const TYPE_LABEL = {
@@ -45,7 +46,7 @@ function ScheduleDetail({ schedule, onEdit, onDeleted, onClose }) {
         .eq('auth_id', authUser.id)
         .single()
 
-      const backendUrl = (import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001').trim()
+      const backendUrl = getBackendUrl()
       fetch(`${backendUrl}/api/notify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

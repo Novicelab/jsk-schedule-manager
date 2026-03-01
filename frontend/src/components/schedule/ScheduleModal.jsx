@@ -3,6 +3,7 @@ import dayjs from 'dayjs'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 import { supabase } from '../../lib/supabase'
+import { getBackendUrl } from '../../lib/config'
 import LoadingPopup from '../LoadingPopup'
 import './ScheduleModal.css'
 
@@ -181,7 +182,7 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
 
         // 알림 발송 (백엔드 API - 실패해도 계속 진행)
         try {
-          const backendUrl = (import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001').trim()
+          const backendUrl = getBackendUrl()
           const notifyRes = await fetch(`${backendUrl}/api/notify`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -222,7 +223,7 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
 
         // 알림 발송 (백엔드 API - 실패해도 계속 진행)
         try {
-          const backendUrl = (import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001').trim()
+          const backendUrl = getBackendUrl()
           const notifyRes = await fetch(`${backendUrl}/api/notify`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
