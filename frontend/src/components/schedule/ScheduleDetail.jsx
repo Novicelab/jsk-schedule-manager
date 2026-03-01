@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import dayjs from 'dayjs'
 import { supabase } from '../../lib/supabase'
-import { getBackendUrl } from '../../lib/config'
 import LoadingPopup from '../LoadingPopup'
 
 const TYPE_LABEL = {
@@ -38,7 +37,7 @@ function ScheduleDetail({ schedule, onEdit, onDeleted, onClose }) {
 
       if (error) throw error
 
-      // 알림 발송 (Edge Function, fire-and-forget)
+      // 알림 발송 (Supabase Edge Function, fire-and-forget)
       const { data: { user: authUser } } = await supabase.auth.getUser()
       const { data: currentUser } = await supabase
         .from('users')
@@ -46,19 +45,16 @@ function ScheduleDetail({ schedule, onEdit, onDeleted, onClose }) {
         .eq('auth_id', authUser.id)
         .single()
 
-      const backendUrl = getBackendUrl()
       try {
-        const notifyRes = await fetch(`${backendUrl}/api/notify`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+        const { error: notifyError } = await supabase.functions.invoke('send-notification', {
+          body: {
             scheduleId: schedule.id,
             actionType: 'DELETED',
             actorUserId: currentUser?.id,
-          }),
+          },
         })
-        if (!notifyRes.ok) {
-          console.warn('알림 발송 실패: HTTP', notifyRes.status)
+        if (notifyError) {
+          console.warn('알림 발송 실패:', notifyError)
           setDeleteError('일정이 삭제되었습니다. 카카오 알림 발송에 실패했습니다.')
           setTimeout(() => onDeleted(), 2000)
           return

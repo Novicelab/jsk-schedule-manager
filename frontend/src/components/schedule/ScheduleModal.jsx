@@ -3,7 +3,6 @@ import dayjs from 'dayjs'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 import { supabase } from '../../lib/supabase'
-import { getBackendUrl } from '../../lib/config'
 import LoadingPopup from '../LoadingPopup'
 import './ScheduleModal.css'
 
@@ -180,21 +179,18 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
 
         if (error) throw error
 
-        // 알림 발송 (백엔드 API - 실패해도 계속 진행)
+        // 알림 발송 (Supabase Edge Function - 실패해도 계속 진행)
         try {
-          const backendUrl = getBackendUrl()
-          const notifyRes = await fetch(`${backendUrl}/api/notify`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
+          const { error: notifyError } = await supabase.functions.invoke('send-notification', {
+            body: {
               scheduleId: schedule.id,
               actionType: 'UPDATED',
               actorUserId: currentUser.id,
-            }),
+            },
           })
-          if (!notifyRes.ok) {
+          if (notifyError) {
             notifyFailed = true
-            console.warn('알림 발송 실패: HTTP', notifyRes.status)
+            console.warn('알림 발송 실패:', notifyError)
           }
         } catch (err) {
           console.warn('알림 발송 실패:', err)
@@ -221,21 +217,18 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
 
         if (error) throw error
 
-        // 알림 발송 (백엔드 API - 실패해도 계속 진행)
+        // 알림 발송 (Supabase Edge Function - 실패해도 계속 진행)
         try {
-          const backendUrl = getBackendUrl()
-          const notifyRes = await fetch(`${backendUrl}/api/notify`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
+          const { error: notifyError } = await supabase.functions.invoke('send-notification', {
+            body: {
               scheduleId: newSchedule.id,
               actionType: 'CREATED',
               actorUserId: currentUser.id,
-            }),
+            },
           })
-          if (!notifyRes.ok) {
+          if (notifyError) {
             notifyFailed = true
-            console.warn('알림 발송 실패: HTTP', notifyRes.status)
+            console.warn('알림 발송 실패:', notifyError)
           }
         } catch (err) {
           console.warn('알림 발송 실패:', err)
