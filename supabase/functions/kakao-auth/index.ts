@@ -117,7 +117,7 @@ serve(async (req) => {
           // Auth 사용자는 이미 있으므로, users 테이블에 복구 로직
           isNewUser = false
 
-          const { data: updatedUser } = await supabaseAdmin
+          const { data: updatedUser, error: upsertError } = await supabaseAdmin
             .from('users')
             .upsert({
               kakao_id: kakaoId,
@@ -126,15 +126,33 @@ serve(async (req) => {
               profile_image_url: profileImageUrl,
               kakao_access_token: kakaoAccessToken,
               role: 'USER',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
             }, { onConflict: 'kakao_id' })
             .select()
             .single()
+
+          if (upsertError) {
+            console.error('users 테이블 422 upsert 실패:', {
+              message: upsertError.message,
+              code: upsertError.code,
+              details: JSON.stringify(upsertError)
+            })
+            return new Response(
+              JSON.stringify({
+                error: '사용자 정보 저장에 실패했습니다.',
+                details: upsertError.message,
+                code: upsertError.code
+              }),
+              { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            )
+          }
 
           if (updatedUser) {
             user = updatedUser
             console.log('users 테이블 복구 완료:', user.id)
           } else {
-            console.error('users 테이블 upsert 실패')
+            console.error('users 테이블 upsert 실패 (no data)')
             return new Response(
               JSON.stringify({ error: '사용자 정보 저장에 실패했습니다.' }),
               { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -171,6 +189,8 @@ serve(async (req) => {
             kakao_access_token: kakaoAccessToken,
             auth_id: authData!.user.id,
             role: 'USER',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
           })
           .select()
           .single()
@@ -179,7 +199,7 @@ serve(async (req) => {
           console.error('사용자 DB 추가 실패:', insertError)
           // Auth는 이미 생성되었으므로, users 테이블에 upsert로 복구 시도
           console.warn('users 테이블 upsert 시도 중...')
-          const { data: upsertedUser } = await supabaseAdmin
+          const { data: upsertedUser, error: upsertError } = await supabaseAdmin
             .from('users')
             .upsert({
               kakao_id: kakaoId,
@@ -189,9 +209,26 @@ serve(async (req) => {
               kakao_access_token: kakaoAccessToken,
               auth_id: authData!.user.id,
               role: 'USER',
+              created_at: new Date().toISOString(),
             }, { onConflict: 'kakao_id' })
             .select()
             .single()
+
+          if (upsertError) {
+            console.error('users 테이블 INSERT 실패 후 upsert 재시도 실패:', {
+              message: upsertError.message,
+              code: upsertError.code,
+              details: JSON.stringify(upsertError)
+            })
+            return new Response(
+              JSON.stringify({
+                error: '사용자 정보 저장에 실패했습니다.',
+                details: upsertError.message,
+                code: upsertError.code
+              }),
+              { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            )
+          }
 
           if (!upsertedUser) {
             return new Response(
