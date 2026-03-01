@@ -108,7 +108,16 @@ router.post('/', async (req, res) => {
     }
 
     logger.info('알림 발송 완료', { sent: sentCount, failed: failedCount })
-    return res.json({ sent: sentCount, failed: failedCount })
+    // 디버깅: 상세한 에러 메시지 반환
+    const failureDetails = failedCount > 0
+      ? await supabaseAdmin.from('notifications').select('user_id, status, message').eq('schedule_id', scheduleId).order('created_at', { ascending: false }).limit(failedCount)
+      : { data: [] }
+
+    return res.json({
+      sent: sentCount,
+      failed: failedCount,
+      failureDetails: failureDetails.data || []
+    })
   } catch (err) {
     logger.error('알림 처리 중 예외 발생', err.message)
     return res.status(500).json({ error: '알림 처리 중 오류가 발생했습니다.' })
