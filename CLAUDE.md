@@ -135,6 +135,12 @@
   - ✅ kakao-auth 디버깅 로깅 강화
   - ✅ Edge Function 배포 완료 (qphhpfolrbsyiyoevaoe)
   - ✅ 전체 흐름 git commit & push 완료
+- [x] 카카오 알림 발송 안정화 (2026-03-02)
+  - ✅ users 테이블에 kakao_refresh_token, kakao_token_expires_at 컬럼 추가
+  - ✅ kakao-auth: 로그인 시 refresh_token 저장
+  - ✅ send-notification: 토큰 만료 자동 갱신 (만료 5분 전 선제적 갱신)
+  - ✅ send-notification: result_code === 0 기반 실제 성공 여부 검증
+  - ✅ 카카오톡 알림 수신 확인 완료
 
 ---
 
