@@ -123,6 +123,11 @@
   - ✅ issue-resolution-team 생성 (Designer + Developer + QA 병렬)
   - ✅ 에이전트 업데이트 (TypeScript/React/Supabase 기반)
   - ✅ 자동 호출 트리거 설정 (버그, 에러, 배포, 보안 키워드)
+- [x] 사용자 경험 개선 (2026-03-01): 로딩 팝업 추가
+  - ✅ LoadingPopup 재사용 가능 컴포넌트 생성
+  - ✅ Dimmed 배경 (rgba(0,0,0,0.5)) + 애니메이션 스피너 UI
+  - ✅ 비동기 작업 전반 적용 (로그인, 세션 확인, 일정 CRUD, 이름 저장)
+  - ✅ 프론트엔드 자동 배포 완료
 
 ---
 
