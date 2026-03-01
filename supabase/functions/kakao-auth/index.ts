@@ -117,6 +117,12 @@ serve(async (req) => {
           // Auth 사용자는 이미 있으므로, users 테이블에 복구 로직
           // (isNewUser는 이후 user.name 값으로 결정됨)
 
+          // 이 시점에서는 Auth 사용자가 이미 생성되었음
+          // 따라서 auth_id는 AuthError에서 추출 가능 (이메일로 조회 후 가져옴)
+          // 하지만 간단하게, Supabase Auth 사용자 이메일로 조회하여 ID 얻기
+          const { data: existingAuthUser } = await supabaseAdmin.auth.admin.getUserByEmail(authEmail)
+          const authId = existingAuthUser?.id || null
+
           const { data: updatedUser, error: upsertError } = await supabaseAdmin
             .from('users')
             .upsert({
@@ -125,6 +131,7 @@ serve(async (req) => {
               email: email,
               profile_image_url: profileImageUrl,
               kakao_access_token: kakaoAccessToken,
+              auth_id: authId,
               role: 'USER',
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
@@ -210,6 +217,7 @@ serve(async (req) => {
               auth_id: authData!.user.id,
               role: 'USER',
               created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
             }, { onConflict: 'kakao_id' })
             .select()
             .single()
