@@ -139,7 +139,7 @@ serve(async (req) => {
 
       user = newUser
 
-      // 알림 설정 기본값 생성
+      // 알림 설정 기본값 생성 (실패해도 로그인 진행)
       const defaultPreferences = [
         { user_id: user.id, schedule_type: 'VACATION', action_type: 'CREATED', enabled: true },
         { user_id: user.id, schedule_type: 'VACATION', action_type: 'UPDATED', enabled: true },
@@ -148,7 +148,14 @@ serve(async (req) => {
         { user_id: user.id, schedule_type: 'WORK', action_type: 'UPDATED', enabled: true },
         { user_id: user.id, schedule_type: 'WORK', action_type: 'DELETED', enabled: true },
       ]
-      await supabaseAdmin.from('notification_preferences').insert(defaultPreferences)
+
+      try {
+        await supabaseAdmin.from('notification_preferences').insert(defaultPreferences)
+        console.log('알림 설정 기본값 생성 완료:', user.id)
+      } catch (prefError) {
+        console.warn('알림 설정 생성 실패 (로그인은 진행):', prefError)
+        // 알림 설정 없이도 로그인 진행 가능
+      }
     } else {
       // 5b. 기존 사용자: 카카오 토큰 업데이트
       const { data: updatedUser } = await supabaseAdmin
