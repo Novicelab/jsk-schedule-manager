@@ -86,9 +86,11 @@ router.post('/', async (req, res) => {
       const result = await sendKakaoMessage(user.kakao_access_token, message)
 
       // 알림 기록 저장
-      const notifMessage = result.success
-        ? message
-        : `${result.error} | 원본: ${message}`
+      let notifMessage = message
+      if (!result.success) {
+        // 카카오 API 에러 상세 정보를 message에 포함
+        notifMessage = `[KAKAO_ERROR ${result.statusCode}] ${result.error} | 원본: ${message}`
+      }
 
       await supabaseAdmin.from('notifications').insert({
         schedule_id: scheduleId,
@@ -107,9 +109,10 @@ router.post('/', async (req, res) => {
         failureDetails.push({
           user_id: user.id,
           error: result.error,
-          statusCode: result.statusCode
+          statusCode: result.statusCode,
+          fullMessage: notifMessage
         })
-        logger.warn('카카오 알림 발송 실패', { userId: user.id, error: result.error })
+        logger.warn('카카오 알림 발송 실패', { userId: user.id, error: result.error, statusCode: result.statusCode })
       }
     }
 

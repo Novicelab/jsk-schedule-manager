@@ -47,15 +47,28 @@ function ScheduleDetail({ schedule, onEdit, onDeleted, onClose }) {
         .single()
 
       const backendUrl = getBackendUrl()
-      fetch(`${backendUrl}/api/notify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          scheduleId: schedule.id,
-          actionType: 'DELETED',
-          actorUserId: currentUser?.id,
-        }),
-      }).catch(err => console.error('알림 발송 실패:', err))
+      try {
+        const notifyRes = await fetch(`${backendUrl}/api/notify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            scheduleId: schedule.id,
+            actionType: 'DELETED',
+            actorUserId: currentUser?.id,
+          }),
+        })
+        if (!notifyRes.ok) {
+          console.warn('알림 발송 실패: HTTP', notifyRes.status)
+          setDeleteError('일정이 삭제되었습니다. 카카오 알림 발송에 실패했습니다.')
+          setTimeout(() => onDeleted(), 2000)
+          return
+        }
+      } catch (err) {
+        console.warn('알림 발송 실패:', err)
+        setDeleteError('일정이 삭제되었습니다. 카카오 알림 발송에 실패했습니다.')
+        setTimeout(() => onDeleted(), 2000)
+        return
+      }
 
       onDeleted()
     } catch (err) {

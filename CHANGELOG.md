@@ -4,6 +4,46 @@
 
 ---
 
+## [2026-03-01] Medium 버그 5건 수정 완료
+
+### 배경
+- QA 팀에서 발견한 Medium 우선순위 버그 5건 일괄 수정
+- 사용자 피드백 미흡, 세션 관리, 에러 로깅 개선
+
+### 변경사항
+
+#### 버그 01: 알림 실패 시 사용자 피드백 없음
+- `frontend/src/components/schedule/ScheduleDetail.jsx`
+  - 알림 발송을 fire-and-forget에서 await로 변경
+  - 알림 실패 시 deleteError에 경고 메시지 표시
+  - 메시지: "일정이 삭제되었습니다. 카카오 알림 발송에 실패했습니다."
+  - 2초 후 자동으로 모달 닫기
+
+#### 버그 06, 07: 프론트엔드 상태 관리 개선
+- Navbar: localStorage 변경 감지를 위한 storage 이벤트 리스너 추가
+- PrivateRoute: onAuthStateChange 구독으로 세션 만료 자동 감지
+
+#### 버그 08: 카카오 토큰 만료 시 에러 원인 불명확
+- `backend/routes/notify.js`
+  - 알림 실패 시 메시지에 `[KAKAO_ERROR ${statusCode}]` 포함
+  - failureDetails에 fullMessage 추가로 상세 에러 정보 기록
+  - Supabase notifications 테이블에 상세 에러 저장
+
+#### 버그 10: 결정론적 Auth 비밀번호 (보안)
+- `supabase/functions/kakao-auth/index.ts`
+  - 새 비밀번호: `kakao_${kakaoId}_${KAKAO_CLIENT_SECRET}_${SERVICE_KEY_SUFFIX}`
+  - 기존 사용자는 자동 마이그레이션 지원 (로그인 중단 없음)
+  - 신규 사용자는 강화된 비밀번호로 자동 생성
+
+### 검증 항목
+- [x] ScheduleDetail 알림 실패 경고 배너 표시
+- [x] Navbar 사용자 정보 실시간 동기화
+- [x] PrivateRoute 세션 만료 감지
+- [x] notifications 테이블에 상세 에러 메시지 기록
+- [x] 기존 사용자 자동 마이그레이션
+
+---
+
 ## [2026-03-01] Kakao 알림톡 권한 추가 - 알림 기능 복구
 
 ### 배경
