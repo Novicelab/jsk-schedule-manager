@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import dayjs from 'dayjs'
 import { supabase } from '../../lib/supabase'
 import LoadingPopup from '../LoadingPopup'
@@ -18,6 +18,27 @@ function ScheduleDetail({ schedule, onEdit, onDeleted, onClose }) {
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const deleteTimerRef = useRef(null)
+
+  // 컴포넌트 unmount 시 대기 중인 타이머 클린업
+  useEffect(() => {
+    return () => {
+      if (deleteTimerRef.current) {
+        clearTimeout(deleteTimerRef.current)
+        console.log('삭제 타이머 클린업됨')
+      }
+    }
+  }, [])
+
+  // onClose 호출 시 대기 중인 타이머 미리 클리어
+  const handleClose = () => {
+    if (deleteTimerRef.current) {
+      clearTimeout(deleteTimerRef.current)
+      deleteTimerRef.current = null
+      console.log('모달 닫기 - 삭제 타이머 취소됨')
+    }
+    onClose()
+  }
 
   const handleDelete = async () => {
     if (!confirmDelete) {
@@ -56,13 +77,19 @@ function ScheduleDetail({ schedule, onEdit, onDeleted, onClose }) {
         if (notifyError) {
           console.warn('알림 발송 실패:', notifyError)
           setDeleteError('일정이 삭제되었습니다. 카카오 알림 발송에 실패했습니다.')
-          setTimeout(() => onDeleted(), 2000)
+          deleteTimerRef.current = setTimeout(() => {
+            console.log('onDeleted() 호출 (알림 발송 실패)')
+            onDeleted()
+          }, 2000)
           return
         }
       } catch (err) {
         console.warn('알림 발송 실패:', err)
         setDeleteError('일정이 삭제되었습니다. 카카오 알림 발송에 실패했습니다.')
-        setTimeout(() => onDeleted(), 2000)
+        deleteTimerRef.current = setTimeout(() => {
+          console.log('onDeleted() 호출 (알림 발송 예외)')
+          onDeleted()
+        }, 2000)
         return
       }
 
@@ -86,7 +113,7 @@ function ScheduleDetail({ schedule, onEdit, onDeleted, onClose }) {
   return (
     <>
       <LoadingPopup isOpen={deleting} message="일정 삭제 중..." />
-      <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-overlay" onClick={handleClose}>
         <div
           className="modal-content"
           onClick={(e) => e.stopPropagation()}
@@ -100,7 +127,7 @@ function ScheduleDetail({ schedule, onEdit, onDeleted, onClose }) {
           </h2>
           <button
             className="modal-close-btn"
-            onClick={onClose}
+            onClick={handleClose}
             aria-label="닫기"
           >
             x
@@ -164,7 +191,7 @@ function ScheduleDetail({ schedule, onEdit, onDeleted, onClose }) {
         <div className="modal-footer">
           <button
             className="btn btn-secondary"
-            onClick={onClose}
+            onClick={handleClose}
           >
             닫기
           </button>
