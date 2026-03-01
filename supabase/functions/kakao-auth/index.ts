@@ -109,13 +109,13 @@ serve(async (req) => {
       if (authError) {
         // 422 Conflict: 이메일이 이미 등록됨 (Auth만 있고 users는 없는 경우)
         if (authError.status === 422) {
-          console.warn('Auth 사용자 중복 감지, 기존 사용자로 처리:', {
+          console.warn('Auth 사용자 중복 감지, users 테이블 복구 시도:', {
             email: authEmail,
             kakaoId: kakaoId
           })
 
           // Auth 사용자는 이미 있으므로, users 테이블에 복구 로직
-          isNewUser = false
+          // (isNewUser는 이후 user.name 값으로 결정됨)
 
           const { data: updatedUser, error: upsertError } = await supabaseAdmin
             .from('users')
@@ -340,6 +340,9 @@ serve(async (req) => {
     }
 
     // 7. 응답 반환
+    // isNewUser는 user.name 상태로 결정 (name이 '__PENDING__'이면 신규 사용자)
+    const finalIsNewUser = user.name === '__PENDING__'
+
     return new Response(
       JSON.stringify({
         session: sessionData.data.session,
@@ -350,7 +353,7 @@ serve(async (req) => {
           email: user.email,
           profileImageUrl: user.profile_image_url,
         },
-        isNewUser,
+        isNewUser: finalIsNewUser,
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
