@@ -63,23 +63,34 @@ function NameInputModal({ onComplete }) {
         accessToken: sessionData.session.access_token ? '있음' : '없음'
       })
 
-      const { data: updateData, error: invokeError } = await supabase.functions.invoke('update-user-name', {
-        body: {
-          userId: currentUser.id,
-          name: name.trim(),
-          kakaoId: currentUser.kakaoId
+      // fetch를 직접 사용하여 명시적 Authorization 헤더 전달
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+      const updateResponse = await fetch(
+        `${supabaseUrl}/functions/v1/update-user-name`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${sessionData.session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: currentUser.id,
+            name: name.trim(),
+            kakaoId: currentUser.kakaoId,
+          }),
         }
-      })
+      )
 
-      console.log('update-user-name 응답:', {
-        data: updateData,
-        error: invokeError
-      })
+      console.log('update-user-name 응답 상태:', updateResponse.status)
 
-      if (invokeError) {
-        console.error('Edge Function 호출 실패:', invokeError)
-        throw invokeError
+      if (!updateResponse.ok) {
+        const errorData = await updateResponse.json()
+        console.error('Edge Function 호출 실패:', errorData)
+        throw new Error(errorData.error || '사용자 정보 업데이트에 실패했습니다.')
       }
+
+      const updateData = await updateResponse.json()
+      console.log('update-user-name 응답:', updateData)
 
       if (updateData?.error) {
         throw new Error(updateData.error)
