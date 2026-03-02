@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import './LoginPage.css'
 
+// prompt=login 제거: Kakao 로그아웃 엔드포인트 도입으로 Kakao 세션이 이미 종료되어 있음
+// prompt=login은 Android에서 카카오톡 앱 연동 로그인과 충돌하므로 사용하지 않음
 const KAKAO_AUTH_URL = `https://kauth.kakao.com/oauth/authorize?client_id=${
   import.meta.env.VITE_KAKAO_CLIENT_ID
 }&redirect_uri=${
   import.meta.env.VITE_KAKAO_REDIRECT_URI
-}&response_type=code&scope=talk_message&prompt=login`
+}&response_type=code&scope=talk_message`
 
 function LoginPage() {
   const navigate = useNavigate()

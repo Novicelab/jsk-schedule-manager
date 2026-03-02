@@ -29,32 +29,82 @@ serve(async (req) => {
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
-    // 1. 카카오 토큰 교환
-    const tokenResponse = await fetch('https://kauth.kakao.com/oauth/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        grant_type: 'authorization_code',
-        client_id: KAKAO_CLIENT_ID,
-        client_secret: KAKAO_CLIENT_SECRET,
-        redirect_uri: redirectUri,
-        code,
-      }),
+    // 1. 카카오 토큰 교환 (최대 2회 재시도)
+    let tokenResponse: Response | null = null
+    let tokenData: Record<string, unknown> | null = null
+    const tokenParams = new URLSearchParams({
+      grant_type: 'authorization_code',
+      client_id: KAKAO_CLIENT_ID,
+      client_secret: KAKAO_CLIENT_SECRET,
+      redirect_uri: redirectUri,
+      code,
     })
 
-    if (!tokenResponse.ok) {
-      const errorData = await tokenResponse.text()
-      console.error('카카오 토큰 교환 실패:', errorData)
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        tokenResponse = await fetch('https://kauth.kakao.com/oauth/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: tokenParams,
+        })
+
+        if (tokenResponse.ok) {
+          tokenData = await tokenResponse.json()
+          console.log(`카카오 토큰 교환 성공 (시도 ${attempt})`)
+          break
+        }
+
+        const errorText = await tokenResponse.text()
+        console.error(`카카오 토큰 교환 실패 (시도 ${attempt}/${2}):`, {
+          status: tokenResponse.status,
+          body: errorText
+        })
+
+        if (attempt < 2) {
+          // 재시도 전 500ms 대기
+          await new Promise(resolve => setTimeout(resolve, 500))
+        } else {
+          return new Response(
+            JSON.stringify({
+              error: '카카오 인증에 실패했습니다.',
+              debug: { status: tokenResponse.status, body: errorText }
+            }),
+            { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+      } catch (fetchError) {
+        console.error(`카카오 토큰 교환 네트워크 오류 (시도 ${attempt}/${2}):`, fetchError)
+        if (attempt >= 2) {
+          return new Response(
+            JSON.stringify({ error: '카카오 서버 연결에 실패했습니다.' }),
+            { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+        await new Promise(resolve => setTimeout(resolve, 500))
+      }
+    }
+
+    if (!tokenData) {
       return new Response(
-        JSON.stringify({ error: '카카오 인증에 실패했습니다.' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: '카카오 토큰 데이터를 받지 못했습니다.' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    const tokenData = await tokenResponse.json()
-    const kakaoAccessToken = tokenData.access_token
-    const kakaoRefreshToken = tokenData.refresh_token || null
-    const expiresIn = tokenData.expires_in || 21600 // 기본 6시간
+    // authorization_code는 1회용: 이미 사용된 코드는 KOE320 에러 반환
+    if (tokenData.error) {
+      console.error('카카오 토큰 에러 응답:', tokenData)
+      return new Response(
+        JSON.stringify({
+          error: '카카오 인가 코드가 유효하지 않습니다. 다시 로그인해주세요.',
+          debug: { kakaoError: tokenData.error, description: tokenData.error_description }
+        }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+    const kakaoAccessToken = tokenData.access_token as string
+    const kakaoRefreshToken = (tokenData.refresh_token as string) || null
+    const expiresIn = (tokenData.expires_in as number) || 21600 // 기본 6시간
     const kakaoTokenExpiresAt = new Date(Date.now() + expiresIn * 1000).toISOString()
 
     // 2. 카카오 사용자 정보 조회
@@ -63,8 +113,16 @@ serve(async (req) => {
     })
 
     if (!userInfoResponse.ok) {
+      const userInfoError = await userInfoResponse.text()
+      console.error('카카오 사용자 정보 조회 실패:', {
+        status: userInfoResponse.status,
+        body: userInfoError
+      })
       return new Response(
-        JSON.stringify({ error: '카카오 사용자 정보 조회에 실패했습니다.' }),
+        JSON.stringify({
+          error: '카카오 사용자 정보 조회에 실패했습니다.',
+          debug: { status: userInfoResponse.status }
+        }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -362,9 +420,22 @@ serve(async (req) => {
     }
 
     if (sessionData.error) {
-      console.error('Supabase 로그인 실패:', sessionData.error)
+      console.error('Supabase 로그인 실패:', {
+        message: sessionData.error.message,
+        status: sessionData.error.status,
+        authEmail,
+        isNewUser,
+        userIdInDb: user?.id
+      })
       return new Response(
-        JSON.stringify({ error: '로그인 처리에 실패했습니다.' }),
+        JSON.stringify({
+          error: '로그인 처리에 실패했습니다.',
+          debug: {
+            reason: sessionData.error.message,
+            isNewUser,
+            hasUserInDb: !!user
+          }
+        }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
