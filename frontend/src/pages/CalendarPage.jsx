@@ -114,7 +114,9 @@ function CalendarPage() {
           id: String(s.id),
           title: s.title,
           start: s.start_at,
-          end: s.end_at,
+          end: s.all_day
+            ? dayjs(s.end_at).add(1, 'day').format('YYYY-MM-DD')
+            : s.end_at,
           allDay: s.all_day,
           backgroundColor: color,
           borderColor: color,

@@ -165,10 +165,10 @@ serve(async (req) => {
 
         const changes: string[] = []
         if (oldTypeLabel !== newTypeLabel) {
-          changes.push(`유형: ${oldTypeLabel} → ${newTypeLabel}`)
+          changes.push(`${oldTypeLabel} → ${newTypeLabel}`)
         }
         if (oldDateStr !== newDateStr) {
-          changes.push(`일자: ${oldDateStr} → ${newDateStr}`)
+          changes.push(`${oldDateStr} → ${newDateStr}`)
         }
 
         if (changes.length > 0) {
