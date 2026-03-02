@@ -558,6 +558,22 @@ node --version && npm --version
 
 ---
 
+# 이미지 전달 규칙
+
+## 스크린샷/이미지 공유 방법
+
+사용자가 이미지로 정보를 전달할 때는 아래 규칙을 따른다.
+
+- **저장 경로**: `C:\AI Project\JSK_schedule manager\img\`
+- **전달 방법**: 해당 폴더에 이미지 저장 후 파일명 알려주기
+- **Claude 처리**: 파일명을 받으면 `Read` 도구로 해당 경로의 이미지를 읽어 정보 판단
+
+**예시:**
+- 사용자: `"login-error.png 봐줘"`
+- Claude: `C:\AI Project\JSK_schedule manager\img\login-error.png` 읽어서 내용 분석
+
+---
+
 # claude.md 파일 관리 규칙
 
 ## 정책
