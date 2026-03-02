@@ -1061,11 +1061,11 @@ select {
 }
 
 .mobile-event-content.vacation-event.vacation-HALF_AM {
-  background-color: #ab47bc;
+  background-color: #82d9a5;
 }
 
 .mobile-event-content.vacation-event.vacation-HALF_PM {
-  background-color: #ab47bc;
+  background-color: #82d9a5;
 }
 
 .mobile-event-content.work-event {
@@ -1271,7 +1271,12 @@ select {
   padding: 12px;
   background-color: #f9f9f9;
   border-radius: 8px;
-  cursor: default;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.date-event-item:hover {
+  background-color: #f0f0f0;
 }
 
 .date-event-dot {
