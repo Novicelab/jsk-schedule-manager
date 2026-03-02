@@ -27,6 +27,7 @@ function CalendarPage() {
   const [editingSchedule, setEditingSchedule] = useState(null)
 
   const [schedulesError, setSchedulesError] = useState(null)
+  const [currentTitle, setCurrentTitle] = useState('')
 
   // 모바일 반응형 UI
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
@@ -139,7 +140,9 @@ function CalendarPage() {
         return {
           id: String(s.id),
           title: s.title,
-          start: s.start_at,
+          // allDay 이벤트: start/end 모두 date-only (YYYY-MM-DD) 형식 필요
+          // end는 FullCalendar exclusive end date 방식이므로 +1일 처리
+          start: s.all_day ? dayjs(s.start_at).format('YYYY-MM-DD') : s.start_at,
           end: s.all_day
             ? dayjs(s.end_at).add(1, 'day').format('YYYY-MM-DD')
             : s.end_at,
@@ -170,9 +173,21 @@ function CalendarPage() {
     }
   }, [currentRange, loadSchedules])
 
+  // 커스텀 헤더 이전/다음 달 이동
+  const handlePrev = useCallback(() => {
+    calendarRef.current?.getApi().prev()
+  }, [])
+
+  const handleNext = useCallback(() => {
+    calendarRef.current?.getApi().next()
+  }, [])
+
   // FullCalendar 뷰 범위 변경 콜백
   const handleDatesSet = useCallback((dateInfo) => {
     setCurrentRange({ start: dateInfo.start, end: dateInfo.end })
+    // 표시 중인 달의 중간 날짜로 월 타이틀 계산
+    const mid = new Date((dateInfo.start.getTime() + dateInfo.end.getTime()) / 2)
+    setCurrentTitle(dayjs(mid).format('YYYY년 M월'))
   }, [])
 
   // 날짜 클릭 → 모바일: 팝업 표시, 데스크톱: 모달 열기
@@ -301,6 +316,14 @@ function CalendarPage() {
           <div className="error-banner">{schedulesError}</div>
         )}
 
+        {/* 커스텀 월 네비게이션 헤더 - 터치 플리킹 영역에서 제외 */}
+        <div className="calendar-custom-header">
+          <button className="calendar-nav-btn" onClick={handlePrev} aria-label="이전 달">&#8249;</button>
+          <span className="calendar-nav-title">{currentTitle}</span>
+          <button className="calendar-nav-btn" onClick={handleNext} aria-label="다음 달">&#8250;</button>
+        </div>
+
+        {/* 날짜 셀 그리드 영역 - 이 영역만 좌우 플리킹 가능 */}
         <div
           className="calendar-container"
           onTouchStart={handleTouchStart}
@@ -311,11 +334,7 @@ function CalendarPage() {
             plugins={[dayGridPlugin, interactionPlugin]}
             initialView="dayGridMonth"
             locale="ko"
-            headerToolbar={{
-              left: 'prev',
-              center: 'title',
-              right: 'next',
-            }}
+            headerToolbar={false}
             events={events}
             datesSet={handleDatesSet}
             dateClick={handleDateClick}
