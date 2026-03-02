@@ -4,6 +4,47 @@
 
 ---
 
+## [2026-03-02] 4개 이슈 수정 - 탈퇴 일정 보존 / 캘린더 색상 / 커서 / 삭제 RLS
+
+### 변경사항
+
+#### 1. 탈퇴 시 일정 데이터 보존
+- `supabase/functions/delete-user/index.ts`
+  - 기존: users 레코드 hard delete → 일정에서 이름 표시 불가
+  - 변경: kakao_id, email, auth_id, kakao_access_token 등 민감정보만 null 처리
+  - name 유지 → 탈퇴 후에도 기존 일정에서 이름 계속 표시
+  - Supabase Auth 계정은 삭제 유지 (재로그인 불가)
+
+#### 2. 캘린더 색상 보라/그레이 계열로 변경
+- `frontend/src/pages/CalendarPage.jsx`
+  - 휴가(일반): 초록 `#27ae60` → 짙은 보라 `#7b1fa2` (키 컬러)
+  - 반차: 연초록 `#82d9a5` → 중간 보라 `#ab47bc`
+  - 업무: 파랑 `#2980b9` → 연한 그레이 `#bdbdbd`
+- `frontend/src/styles/global.css`
+  - 모바일 이벤트 배경색 동일하게 적용
+  - type-vacation badge: 초록 → 보라 테마 (`#f3e5f5, #7b1fa2`)
+  - type-work badge 추가 (`#f5f5f5, #616161`)
+
+#### 3. 캘린더 클릭 커서 및 모바일 선택 제거
+- `frontend/src/styles/global.css`
+  - `.fc-event`: `cursor: pointer` → `cursor: default`
+  - `.date-event-item`: `cursor: pointer` → `cursor: default`, hover 스타일 제거
+- `frontend/src/pages/CalendarPage.jsx`
+  - 모바일 date popup 일정 아이템 onClick 핸들러 제거
+
+#### 4. 일정 삭제 RLS 42501 에러 수정
+- `supabase/functions/soft-delete-schedule/index.ts` (신규)
+  - Service Role Key로 RLS 우회하여 안정적인 soft delete 처리
+  - JWT 인증 + 본인 일정 여부 검증 후 `deleted_at` 설정
+- `frontend/src/components/schedule/ScheduleDetail.jsx`
+  - 직접 `supabase.update()` → `supabase.functions.invoke('soft-delete-schedule')` 변경
+
+### 배포
+- Render: GitHub push 자동 배포 (프론트엔드)
+- Supabase Edge Functions: `soft-delete-schedule`, `delete-user` 재배포
+
+---
+
 ## [2026-03-02] 카카오 알림 발송 실패 해결 - Token Refresh + result_code 검증
 
 ### 배경
