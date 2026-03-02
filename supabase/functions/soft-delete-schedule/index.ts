@@ -13,11 +13,11 @@ serve(async (req) => {
   }
 
   try {
-    const { userId } = await req.json()
+    const { scheduleId } = await req.json()
 
-    if (!userId) {
+    if (!scheduleId) {
       return new Response(
-        JSON.stringify({ error: '사용자 ID가 필요합니다.' }),
+        JSON.stringify({ error: '일정 ID가 필요합니다.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -51,76 +51,77 @@ serve(async (req) => {
       )
     }
 
-    // Admin Client (Service Role)
+    // Admin Client (Service Role - RLS 우회)
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
       auth: { autoRefreshToken: false, persistSession: false }
     })
 
-    // 삭제 대상 사용자 조회 (auth_id로 요청자와 동일인 확인)
-    const { data: targetUser, error: userError } = await supabaseAdmin
+    // 요청자의 users 테이블 ID 조회
+    const { data: currentUser, error: userError } = await supabaseAdmin
       .from('users')
-      .select('id, auth_id')
-      .eq('id', userId)
+      .select('id')
+      .eq('auth_id', authUser.id)
       .single()
 
-    if (userError || !targetUser) {
+    if (userError || !currentUser) {
       return new Response(
         JSON.stringify({ error: '사용자를 찾을 수 없습니다.' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // 요청자가 본인 계정만 삭제 가능
-    if (targetUser.auth_id !== authUser.id) {
+    // 일정 조회 (본인 일정 여부 확인)
+    const { data: schedule, error: scheduleError } = await supabaseAdmin
+      .from('schedules')
+      .select('id, created_by, deleted_at')
+      .eq('id', scheduleId)
+      .single()
+
+    if (scheduleError || !schedule) {
       return new Response(
-        JSON.stringify({ error: '본인 계정만 탈퇴할 수 있습니다.' }),
+        JSON.stringify({ error: '일정을 찾을 수 없습니다.' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // 본인 일정만 삭제 가능
+    if (schedule.created_by !== currentUser.id) {
+      return new Response(
+        JSON.stringify({ error: '본인이 등록한 일정만 삭제할 수 있습니다.' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // 1. notifications 삭제
-    await supabaseAdmin.from('notifications').delete().eq('user_id', userId)
-
-    // 2. notification_preferences 삭제
-    await supabaseAdmin.from('notification_preferences').delete().eq('user_id', userId)
-
-    // 3. users 테이블: 민감정보만 null 처리, name은 유지 (기존 일정에서 이름 표시 보존)
-    const { error: clearUserError } = await supabaseAdmin
-      .from('users')
-      .update({
-        kakao_id: null,
-        email: null,
-        auth_id: null,
-        kakao_access_token: null,
-        kakao_refresh_token: null,
-        kakao_token_expires_at: null,
-      })
-      .eq('id', userId)
-
-    if (clearUserError) {
-      console.error('users 정보 초기화 실패:', clearUserError)
+    // 이미 삭제된 일정 처리
+    if (schedule.deleted_at) {
       return new Response(
-        JSON.stringify({ error: '사용자 데이터 처리에 실패했습니다.' }),
+        JSON.stringify({ error: '이미 삭제된 일정입니다.' }),
+        { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Soft delete (Service Role - RLS 우회)
+    const { error: deleteError } = await supabaseAdmin
+      .from('schedules')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', scheduleId)
+
+    if (deleteError) {
+      console.error('soft delete 실패:', deleteError)
+      return new Response(
+        JSON.stringify({ error: '일정 삭제에 실패했습니다.' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // 4. Supabase Auth 계정 삭제 (로그인 불가 처리)
-    if (targetUser.auth_id) {
-      const { error: authDeleteError } = await supabaseAdmin.auth.admin.deleteUser(targetUser.auth_id)
-      if (authDeleteError) {
-        console.warn('Auth 계정 삭제 실패 (users 정보 초기화는 완료):', authDeleteError)
-      }
-    }
-
-    console.log('사용자 탈퇴 완료 (일정 데이터 보존):', { userId, authId: targetUser.auth_id })
+    console.log('일정 soft delete 완료:', { scheduleId, userId: currentUser.id })
 
     return new Response(
       JSON.stringify({ success: true }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {
-    console.error('delete-user 에러:', error)
+    console.error('soft-delete-schedule 에러:', error)
     return new Response(
       JSON.stringify({ error: '서버 오류가 발생했습니다.' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

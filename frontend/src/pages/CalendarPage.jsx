@@ -11,10 +11,10 @@ import { supabase } from '../lib/supabase'
 
 // 일정 유형별 색상
 const SCHEDULE_COLORS = {
-  VACATION_FULL: '#27ae60',    // 짙은 초록 (일반 휴가)
-  VACATION_HALF_AM: '#82d9a5', // 옅은 초록 (오전 반차)
-  VACATION_HALF_PM: '#82d9a5', // 옅은 초록 (오후 반차)
-  WORK: '#2980b9',             // 파란색
+  VACATION_FULL: '#7b1fa2',    // 짙은 보라 (일반 휴가, 키 컬러)
+  VACATION_HALF_AM: '#ab47bc', // 중간 보라 (오전 반차)
+  VACATION_HALF_PM: '#ab47bc', // 중간 보라 (오후 반차)
+  WORK: '#bdbdbd',             // 연한 그레이 (업무)
 }
 
 function CalendarPage() {
@@ -352,10 +352,6 @@ function CalendarPage() {
                     <li
                       key={event.id}
                       className="date-event-item"
-                      onClick={() => {
-                        handleEventDetail(event.id)
-                        setShowDatePopup(false)
-                      }}
                     >
                       <span
                         className="date-event-dot"

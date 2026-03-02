@@ -311,7 +311,7 @@ select {
 }
 
 .calendar-container .fc-event {
-  cursor: pointer;
+  cursor: default;
   border-radius: 4px;
   font-size: 12px;
   padding: 1px 4px;
@@ -684,8 +684,13 @@ select {
 }
 
 .type-vacation {
-  background-color: #d5f5e3;
-  color: #1e8449;
+  background-color: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.type-work {
+  background-color: #f5f5f5;
+  color: #616161;
 }
 
 .type-team {
@@ -1052,20 +1057,20 @@ select {
 }
 
 .mobile-event-content.vacation-event.vacation-FULL {
-  background-color: #27ae60;
+  background-color: #7b1fa2;
 }
 
 .mobile-event-content.vacation-event.vacation-HALF_AM {
-  background-color: #82d9a5;
+  background-color: #ab47bc;
 }
 
 .mobile-event-content.vacation-event.vacation-HALF_PM {
-  background-color: #82d9a5;
+  background-color: #ab47bc;
 }
 
 .mobile-event-content.work-event {
-  color: #fff;
-  background-color: #2980b9;
+  color: #555;
+  background-color: #bdbdbd;
 }
 
 .event-name {
@@ -1266,12 +1271,7 @@ select {
   padding: 12px;
   background-color: #f9f9f9;
   border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.15s;
-}
-
-.date-event-item:hover {
-  background-color: #f0f0f0;
+  cursor: default;
 }
 
 .date-event-dot {

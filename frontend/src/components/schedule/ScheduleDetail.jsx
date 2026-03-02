@@ -50,11 +50,10 @@ function ScheduleDetail({ schedule, onEdit, onDeleted, onClose }) {
     setDeleteError(null)
 
     try {
-      // Soft delete: deleted_at 설정
-      const { error } = await supabase
-        .from('schedules')
-        .update({ deleted_at: new Date().toISOString() })
-        .eq('id', schedule.id)
+      // Soft delete: Edge Function 사용 (RLS 우회, Service Role)
+      const { error } = await supabase.functions.invoke('soft-delete-schedule', {
+        body: { scheduleId: schedule.id },
+      })
 
       if (error) throw error
 

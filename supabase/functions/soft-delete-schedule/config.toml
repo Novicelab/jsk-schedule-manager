@@ -1,0 +1,2 @@
+[functions.soft-delete-schedule]
+verify_jwt = false
