@@ -157,6 +157,12 @@
   - ✅ 캘린더 색상 변경: 휴가(일반) 짙은 보라 #7b1fa2 / 업무 연한 그레이 #bdbdbd
   - ✅ 일정 삭제 RLS 42501 에러 수정: soft-delete-schedule Edge Function 생성 (Service Role)
   - ✅ 모바일 바텀시트 일정 클릭 → 일정 상세 팝업 연동 복구
+- [x] UI/UX 개선 및 알림 안정화 (2026-03-02)
+  - ✅ GNB 이름/이메일 표시 제거
+  - ✅ 캘린더 월/주/일 뷰 전환 버튼 제거 (월 단위 고정)
+  - ✅ 알림 메시지: '제목:', '일자:' 레이블 제거, 값 바로 표시
+  - ✅ 알림 메시지: 수정 시 변경된 유형/일자 before → after 형식 표시
+  - ✅ send-notification 401 오류 수정: --no-verify-jwt 플래그로 재배포 (config.toml의 verify_jwt=false가 CLI에 자동 적용되지 않는 문제)
 
 ---
 
@@ -295,7 +301,7 @@ supabase login
 
 # Edge Functions 배포
 supabase functions deploy kakao-auth --project-ref qphhpfolrbsyiyoevaoe
-supabase functions deploy send-notification --project-ref qphhpfolrbsyiyoevaoe
+supabase functions deploy send-notification --project-ref qphhpfolrbsyiyoevaoe --no-verify-jwt
 supabase functions deploy update-user-name --project-ref qphhpfolrbsyiyoevaoe
 supabase functions deploy delete-user --project-ref qphhpfolrbsyiyoevaoe
 supabase functions deploy soft-delete-schedule --project-ref qphhpfolrbsyiyoevaoe
