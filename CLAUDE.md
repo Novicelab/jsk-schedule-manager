@@ -170,6 +170,14 @@
   - ✅ 로그아웃 후 재로그인 카카오 계정 선택 강제: KAKAO_AUTH_URL에 prompt=login 파라미터 추가
   - ✅ 캘린더 이전/다음 달 버튼 위치: left='prev', center='title', right='next'
   - ✅ 모바일 캘린더 좌우 스와이프로 이전/다음 달 이동 (50px 이상 감지)
+- [x] 카카오 로그인 에러 수정 (2026-03-02)
+  - ✅ Android prompt=login 충돌: Kakao 로그아웃 엔드포인트 도입 (kauth.kakao.com/oauth/logout), prompt=login 제거
+  - ✅ kakao-auth Edge Function 에러 핸들링 강화: 토큰 교환 최대 2회 재시도, KOE320 명시 처리, 상세 debug 로깅
+  - ⚠️ Kakao Developers Console 수동 설정 필요: logout_redirect_uri 등록 (아래 참고)
+- [x] 캘린더 UI 구조 개선 (2026-03-02)
+  - ✅ FullCalendar headerToolbar 제거, 커스텀 월 네비게이션 헤더 별도 구성 (터치 영역 분리)
+  - ✅ 날짜 셀 그리드 영역에만 좌우 플리킹 터치 이벤트 적용
+  - ✅ 다일 일정 표시: allDay 이벤트 start도 date-only 형식으로 통일 (multi-day bar 정상 표시)
 - [x] QA 선제 테스트 이슈 10건 수정 (2026-03-02)
   - ✅ [Critical] update-user-name: JWT 검증 + userId 소유권 검증 추가 (타인 이름 변경 방지)
   - ✅ [High] NameInputModal: userUpdated CustomEvent dead code 제거
@@ -458,6 +466,15 @@ echo $KAKAO_CLIENT_ID
 # 리다이렉트 URI: http://localhost:5173/auth/callback (로컬)
 #             https://jsk-schedule-frontend.onrender.com/auth/callback (배포)
 ```
+
+**⚠️ Logout Redirect URI 등록 (로그아웃 기능 정상 작동 필수)**
+```
+Kakao Developers Console → [앱 이름] → 카카오 로그인 → 고급
+→ Logout Redirect URI 등록:
+  - 배포: https://jsk-schedule-frontend.onrender.com/login
+  - 로컬: http://localhost:5173/login
+```
+> 등록하지 않으면 로그아웃 후 로그인 페이지로 이동하지 못함
 
 **알림톡 권한 확인**
 ```bash
