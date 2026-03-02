@@ -163,6 +163,13 @@
   - ✅ 알림 메시지: '제목:', '일자:' 레이블 제거, 값 바로 표시
   - ✅ 알림 메시지: 수정 시 변경된 유형/일자 before → after 형식 표시
   - ✅ send-notification 401 오류 수정: --no-verify-jwt 플래그로 재배포 (config.toml의 verify_jwt=false가 CLI에 자동 적용되지 않는 문제)
+  - ✅ 다일 일정 캘린더 표시: allDay 이벤트 end +1일 처리 (FullCalendar exclusive end 방식)
+  - ✅ 알림 메시지: 수정 시 before→after 레이블('유형:', '일자:') 제거
+- [x] 멀티단말/UX 버그 수정 (2026-03-02)
+  - ✅ 멀티 단말 계정 혼동 수정: CallbackPage 로그인 시작 시 localStorage.removeItem('user') 즉시 실행
+  - ✅ 로그아웃 후 재로그인 카카오 계정 선택 강제: KAKAO_AUTH_URL에 prompt=login 파라미터 추가
+  - ✅ 캘린더 이전/다음 달 버튼 위치: left='prev', center='title', right='next'
+  - ✅ 모바일 캘린더 좌우 스와이프로 이전/다음 달 이동 (50px 이상 감지)
 
 ---
 
