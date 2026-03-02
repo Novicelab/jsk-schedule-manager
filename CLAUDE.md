@@ -170,6 +170,17 @@
   - ✅ 로그아웃 후 재로그인 카카오 계정 선택 강제: KAKAO_AUTH_URL에 prompt=login 파라미터 추가
   - ✅ 캘린더 이전/다음 달 버튼 위치: left='prev', center='title', right='next'
   - ✅ 모바일 캘린더 좌우 스와이프로 이전/다음 달 이동 (50px 이상 감지)
+- [x] QA 선제 테스트 이슈 10건 수정 (2026-03-02)
+  - ✅ [Critical] update-user-name: JWT 검증 + userId 소유권 검증 추가 (타인 이름 변경 방지)
+  - ✅ [High] NameInputModal: userUpdated CustomEvent dead code 제거
+  - ✅ [High] send-notification: 내부 JWT 검증 추가 (인증된 사용자만 알림 발송 가능)
+  - ✅ [Medium] CalendarPage: 모바일 날짜 팝업 이벤트 필터 exclusive end date 방식 수정
+  - ✅ [Medium] 알림 실패 정책 명문화: 롤백 없음 의도적 설계 주석 추가
+  - ✅ [Medium] LoginPage: prompt=login 제거 (localStorage 클리어로 멀티단말 해결, UX 개선)
+  - ✅ [Low] soft-delete-schedule/config.toml 형식 통일 (섹션 헤더 제거)
+  - ✅ [Low] CalendarPage 스와이프: |deltaX| > |deltaY| 조건으로 세로 스크롤 오판 방지
+  - ✅ [Low] CalendarPage 높이: 700px → auto (모바일 반응형)
+  - ✅ [Low] 버그-05(oldData 필드명) 분석 결과 실제 버그 없음 확인
 
 ---
 
