@@ -184,6 +184,19 @@ serve(async (req) => {
           const { data: existingAuthUser } = await supabaseAdmin.auth.admin.getUserByEmail(authEmail)
           const authId = existingAuthUser?.id || null
 
+          // 기존 Auth 사용자의 비밀번호를 현재 newAuthPassword로 갱신
+          // (이전 실패 시도에서 다른 비밀번호로 생성되었을 수 있음)
+          if (authId) {
+            try {
+              await supabaseAdmin.auth.admin.updateUserById(authId, {
+                password: newAuthPassword,
+              })
+              console.log('422 복구: Auth 비밀번호 갱신 완료:', authId)
+            } catch (pwdError) {
+              console.warn('422 복구: Auth 비밀번호 갱신 실패 (로그인 진행):', pwdError)
+            }
+          }
+
           const { data: updatedUser, error: upsertError } = await supabaseAdmin
             .from('users')
             .upsert({
@@ -378,11 +391,27 @@ serve(async (req) => {
           user.auth_id = authData.user.id
         } else if (authError?.status === 422) {
           // 422: 이메일이 이미 등록됨 (이전 시도의 잔존 사용자)
-          console.warn('기존 사용자 Auth 중복 감지, users 테이블과 매핑:', {
+          console.warn('기존 사용자 Auth 중복 감지, 비밀번호 갱신 및 매핑:', {
             userId: user.id,
             email: authEmail
           })
-          // 이 경우 auth_id 없이 계속 진행 (로그인은 가능)
+          // Auth 사용자 조회 후 비밀번호 갱신 + auth_id 매핑
+          const { data: existingAuth } = await supabaseAdmin.auth.admin.getUserByEmail(authEmail)
+          if (existingAuth?.id) {
+            try {
+              await supabaseAdmin.auth.admin.updateUserById(existingAuth.id, {
+                password: newAuthPassword,
+              })
+              await supabaseAdmin
+                .from('users')
+                .update({ auth_id: existingAuth.id })
+                .eq('id', user.id)
+              user.auth_id = existingAuth.id
+              console.log('기존 사용자 Auth 복구 완료:', existingAuth.id)
+            } catch (recoveryError) {
+              console.warn('기존 사용자 Auth 복구 실패:', recoveryError)
+            }
+          }
         }
       }
     }
@@ -472,8 +501,12 @@ serve(async (req) => {
     )
   } catch (error) {
     console.error('kakao-auth 에러:', error)
+    const errorMessage = error instanceof Error ? error.message : String(error)
     return new Response(
-      JSON.stringify({ error: '서버 오류가 발생했습니다.' }),
+      JSON.stringify({
+        error: '서버 오류가 발생했습니다.',
+        debug: { message: errorMessage }
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }

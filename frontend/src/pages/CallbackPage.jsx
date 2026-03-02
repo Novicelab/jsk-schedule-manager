@@ -39,10 +39,14 @@ function CallbackPage() {
         })
 
         if (invokeError) {
-          throw new Error(invokeError.message || 'Edge Function 호출 실패')
+          // Edge Function이 non-2xx 상태 코드를 반환한 경우, data에 실제 에러 정보가 포함될 수 있음
+          const detail = data?.error || data?.debug || invokeError.message
+          console.error('Edge Function 에러 상세:', { invokeError, data })
+          throw new Error(typeof detail === 'string' ? detail : invokeError.message || 'Edge Function 호출 실패')
         }
 
         if (!data || data.error) {
+          console.error('Edge Function 응답 에러:', data)
           throw new Error(data?.error || 'Edge Function 응답 오류')
         }
 

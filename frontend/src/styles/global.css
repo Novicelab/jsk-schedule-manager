@@ -338,6 +338,26 @@ select {
   border-radius: 0 0 10px 10px;
   padding: 0 16px 16px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+/* 캘린더 좌/우 슬라이드 애니메이션 */
+@keyframes slideFromRight {
+  0% { transform: translateX(30%); opacity: 0.3; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideFromLeft {
+  0% { transform: translateX(-30%); opacity: 0.3; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+.calendar-container.slide-left > .fc {
+  animation: slideFromRight 0.3s ease-out;
+}
+
+.calendar-container.slide-right > .fc {
+  animation: slideFromLeft 0.3s ease-out;
 }
 
 /* FullCalendar 커스텀 */
@@ -354,7 +374,6 @@ select {
 
 .calendar-container .fc-daygrid-event {
   white-space: nowrap;
-  overflow: hidden;
   text-overflow: ellipsis;
 }
 
@@ -1141,19 +1160,12 @@ select {
 /* 모바일: 이벤트를 텍스트로 표시 */
 @media (max-width: 767px) {
   .calendar-container .fc-daygrid-day-events {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
     padding: 2px 3px;
     min-height: auto !important;
   }
 
   .calendar-container .fc-daygrid-event-harness {
     margin: 0 !important;
-    position: relative !important;
-    top: auto !important;
-    width: 100%;
-    flex-shrink: 0;
   }
 
   .calendar-container .fc-daygrid-event {

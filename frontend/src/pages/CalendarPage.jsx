@@ -35,6 +35,8 @@ function CalendarPage() {
   const [clickedDate, setClickedDate] = useState(null)
   const [clickedDateEvents, setClickedDateEvents] = useState([])
 
+  const [slideDirection, setSlideDirection] = useState(null) // 'left' | 'right' | null
+
   const calendarRef = useRef(null)
   const resizeTimeoutRef = useRef(null)
   const touchStartXRef = useRef(null)
@@ -79,6 +81,13 @@ function CalendarPage() {
     )
   }
 
+  // 슬라이드 애니메이션 트리거
+  const triggerSlide = useCallback((direction) => {
+    setSlideDirection(direction)
+    // 애니메이션 완료 후 클래스 제거 (300ms)
+    setTimeout(() => setSlideDirection(null), 300)
+  }, [])
+
   // 터치 스와이프로 이전/다음 달 이동
   const handleTouchStart = useCallback((e) => {
     touchStartXRef.current = e.touches[0].clientX
@@ -97,8 +106,10 @@ function CalendarPage() {
     const api = calendarRef.current?.getApi()
     if (!api) return
     if (deltaX < 0) {
+      triggerSlide('left')
       api.next()  // 왼쪽 스와이프 → 다음 달
     } else {
+      triggerSlide('right')
       api.prev()  // 오른쪽 스와이프 → 이전 달
     }
   }, [])
@@ -175,12 +186,14 @@ function CalendarPage() {
 
   // 커스텀 헤더 이전/다음 달 이동
   const handlePrev = useCallback(() => {
+    triggerSlide('right')
     calendarRef.current?.getApi().prev()
-  }, [])
+  }, [triggerSlide])
 
   const handleNext = useCallback(() => {
+    triggerSlide('left')
     calendarRef.current?.getApi().next()
-  }, [])
+  }, [triggerSlide])
 
   // FullCalendar 뷰 범위 변경 콜백
   const handleDatesSet = useCallback((dateInfo) => {
@@ -325,7 +338,7 @@ function CalendarPage() {
 
         {/* 날짜 셀 그리드 영역 - 이 영역만 좌우 플리킹 가능 */}
         <div
-          className="calendar-container"
+          className={`calendar-container${slideDirection ? ` slide-${slideDirection}` : ''}`}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
