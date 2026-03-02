@@ -189,6 +189,11 @@
   - ✅ [Low] CalendarPage 스와이프: |deltaX| > |deltaY| 조건으로 세로 스크롤 오판 방지
   - ✅ [Low] CalendarPage 높이: 700px → auto (모바일 반응형)
   - ✅ [Low] 버그-05(oldData 필드명) 분석 결과 실제 버그 없음 확인
+- [x] 다일 일정 표시 + iOS 로그인 + 캘린더 애니메이션 (2026-03-03)
+  - ✅ 다일 일정 캘린더 표시 수정: CSS overflow:hidden, position:relative, display:flex 제거 (FullCalendar multi-day bar 렌더링 복원)
+  - ✅ iOS 신규 계정 로그인 에러 수정: kakao-auth 422 복구 경로에서 Auth 비밀번호 갱신 추가
+  - ✅ CallbackPage 에러 상세 정보 표시 개선 (debug 데이터 포함)
+  - ✅ 캘린더 좌/우 슬라이드 애니메이션 추가 (300ms CSS 키프레임, 스와이프 + 버튼)
 
 ---
 
