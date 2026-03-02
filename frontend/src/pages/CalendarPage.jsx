@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
-import timeGridPlugin from '@fullcalendar/timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import dayjs from 'dayjs'
 import Navbar from '../components/Navbar'
@@ -275,19 +274,13 @@ function CalendarPage() {
         <div className="calendar-container">
           <FullCalendar
             ref={calendarRef}
-            plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+            plugins={[dayGridPlugin, interactionPlugin]}
             initialView="dayGridMonth"
             locale="ko"
             headerToolbar={{
               left: 'prev,next',
               center: 'title',
-              right: 'dayGridMonth,timeGridWeek,timeGridDay',
-            }}
-            buttonText={{
-              today: '오늘',
-              month: '월',
-              week: '주',
-              day: '일',
+              right: '',
             }}
             events={events}
             datesSet={handleDatesSet}

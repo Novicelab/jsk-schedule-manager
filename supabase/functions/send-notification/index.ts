@@ -14,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    const { scheduleId, actionType, actorUserId } = await req.json()
+    const { scheduleId, actionType, actorUserId, oldData } = await req.json()
 
     if (!scheduleId || !actionType || !actorUserId) {
       return new Response(
@@ -136,19 +136,53 @@ serve(async (req) => {
         }
       }
 
-      // 메시지 생성
-      const startDate = new Date(schedule.start_at).toLocaleDateString('ko-KR')
-      const endDate = new Date(schedule.end_at).toLocaleDateString('ko-KR')
+      // 메시지 생성 헬퍼
+      const VACATION_LABEL: Record<string, string> = {
+        FULL: '휴가(일반)',
+        HALF_AM: '휴가(오전 반차)',
+        HALF_PM: '휴가(오후 반차)',
+      }
+      const getTypeLabel = (type: string, vacationType?: string) =>
+        type === 'VACATION' ? (VACATION_LABEL[vacationType || 'FULL'] || '휴가') : '업무'
+
+      const formatDate = (isoStr: string) => new Date(isoStr).toLocaleDateString('ko-KR')
+      const formatDateRange = (start: string, end: string) => {
+        const s = formatDate(start)
+        const e = formatDate(end)
+        return s === e ? s : `${s} ~ ${e}`
+      }
+
+      const newDateStr = formatDateRange(schedule.start_at, schedule.end_at)
+
       let message = `📅 [일정 ${actionLabel}]\n`
       if (scheduleType !== 'VACATION') message += `작성자: ${actorName}\n`
-      message += `제목: ${schedule.title}\n`
-      message += `일자: ${startDate}`
-      if (startDate !== endDate) message += ` ~ ${endDate}`
+      message += `${schedule.title}\n`
 
-      if (!schedule.all_day) {
-        const startTime = new Date(schedule.start_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
-        const endTime = new Date(schedule.end_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
-        message += `\n시간: ${startTime} ~ ${endTime}`
+      if (actionType === 'UPDATED' && oldData) {
+        const oldTypeLabel = getTypeLabel(oldData.type, oldData.vacationType)
+        const newTypeLabel = getTypeLabel(schedule.type, schedule.vacation_type)
+        const oldDateStr = formatDateRange(oldData.startAt, oldData.endAt)
+
+        const changes: string[] = []
+        if (oldTypeLabel !== newTypeLabel) {
+          changes.push(`유형: ${oldTypeLabel} → ${newTypeLabel}`)
+        }
+        if (oldDateStr !== newDateStr) {
+          changes.push(`일자: ${oldDateStr} → ${newDateStr}`)
+        }
+
+        if (changes.length > 0) {
+          message += changes.join('\n')
+        } else {
+          message += newDateStr
+        }
+      } else {
+        message += newDateStr
+        if (!schedule.all_day) {
+          const startTime = new Date(schedule.start_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+          const endTime = new Date(schedule.end_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+          message += `\n${startTime} ~ ${endTime}`
+        }
       }
 
       // 카카오 나에게 보내기 API 호출

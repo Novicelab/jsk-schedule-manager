@@ -181,6 +181,12 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
               scheduleId: schedule.id,
               actionType: 'UPDATED',
               actorUserId: currentUser.id,
+              oldData: {
+                startAt: schedule.startAt,
+                endAt: schedule.endAt,
+                type: schedule.type,
+                vacationType: schedule.vacationType,
+              },
             },
           })
           if (notifyError) {
