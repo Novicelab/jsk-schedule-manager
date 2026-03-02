@@ -72,7 +72,10 @@
                                 ├── Auth (세션 관리, 토큰 자동 갱신)
                                 └── Edge Functions
                                     ├── kakao-auth (카카오 OAuth 처리)
-                                    └── send-notification (알림톡 발송)
+                                    ├── send-notification (알림톡 발송)
+                                    ├── update-user-name (사용자 이름 저장, RLS 우회)
+                                    ├── delete-user (회원 탈퇴, 민감정보 삭제)
+                                    └── soft-delete-schedule (일정 soft delete, RLS 우회)
 ```
 
 - **프론트엔드**: React SPA → Supabase JS Client로 DB 직접 접근
@@ -141,6 +144,19 @@
   - ✅ send-notification: 토큰 만료 자동 갱신 (만료 5분 전 선제적 갱신)
   - ✅ send-notification: result_code === 0 기반 실제 성공 여부 검증
   - ✅ 카카오톡 알림 수신 확인 완료
+- [x] 기능 개선 및 UI/UX 개선 (2026-03-02)
+  - ✅ 로그인 화면 디자인 개선 (핑크/라벤더 그라디언트 + 플로팅 원형 + 글래스모피즘)
+  - ✅ GNB: '캘린더' 메뉴 제거, 브랜드명 '간호부 일정 관리'로 변경
+  - ✅ 일정 상세 팝업: 본인 등록 일정에 수정/삭제 버튼 표시
+  - ✅ 설정(MyPage): 회원 탈퇴 기능 추가 (2단계 확인)
+  - ✅ delete-user Edge Function 생성 (민감정보 null 처리, Auth 계정 삭제)
+  - ✅ 알림 메시지: 휴가 유형 등록 시 '작성자' 항목 제거
+  - ✅ 앱 전체 키 컬러 통일 (보라/핑크 계열 #9c27b0, GNB gradient)
+- [x] 버그 수정 및 안정화 (2026-03-02)
+  - ✅ 탈퇴 시 일정 데이터 보존: users 레코드 삭제 → 민감정보 null 처리로 변경 (name 유지)
+  - ✅ 캘린더 색상 변경: 휴가(일반) 짙은 보라 #7b1fa2 / 업무 연한 그레이 #bdbdbd
+  - ✅ 일정 삭제 RLS 42501 에러 수정: soft-delete-schedule Edge Function 생성 (Service Role)
+  - ✅ 모바일 바텀시트 일정 클릭 → 일정 상세 팝업 연동 복구
 
 ---
 
@@ -280,6 +296,9 @@ supabase login
 # Edge Functions 배포
 supabase functions deploy kakao-auth --project-ref qphhpfolrbsyiyoevaoe
 supabase functions deploy send-notification --project-ref qphhpfolrbsyiyoevaoe
+supabase functions deploy update-user-name --project-ref qphhpfolrbsyiyoevaoe
+supabase functions deploy delete-user --project-ref qphhpfolrbsyiyoevaoe
+supabase functions deploy soft-delete-schedule --project-ref qphhpfolrbsyiyoevaoe
 ```
 
 ---
