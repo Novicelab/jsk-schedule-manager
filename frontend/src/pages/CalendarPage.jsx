@@ -36,6 +36,7 @@ function CalendarPage() {
 
   const calendarRef = useRef(null)
   const resizeTimeoutRef = useRef(null)
+  const touchStartXRef = useRef(null)
 
   // 색상 결정 함수
   const getEventColor = (schedule) => {
@@ -75,6 +76,25 @@ function CalendarPage() {
       </div>
     )
   }
+
+  // 터치 스와이프로 이전/다음 달 이동
+  const handleTouchStart = useCallback((e) => {
+    touchStartXRef.current = e.touches[0].clientX
+  }, [])
+
+  const handleTouchEnd = useCallback((e) => {
+    if (touchStartXRef.current === null) return
+    const deltaX = e.changedTouches[0].clientX - touchStartXRef.current
+    touchStartXRef.current = null
+    if (Math.abs(deltaX) < 50) return // 50px 미만은 무시
+    const api = calendarRef.current?.getApi()
+    if (!api) return
+    if (deltaX < 0) {
+      api.next()  // 왼쪽 스와이프 → 다음 달
+    } else {
+      api.prev()  // 오른쪽 스와이프 → 이전 달
+    }
+  }, [])
 
   // 윈도우 리사이즈 감지 (debounced)
   useEffect(() => {
@@ -273,16 +293,20 @@ function CalendarPage() {
           <div className="error-banner">{schedulesError}</div>
         )}
 
-        <div className="calendar-container">
+        <div
+          className="calendar-container"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        >
           <FullCalendar
             ref={calendarRef}
             plugins={[dayGridPlugin, interactionPlugin]}
             initialView="dayGridMonth"
             locale="ko"
             headerToolbar={{
-              left: 'prev,next',
+              left: 'prev',
               center: 'title',
-              right: '',
+              right: 'next',
             }}
             events={events}
             datesSet={handleDatesSet}
