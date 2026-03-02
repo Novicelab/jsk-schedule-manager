@@ -14,6 +14,17 @@ serve(async (req) => {
   }
 
   try {
+    // Authorization 헤더 검증 (토큰 필수)
+    const authHeader = req.headers.get('authorization')
+    const token = authHeader?.replace('Bearer ', '')
+
+    if (!token) {
+      return new Response(
+        JSON.stringify({ error: '인증 토큰이 필요합니다.' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     const { scheduleId, actionType, actorUserId, oldData } = await req.json()
 
     if (!scheduleId || !actionType || !actorUserId) {
@@ -26,6 +37,21 @@ serve(async (req) => {
     // 환경변수
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!
+
+    // 요청자 JWT 검증 (인증된 사용자만 알림 발송 가능)
+    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { autoRefreshToken: false, persistSession: false },
+      global: { headers: { Authorization: `Bearer ${token}` } },
+    })
+    const { data: { user: authUser }, error: authError } = await supabaseClient.auth.getUser()
+
+    if (authError || !authUser) {
+      return new Response(
+        JSON.stringify({ error: '유효하지 않은 인증 토큰입니다.' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
     // Supabase Admin Client
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {

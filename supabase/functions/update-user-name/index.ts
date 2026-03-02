@@ -16,21 +16,6 @@ serve(async (req) => {
   try {
     const { userId, name, kakaoId, authId } = await req.json()
 
-    // Authorization 헤더 검증
-    const authHeader = req.headers.get('authorization')
-    const token = authHeader?.replace('Bearer ', '')
-
-    console.log('update-user-name 요청 시작:', {
-      userId,
-      name,
-      kakaoId,
-      authHeader: {
-        hasHeader: !!authHeader,
-        hasToken: !!token,
-        headerValue: authHeader ? '있음' : '없음'
-      }
-    })
-
     if (!userId || !name) {
       return new Response(
         JSON.stringify({ error: '사용자 ID와 이름이 필요합니다.' }),
@@ -38,13 +23,64 @@ serve(async (req) => {
       )
     }
 
-    // Supabase Admin Client (Service Role Key 사용)
+    // Authorization 헤더 검증 (토큰 필수)
+    const authHeader = req.headers.get('authorization')
+    const token = authHeader?.replace('Bearer ', '')
+
+    if (!token) {
+      return new Response(
+        JSON.stringify({ error: '인증 토큰이 필요합니다.' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!
 
+    // 요청자 JWT 검증
+    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { autoRefreshToken: false, persistSession: false },
+      global: { headers: { Authorization: `Bearer ${token}` } },
+    })
+    const { data: { user: authUser }, error: authError } = await supabaseClient.auth.getUser()
+
+    if (authError || !authUser) {
+      return new Response(
+        JSON.stringify({ error: '유효하지 않은 인증 토큰입니다.' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Supabase Admin Client (Service Role Key 사용)
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
       auth: { autoRefreshToken: false, persistSession: false }
     })
+
+    // 요청자의 users 테이블 ID 조회 (auth_id 기준)
+    const { data: requestingUser, error: requestingUserError } = await supabaseAdmin
+      .from('users')
+      .select('id')
+      .eq('auth_id', authUser.id)
+      .single()
+
+    if (requestingUserError || !requestingUser) {
+      return new Response(
+        JSON.stringify({ error: '요청자 정보를 찾을 수 없습니다.' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // 본인 정보만 수정 가능
+    if (requestingUser.id !== userId) {
+      console.error('소유권 검증 실패:', { requestingUserId: requestingUser.id, targetUserId: userId })
+      return new Response(
+        JSON.stringify({ error: '본인의 정보만 수정할 수 있습니다.' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    console.log('update-user-name 요청 검증 완료:', { userId, authUserId: authUser.id })
 
     // 사용자 존재 여부 확인
     const { data: existingUser, error: selectError } = await supabaseAdmin

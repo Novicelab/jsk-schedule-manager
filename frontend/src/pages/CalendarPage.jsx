@@ -37,6 +37,7 @@ function CalendarPage() {
   const calendarRef = useRef(null)
   const resizeTimeoutRef = useRef(null)
   const touchStartXRef = useRef(null)
+  const touchStartYRef = useRef(null)
 
   // 색상 결정 함수
   const getEventColor = (schedule) => {
@@ -80,13 +81,18 @@ function CalendarPage() {
   // 터치 스와이프로 이전/다음 달 이동
   const handleTouchStart = useCallback((e) => {
     touchStartXRef.current = e.touches[0].clientX
+    touchStartYRef.current = e.touches[0].clientY
   }, [])
 
   const handleTouchEnd = useCallback((e) => {
     if (touchStartXRef.current === null) return
-    const deltaX = e.changedTouches[0].clientX - touchStartXRef.current
+    const touch = e.changedTouches[0]
+    const deltaX = touch.clientX - touchStartXRef.current
+    const deltaY = touch.clientY - (touchStartYRef.current ?? touch.clientY)
     touchStartXRef.current = null
-    if (Math.abs(deltaX) < 50) return // 50px 미만은 무시
+    touchStartYRef.current = null
+    // 수평 이동이 수직 이동보다 크고 50px 이상일 때만 월 이동 (세로 스크롤과 구분)
+    if (Math.abs(deltaX) < 50 || Math.abs(deltaX) <= Math.abs(deltaY)) return
     const api = calendarRef.current?.getApi()
     if (!api) return
     if (deltaX < 0) {
@@ -173,10 +179,12 @@ function CalendarPage() {
   const handleDateClick = useCallback((info) => {
     if (isMobile) {
       const dateStr = info.dateStr
-      const dayEvents = events.filter(e =>
-        dayjs(e.start).format('YYYY-MM-DD') <= dateStr &&
-        dayjs(e.end || e.start).format('YYYY-MM-DD') >= dateStr
-      )
+      // allDay 이벤트의 e.end는 +1일 처리된 exclusive date이므로 < 비교
+      const dayEvents = events.filter(e => {
+        const startStr = dayjs(e.start).format('YYYY-MM-DD')
+        const endStr = e.end ? dayjs(e.end).format('YYYY-MM-DD') : startStr
+        return startStr <= dateStr && dateStr < endStr
+      })
       setClickedDate(dateStr)
       setClickedDateEvents(dayEvents)
       setShowDatePopup(true)
@@ -314,7 +322,7 @@ function CalendarPage() {
             eventClick={handleEventClick}
             eventContent={isMobile ? renderEventContent : undefined}
             dayMaxEvents={false}
-            height="700px"
+            height="auto"
             selectable={true}
             editable={false}
             eventDisplay="block"

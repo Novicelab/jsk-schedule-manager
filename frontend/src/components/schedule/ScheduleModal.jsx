@@ -174,7 +174,8 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
 
         if (error) throw error
 
-        // 알림 발송 (Supabase Edge Function - 실패해도 계속 진행)
+        // 알림 발송 (Supabase Edge Function)
+        // 정책: 알림 발송 실패 시에도 일정 저장/수정은 유지 (롤백 없음). 경고 배너 2초 표시 후 완료 처리.
         try {
           const { error: notifyError } = await supabase.functions.invoke('send-notification', {
             body: {
@@ -218,7 +219,8 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
 
         if (error) throw error
 
-        // 알림 발송 (Supabase Edge Function - 실패해도 계속 진행)
+        // 알림 발송 (Supabase Edge Function)
+        // 정책: 알림 발송 실패 시에도 일정 저장/수정은 유지 (롤백 없음). 경고 배너 2초 표시 후 완료 처리.
         try {
           const { error: notifyError } = await supabase.functions.invoke('send-notification', {
             body: {

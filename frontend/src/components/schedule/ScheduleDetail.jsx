@@ -58,6 +58,7 @@ function ScheduleDetail({ schedule, onEdit, onDeleted, onClose }) {
       if (error) throw error
 
       // 알림 발송 (Supabase Edge Function, fire-and-forget)
+      // 정책: 알림 발송 실패 시에도 일정 삭제는 유지 (롤백 없음). 경고 배너 2초 표시 후 완료 처리.
       const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
 
       try {
