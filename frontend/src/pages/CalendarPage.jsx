@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import interactionPlugin from '@fullcalendar/interaction'
@@ -17,6 +18,7 @@ const SCHEDULE_COLORS = {
 }
 
 function CalendarPage() {
+  const [searchParams] = useSearchParams()
   const [events, setEvents] = useState([])
   const [currentRange, setCurrentRange] = useState(null)
 
@@ -358,6 +360,7 @@ function CalendarPage() {
             ref={calendarRef}
             plugins={[dayGridPlugin, interactionPlugin]}
             initialView="dayGridMonth"
+            initialDate={searchParams.get('month') ? `${searchParams.get('month')}-01` : undefined}
             locale="ko"
             headerToolbar={false}
             events={events}

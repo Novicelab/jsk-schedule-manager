@@ -180,7 +180,7 @@ serve(async (req) => {
 
       const newDateStr = formatDateRange(schedule.start_at, schedule.end_at)
 
-      let message = `📅 [일정 ${actionLabel}]\n`
+      let message = `[일정 ${actionLabel}]\n`
       if (scheduleType !== 'VACATION') message += `작성자: ${actorName}\n`
       message += `${schedule.title}\n`
 
@@ -213,10 +213,14 @@ serve(async (req) => {
 
       // 카카오 나에게 보내기 API 호출
       try {
+        // 일정 시작일 기준 월로 캘린더 이동 URL 생성
+        const scheduleMonth = new Date(schedule.start_at).toISOString().slice(0, 7) // YYYY-MM
+        const calendarUrl = `https://jsk-schedule-frontend.onrender.com/?month=${scheduleMonth}`
+
         const templateObject = JSON.stringify({
           object_type: 'text',
           text: message,
-          link: { web_url: '', mobile_web_url: '' },
+          link: { web_url: calendarUrl, mobile_web_url: calendarUrl },
         })
 
         const kakaoResponse = await fetch('https://kapi.kakao.com/v2/api/talk/memo/default/send', {
