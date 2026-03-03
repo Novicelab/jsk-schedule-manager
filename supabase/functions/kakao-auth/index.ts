@@ -181,8 +181,9 @@ serve(async (req) => {
           // 이 시점에서는 Auth 사용자가 이미 생성되었음
           // 따라서 auth_id는 AuthError에서 추출 가능 (이메일로 조회 후 가져옴)
           // 하지만 간단하게, Supabase Auth 사용자 이메일로 조회하여 ID 얻기
-          const { data: existingAuthUser } = await supabaseAdmin.auth.admin.getUserByEmail(authEmail)
-          const authId = existingAuthUser?.id || null
+          const { data: existingAuthData } = await supabaseAdmin.auth.admin.getUserByEmail(authEmail)
+          const authId = existingAuthData?.user?.id || null
+          console.log('422 복구: Auth 사용자 조회 결과:', { authId, hasData: !!existingAuthData })
 
           // 기존 Auth 사용자의 비밀번호를 현재 newAuthPassword로 갱신
           // (이전 실패 시도에서 다른 비밀번호로 생성되었을 수 있음)
@@ -396,18 +397,19 @@ serve(async (req) => {
             email: authEmail
           })
           // Auth 사용자 조회 후 비밀번호 갱신 + auth_id 매핑
-          const { data: existingAuth } = await supabaseAdmin.auth.admin.getUserByEmail(authEmail)
-          if (existingAuth?.id) {
+          const { data: existingAuthData2 } = await supabaseAdmin.auth.admin.getUserByEmail(authEmail)
+          const existingAuthUserId = existingAuthData2?.user?.id
+          if (existingAuthUserId) {
             try {
-              await supabaseAdmin.auth.admin.updateUserById(existingAuth.id, {
+              await supabaseAdmin.auth.admin.updateUserById(existingAuthUserId, {
                 password: newAuthPassword,
               })
               await supabaseAdmin
                 .from('users')
-                .update({ auth_id: existingAuth.id })
+                .update({ auth_id: existingAuthUserId })
                 .eq('id', user.id)
-              user.auth_id = existingAuth.id
-              console.log('기존 사용자 Auth 복구 완료:', existingAuth.id)
+              user.auth_id = existingAuthUserId
+              console.log('기존 사용자 Auth 복구 완료:', existingAuthUserId)
             } catch (recoveryError) {
               console.warn('기존 사용자 Auth 복구 실패:', recoveryError)
             }
@@ -425,7 +427,7 @@ serve(async (req) => {
       password: newAuthPassword,
     })
 
-    // 실패 시 기존 비밀번호로 재시도 (마이그레이션)
+    // 실패 시 기존 비밀번호로 재시도 (마이그레이션 - 기존 사용자만)
     if (sessionData.error && !isNewUser) {
       console.warn('새 비밀번호 로그인 실패, 기존 비밀번호로 재시도:', sessionData.error)
       sessionData = await supabaseClient.auth.signInWithPassword({
@@ -443,13 +445,39 @@ serve(async (req) => {
           console.log('기존 사용자 비밀번호 업그레이드 완료')
         } catch (migrationError) {
           console.warn('비밀번호 업그레이드 실패 (로그인은 진행):', migrationError)
-          // 마이그레이션 실패해도 로그인은 진행
         }
       }
     }
 
+    // 신규 사용자(422 복구 경로): 비밀번호 불일치 시 강제 갱신 후 재시도
+    if (sessionData.error && isNewUser) {
+      console.warn('신규 사용자 로그인 실패, Auth 비밀번호 강제 갱신 후 재시도:', {
+        error: sessionData.error.message,
+        authEmail
+      })
+      try {
+        const { data: authLookup } = await supabaseAdmin.auth.admin.getUserByEmail(authEmail)
+        const lookupAuthId = authLookup?.user?.id
+        if (lookupAuthId) {
+          await supabaseAdmin.auth.admin.updateUserById(lookupAuthId, {
+            password: newAuthPassword,
+          })
+          console.log('신규 사용자 Auth 비밀번호 강제 갱신 완료:', lookupAuthId)
+          sessionData = await supabaseClient.auth.signInWithPassword({
+            email: authEmail,
+            password: newAuthPassword,
+          })
+          if (!sessionData.error) {
+            console.log('신규 사용자 비밀번호 갱신 후 로그인 성공')
+          }
+        }
+      } catch (retryError) {
+        console.error('신규 사용자 로그인 재시도 실패:', retryError)
+      }
+    }
+
     if (sessionData.error) {
-      console.error('Supabase 로그인 실패:', {
+      console.error('Supabase 로그인 최종 실패:', {
         message: sessionData.error.message,
         status: sessionData.error.status,
         authEmail,

@@ -94,6 +94,17 @@ function CalendarPage() {
     touchStartYRef.current = e.touches[0].clientY
   }, [])
 
+  // 수평 스와이프 감지 시 브라우저 native 제스처(뒤로가기 등) 차단
+  const handleTouchMove = useCallback((e) => {
+    if (touchStartXRef.current === null) return
+    const deltaX = Math.abs(e.touches[0].clientX - touchStartXRef.current)
+    const deltaY = Math.abs(e.touches[0].clientY - (touchStartYRef.current ?? e.touches[0].clientY))
+    // 수평 이동이 수직보다 크면 브라우저 기본 동작 차단 (페이지 이동 방지)
+    if (deltaX > deltaY && deltaX > 10) {
+      e.preventDefault()
+    }
+  }, [])
+
   const handleTouchEnd = useCallback((e) => {
     if (touchStartXRef.current === null) return
     const touch = e.changedTouches[0]
@@ -340,6 +351,7 @@ function CalendarPage() {
         <div
           className={`calendar-container${slideDirection ? ` slide-${slideDirection}` : ''}`}
           onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
         >
           <FullCalendar

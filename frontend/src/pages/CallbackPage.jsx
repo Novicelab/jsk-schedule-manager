@@ -23,6 +23,15 @@ function CallbackPage() {
       return
     }
 
+    // iOS Safari bfcache 이중 실행 방지: 동일 code 재사용 차단
+    const usedKey = `auth_code_used_${code}`
+    if (sessionStorage.getItem(usedKey)) {
+      console.warn('이미 사용된 인가 코드, 무시:', code.substring(0, 8))
+      navigate('/login', { replace: true })
+      return
+    }
+    sessionStorage.setItem(usedKey, 'true')
+
     const processCallback = async () => {
       try {
         console.log('=== 카카오 로그인 콜백 시작 ===')
@@ -39,9 +48,19 @@ function CallbackPage() {
         })
 
         if (invokeError) {
-          // Edge Function이 non-2xx 상태 코드를 반환한 경우, data에 실제 에러 정보가 포함될 수 있음
-          const detail = data?.error || data?.debug || invokeError.message
-          console.error('Edge Function 에러 상세:', { invokeError, data })
+          // Supabase SDK는 non-2xx 응답 시 data=null, invokeError.context에 Response 객체를 저장
+          let detail = data?.error || data?.debug || invokeError.message
+          // FunctionsHttpError인 경우 response body에서 실제 에러 정보 추출
+          if (invokeError.context && typeof invokeError.context.json === 'function') {
+            try {
+              const errorBody = await invokeError.context.json()
+              detail = errorBody?.error || errorBody?.debug?.reason || errorBody?.debug?.message || detail
+              console.error('Edge Function 에러 상세 (body):', errorBody)
+            } catch (parseErr) {
+              console.warn('Edge Function 에러 body 파싱 실패:', parseErr)
+            }
+          }
+          console.error('Edge Function 에러:', { invokeError, data, detail })
           throw new Error(typeof detail === 'string' ? detail : invokeError.message || 'Edge Function 호출 실패')
         }
 

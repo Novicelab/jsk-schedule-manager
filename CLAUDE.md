@@ -194,6 +194,13 @@
   - ✅ iOS 신규 계정 로그인 에러 수정: kakao-auth 422 복구 경로에서 Auth 비밀번호 갱신 추가
   - ✅ CallbackPage 에러 상세 정보 표시 개선 (debug 데이터 포함)
   - ✅ 캘린더 좌/우 슬라이드 애니메이션 추가 (300ms CSS 키프레임, 스와이프 + 버튼)
+- [x] 캘린더 UX + 다일 일정 + iOS 로그인 근본 수정 (2026-03-03)
+  - ✅ 캘린더 캐러셀 애니메이션: translateX(100%) 풀 슬라이드 + opacity 제거 (carousel 효과)
+  - ✅ 다일 일정 표시 수정: 모바일 CSS `background:inherit !important` 제거 (multi-day bar 배경색 복원)
+  - ✅ iOS 로그인 근본 수정: `getUserByEmail` 구조 분해 버그 수정 (`.user.id` 2곳), 신규 사용자 비밀번호 강제 갱신 폴백 추가
+  - ✅ CallbackPage 에러 표시 개선: `FunctionsHttpError` response body 파싱으로 실제 에러 메시지 표시
+  - ✅ iOS bfcache 이중 실행 방지: `sessionStorage`에 authorization_code 사용 여부 기록
+  - ✅ kakao-auth Edge Function v24 배포 완료
 
 ---
 

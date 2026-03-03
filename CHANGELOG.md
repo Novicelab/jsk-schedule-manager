@@ -4,6 +4,44 @@
 
 ---
 
+## [2026-03-03] 캘린더 UX + 다일 일정 + iOS 로그인 근본 수정
+
+### 변경사항
+
+#### 1. 캘린더 캐러셀 애니메이션 개선
+- `frontend/src/styles/global.css`
+  - 기존: `translateX(30%)` + opacity(0.3→1) 슬라이드
+  - 변경: `translateX(100%)` 풀 캐러셀 슬라이드 (opacity 변화 없음)
+  - `overflow: hidden`으로 화면 밖 클리핑, 달력 전체가 좌/우로 이동하는 비쥬얼
+
+#### 2. 다일(2일+) 일정 캘린더 전체 날짜 표시 수정
+- `frontend/src/styles/global.css`
+  - 원인: 모바일 CSS `background: inherit !important`가 FullCalendar inline backgroundColor 무시
+  - 수정: `background: inherit !important` 제거 → multi-day bar 배경색 정상 렌더링
+
+#### 3. [Critical] iOS 신규 계정 카카오 로그인 에러 근본 수정
+- `supabase/functions/kakao-auth/index.ts`
+  - **근본 원인**: `getUserByEmail` 구조 분해 버그 (`existingAuthUser?.id` → `existingAuthData?.user?.id`)
+  - Supabase v2 API는 `{ data: { user: { id } } }` 구조 반환, 기존 코드는 `data.id` 접근 → 항상 undefined
+  - 422 복구 경로에서 비밀번호 갱신이 항상 스킵 → 신규 사용자 signInWithPassword 실패
+  - 수정: 구조 분해 2곳 수정 + 신규 사용자 비밀번호 강제 갱신 폴백 추가
+- `frontend/src/pages/CallbackPage.jsx`
+  - `FunctionsHttpError` response body 파싱 추가 (실제 에러 메시지 표시)
+  - iOS Safari bfcache 이중 실행 방지: `sessionStorage`에 authorization_code 사용 여부 기록
+
+### 파일 변경
+| 파일 | 변경 |
+|------|------|
+| `frontend/src/styles/global.css` | 캐러셀 애니메이션 + multi-day 배경색 수정 |
+| `supabase/functions/kakao-auth/index.ts` | getUserByEmail 버그 수정 + 신규 사용자 폴백 |
+| `frontend/src/pages/CallbackPage.jsx` | 에러 body 파싱 + bfcache 방지 |
+
+### 배포
+- kakao-auth Edge Function v24 배포 완료
+- 프론트엔드 자동 배포 (git push 시)
+
+---
+
 ## [2026-03-02] 4개 이슈 수정 - 탈퇴 일정 보존 / 캘린더 색상 / 커서 / 삭제 RLS
 
 ### 변경사항
