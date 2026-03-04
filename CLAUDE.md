@@ -211,6 +211,12 @@
     - ScheduleDetail: 삭제 시 send-notification 호출 제거
     - MyPage: NotificationSettings 컴포넌트 제거
     - send-notification Edge Function 코드는 보존 (재활성화 대비)
+- [x] 조퇴 유형 추가 + 모바일 UX 개선 (2026-03-04)
+  - ✅ 일정 유형에 '조퇴(EARLY_LEAVE)' 추가 (시간 선택 포함, 캘린더 amber #f59e0b)
+  - ✅ 모바일 캘린더 이벤트 클릭 시 바텀시트 출력 (기존 무반응 → 해당 날짜 이벤트 필터링)
+  - ✅ 바텀시트 UI 개선: 이벤트 우측 기간 표시 + 일정 추가 버튼 강조
+  - ✅ send-notification 조퇴 라벨/시간 지원 (코드 보존, 비활성화 상태)
+  - ⚠️ DB 트리거 수동 업데이트 필요: auto_vacation_title()에 EARLY_LEAVE 분기 추가
 
 ---
 

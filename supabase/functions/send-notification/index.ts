@@ -167,6 +167,7 @@ serve(async (req) => {
         FULL: '휴가(일반)',
         HALF_AM: '휴가(오전 반차)',
         HALF_PM: '휴가(오후 반차)',
+        EARLY_LEAVE: '조퇴',
       }
       const getTypeLabel = (type: string, vacationType?: string) =>
         type === 'VACATION' ? (VACATION_LABEL[vacationType || 'FULL'] || '휴가') : '업무'
@@ -204,7 +205,10 @@ serve(async (req) => {
         }
       } else {
         message += newDateStr
-        if (!schedule.all_day) {
+        if (schedule.vacation_type === 'EARLY_LEAVE' && schedule.end_at) {
+          const earlyTime = new Date(schedule.end_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+          message += `\n조퇴 시간: ${earlyTime}`
+        } else if (!schedule.all_day) {
           const startTime = new Date(schedule.start_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
           const endTime = new Date(schedule.end_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
           message += `\n${startTime} ~ ${endTime}`

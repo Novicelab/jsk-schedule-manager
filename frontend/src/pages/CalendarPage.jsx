@@ -11,10 +11,11 @@ import { supabase } from '../lib/supabase'
 
 // 일정 유형별 색상
 const SCHEDULE_COLORS = {
-  VACATION_FULL: '#7b1fa2',    // 짙은 보라 (일반 휴가, 키 컬러)
-  VACATION_HALF_AM: '#82d9a5', // 연한 연두 (오전 반차)
-  VACATION_HALF_PM: '#82d9a5', // 연한 연두 (오후 반차)
-  WORK: '#bdbdbd',             // 연한 그레이 (업무)
+  VACATION_FULL: '#7b1fa2',         // 짙은 보라 (일반 휴가, 키 컬러)
+  VACATION_HALF_AM: '#82d9a5',      // 연한 연두 (오전 반차)
+  VACATION_HALF_PM: '#82d9a5',      // 연한 연두 (오후 반차)
+  VACATION_EARLY_LEAVE: '#f59e0b',  // amber (조퇴)
+  WORK: '#bdbdbd',                  // 연한 그레이 (업무)
 }
 
 function CalendarPage() {
@@ -58,6 +59,7 @@ function CalendarPage() {
     FULL: '휴가',
     HALF_AM: '오전 반차',
     HALF_PM: '오후 반차',
+    EARLY_LEAVE: '조퇴',
   }
 
   // 이벤트 콘텐츠 렌더링 (모바일 최적화)
@@ -179,6 +181,8 @@ function CalendarPage() {
             description: s.description,
             createdBy: s.created_by,
             createdByName: s.created_by_name,
+            rawStartAt: s.start_at,
+            rawEndAt: s.end_at,
           },
         }
       })
@@ -274,13 +278,25 @@ function CalendarPage() {
     }
   }, [])
 
-  // 이벤트 클릭 → 모바일: 무시, PC: 상세 모달 표시
+  // 이벤트 클릭 → 모바일: 바텀시트 표시, PC: 상세 모달 표시
   const handleEventClick = useCallback(
     async (info) => {
-      if (isMobile) return
+      if (isMobile) {
+        // 클릭한 이벤트의 시작일 기준으로 해당 날짜의 이벤트 필터링 후 바텀시트 표시
+        const dateStr = dayjs(info.event.start).format('YYYY-MM-DD')
+        const dayEvents = events.filter(e => {
+          const startStr = dayjs(e.start).format('YYYY-MM-DD')
+          const endStr = e.end ? dayjs(e.end).format('YYYY-MM-DD') : startStr
+          return startStr <= dateStr && dateStr < endStr
+        })
+        setClickedDate(dateStr)
+        setClickedDateEvents(dayEvents)
+        setShowDatePopup(true)
+        return
+      }
       handleEventDetail(info.event.id)
     },
-    [isMobile, handleEventDetail]
+    [isMobile, events, handleEventDetail]
   )
 
   // 일정 저장 완료 후 목록 새로고침
@@ -308,6 +324,19 @@ function CalendarPage() {
     setShowScheduleModal(true)
   }, [])
 
+  // 바텀시트 이벤트 기간 라벨 생성
+  const getEventPeriodLabel = (event) => {
+    const props = event.extendedProps || {}
+    if (props.vacationType === 'EARLY_LEAVE' && props.rawEndAt) {
+      return dayjs(props.rawEndAt).format('HH:mm') + ' 조퇴'
+    }
+    const startStr = dayjs(event.start).format('M/D')
+    // allDay 이벤트의 end는 exclusive (+1일 처리됨)이므로 실제 종료일은 -1일
+    const endDate = event.end ? dayjs(event.end).subtract(1, 'day') : dayjs(event.start)
+    const endStr = endDate.format('M/D')
+    return startStr === endStr ? startStr : `${startStr}~${endStr}`
+  }
+
   return (
     <div className="page-layout">
       <Navbar />
@@ -327,6 +356,13 @@ function CalendarPage() {
                 style={{ backgroundColor: SCHEDULE_COLORS.VACATION_HALF_AM }}
               />
               휴가 (반차)
+            </span>
+            <span className="legend-item">
+              <span
+                className="legend-dot"
+                style={{ backgroundColor: SCHEDULE_COLORS.VACATION_EARLY_LEAVE }}
+              />
+              조퇴
             </span>
             <span className="legend-item">
               <span
@@ -436,6 +472,7 @@ function CalendarPage() {
                         style={{ backgroundColor: event.backgroundColor }}
                       />
                       <span className="date-event-title">{event.title}</span>
+                      <span className="date-event-period">{getEventPeriodLabel(event)}</span>
                     </li>
                   ))}
                 </ul>
@@ -446,7 +483,7 @@ function CalendarPage() {
 
             <div className="date-popup-footer">
               <button
-                className="btn btn-primary"
+                className="btn btn-primary btn-add-schedule"
                 onClick={() => {
                   setSelectedDate(clickedDate)
                   setEditingSchedule(null)

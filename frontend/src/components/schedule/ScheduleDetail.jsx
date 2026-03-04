@@ -12,6 +12,7 @@ const VACATION_TYPE_LABEL = {
   FULL: '일반',
   HALF_AM: '오전 반차',
   HALF_PM: '오후 반차',
+  EARLY_LEAVE: '조퇴',
 }
 
 function ScheduleDetail({ schedule, onEdit, onDeleted, onClose }) {
@@ -109,6 +110,15 @@ function ScheduleDetail({ schedule, onEdit, onDeleted, onClose }) {
               )}
             </span>
           </div>
+
+          {schedule.vacationType === 'EARLY_LEAVE' && schedule.endAt && (
+            <div className="detail-row">
+              <span className="detail-label">조퇴 시간</span>
+              <span className="detail-value">
+                {dayjs(schedule.endAt).format('HH:mm')}
+              </span>
+            </div>
+          )}
 
           {schedule.description && (
             <div className="detail-row detail-row-column">

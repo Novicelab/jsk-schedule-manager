@@ -4,6 +4,50 @@
 
 ---
 
+## [2026-03-04] 조퇴 유형 추가 + 모바일 UX 개선
+
+### 변경사항
+
+#### 1. 조퇴(EARLY_LEAVE) 유형 추가
+- `frontend/src/components/schedule/ScheduleModal.jsx`
+  - `VACATION_TYPES`에 `EARLY_LEAVE: '조퇴'` 추가
+  - 조퇴 시간 picker UI (시: 1~23, 분: 00/30)
+  - `handleSubmit`: EARLY_LEAVE일 때 `end_at`에 조퇴 시간 저장
+  - 수정 모드: `end_at`에서 시/분 파싱하여 기본값 복원
+- `frontend/src/components/schedule/ScheduleDetail.jsx`
+  - `VACATION_TYPE_LABEL`에 `EARLY_LEAVE: '조퇴'` 추가
+  - 조퇴 일정 상세에 "조퇴 시간: HH:mm" 행 표시
+- `frontend/src/pages/CalendarPage.jsx`
+  - `SCHEDULE_COLORS`에 `VACATION_EARLY_LEAVE: '#f59e0b'` (amber) 추가
+  - 색상 범례에 조퇴 항목 추가
+  - `extendedProps`에 `rawStartAt`, `rawEndAt` 추가
+- `frontend/src/components/schedule/ScheduleModal.css`
+  - 조퇴 시간 picker 레이아웃 스타일 추가
+- `frontend/src/styles/global.css`
+  - `.vacation-EARLY_LEAVE` 배경색 클래스 추가
+- `supabase/functions/send-notification/index.ts`
+  - `VACATION_LABEL`에 `EARLY_LEAVE: '조퇴'` 추가
+  - EARLY_LEAVE일 때 알림 메시지에 조퇴 시간 포함
+
+#### 2. 모바일 이벤트 클릭 → 바텀시트 출력
+- `frontend/src/pages/CalendarPage.jsx`
+  - `handleEventClick`: 모바일에서 `return` → 해당 날짜 이벤트 필터링 후 바텀시트 표시
+
+#### 3. 바텀시트 UI 개선
+- `frontend/src/pages/CalendarPage.jsx`
+  - `getEventPeriodLabel` 헬퍼: 단일 `3/4`, 다일 `3/1~3/5`, 조퇴 `14:30 조퇴`
+  - 이벤트 목록 우측에 기간 라벨 표시
+  - "일정 추가" 버튼에 `btn-add-schedule` 클래스 추가
+- `frontend/src/styles/global.css`
+  - `.date-event-period` 스타일 (12px, 회색, 우측 정렬)
+  - `.btn-add-schedule` 강조 스타일 (14px 패딩, 16px bold, border-radius 10px)
+
+### 비고
+- DB 트리거 수동 업데이트 필요: `auto_vacation_title()`에 `WHEN 'EARLY_LEAVE' THEN '조퇴'` 분기 추가
+- send-notification은 비활성화 상태이나 코드 레벨에서 조퇴 지원 추가
+
+---
+
 ## [2026-03-04] 알림 메시지 개선 및 알림 기능 fade-out
 
 ### 변경사항

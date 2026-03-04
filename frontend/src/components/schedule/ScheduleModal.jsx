@@ -15,6 +15,7 @@ const VACATION_TYPES = [
   { value: 'FULL', label: '일반' },
   { value: 'HALF_AM', label: '오전 반차' },
   { value: 'HALF_PM', label: '오후 반차' },
+  { value: 'EARLY_LEAVE', label: '조퇴' },
 ]
 
 function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
@@ -30,6 +31,8 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
     startDate: defaultDateObj,
     endDate: defaultDateObj,
     vacationType: 'FULL',
+    earlyLeaveHour: 14,
+    earlyLeaveMinute: 0,
   })
   const [errors, setErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
@@ -41,6 +44,15 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
       const startAtDayjs = dayjs(schedule.startAt)
       const endAtDayjs = dayjs(schedule.endAt)
 
+      // EARLY_LEAVE일 때 end_at에서 시/분 파싱
+      let earlyLeaveHour = 14
+      let earlyLeaveMinute = 0
+      if (schedule.vacationType === 'EARLY_LEAVE' && schedule.endAt) {
+        const endTime = dayjs(schedule.endAt)
+        earlyLeaveHour = endTime.hour()
+        earlyLeaveMinute = endTime.minute()
+      }
+
       setForm({
         type: schedule.type || 'WORK',
         title: schedule.type === 'WORK' ? (schedule.title || '') : '',
@@ -48,6 +60,8 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
         startDate: startAtDayjs.toDate(),
         endDate: endAtDayjs.toDate(),
         vacationType: schedule.vacationType || 'FULL',
+        earlyLeaveHour,
+        earlyLeaveMinute,
       })
     }
   }, [isEdit, schedule])
@@ -141,10 +155,17 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
         vacation_type = null
       } else {
         start_at = dayjs(form.startDate).format('YYYY-MM-DD') + 'T00:00:00'
-        // 반차인 경우 startDate와 endDate가 같음, 일반인 경우 endDate 사용
-        end_at = (form.vacationType === 'FULL')
-          ? dayjs(form.endDate).format('YYYY-MM-DD') + 'T23:59:59'
-          : dayjs(form.startDate).format('YYYY-MM-DD') + 'T23:59:59'
+        if (form.vacationType === 'EARLY_LEAVE') {
+          // 조퇴: end_at에 조퇴 시간 저장
+          const hh = String(form.earlyLeaveHour).padStart(2, '0')
+          const mm = String(form.earlyLeaveMinute).padStart(2, '0')
+          end_at = dayjs(form.startDate).format('YYYY-MM-DD') + `T${hh}:${mm}:00`
+        } else if (form.vacationType === 'FULL') {
+          end_at = dayjs(form.endDate).format('YYYY-MM-DD') + 'T23:59:59'
+        } else {
+          // 반차: startDate와 endDate가 같음
+          end_at = dayjs(form.startDate).format('YYYY-MM-DD') + 'T23:59:59'
+        }
         all_day = true
         title = '' // DB 트리거가 vacation_type 기반으로 자동 생성
         vacation_type = form.vacationType
@@ -281,7 +302,7 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
                           setForm((prev) => ({
                             ...prev,
                             vacationType: e.target.value,
-                            // 반차인 경우 endDate를 startDate로 자동 설정
+                            // 반차/조퇴인 경우 endDate를 startDate로 자동 설정
                             endDate: e.target.value !== 'FULL' ? prev.startDate : prev.endDate,
                           }))
                         }}
@@ -329,6 +350,34 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
                   <span className="field-error">{errors.endDate}</span>
                 )}
               </div>
+
+              {form.vacationType === 'EARLY_LEAVE' && (
+                <div className="form-group">
+                  <label className="form-label">
+                    조퇴 시간 <span className="required">*</span>
+                  </label>
+                  <div className="early-leave-time-picker">
+                    <select
+                      className="form-input time-select"
+                      value={form.earlyLeaveHour}
+                      onChange={(e) => setForm((prev) => ({ ...prev, earlyLeaveHour: Number(e.target.value) }))}
+                    >
+                      {Array.from({ length: 23 }, (_, i) => i + 1).map((h) => (
+                        <option key={h} value={h}>{String(h).padStart(2, '0')}시</option>
+                      ))}
+                    </select>
+                    <span className="time-separator">:</span>
+                    <select
+                      className="form-input time-select"
+                      value={form.earlyLeaveMinute}
+                      onChange={(e) => setForm((prev) => ({ ...prev, earlyLeaveMinute: Number(e.target.value) }))}
+                    >
+                      <option value={0}>00분</option>
+                      <option value={30}>30분</option>
+                    </select>
+                  </div>
+                </div>
+              )}
             </>
           )}
 
