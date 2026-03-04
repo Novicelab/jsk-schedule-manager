@@ -1170,18 +1170,12 @@ select {
     padding: 2px 3px;
   }
 
-  .calendar-container .fc-daygrid-event-harness {
-    margin: 0 !important;
-  }
-
+  /* 시각적 스타일만 적용 (margin/height는 FullCalendar 레이아웃 엔진에 위임) */
   .calendar-container .fc-daygrid-event {
-    margin: 0 !important;
     padding: 0 !important;
     border: 1px solid rgba(0, 0, 0, 0.1) !important;
     box-shadow: none !important;
     border-radius: 3px !important;
-    height: auto;
-    min-height: 28px;
   }
 
   .calendar-container .fc-daygrid-event:hover {
@@ -1221,9 +1215,6 @@ select {
     font-size: 10px;
   }
 
-  .calendar-container .fc-daygrid-event {
-    min-height: 24px !important;
-  }
 }
 
 /* ============================================
