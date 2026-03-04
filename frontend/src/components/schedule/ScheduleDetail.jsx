@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState } from 'react'
 import dayjs from 'dayjs'
 import { supabase } from '../../lib/supabase'
 import LoadingPopup from '../LoadingPopup'
@@ -18,25 +18,7 @@ function ScheduleDetail({ schedule, onEdit, onDeleted, onClose }) {
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
-  const deleteTimerRef = useRef(null)
-
-  // 컴포넌트 unmount 시 대기 중인 타이머 클린업
-  useEffect(() => {
-    return () => {
-      if (deleteTimerRef.current) {
-        clearTimeout(deleteTimerRef.current)
-        console.log('삭제 타이머 클린업됨')
-      }
-    }
-  }, [])
-
-  // onClose 호출 시 대기 중인 타이머 미리 클리어
   const handleClose = () => {
-    if (deleteTimerRef.current) {
-      clearTimeout(deleteTimerRef.current)
-      deleteTimerRef.current = null
-      console.log('모달 닫기 - 삭제 타이머 취소됨')
-    }
     onClose()
   }
 
@@ -56,37 +38,6 @@ function ScheduleDetail({ schedule, onEdit, onDeleted, onClose }) {
       })
 
       if (error) throw error
-
-      // 알림 발송 (Supabase Edge Function, fire-and-forget)
-      // 정책: 알림 발송 실패 시에도 일정 삭제는 유지 (롤백 없음). 경고 배너 2초 표시 후 완료 처리.
-      const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
-
-      try {
-        const { error: notifyError } = await supabase.functions.invoke('send-notification', {
-          body: {
-            scheduleId: schedule.id,
-            actionType: 'DELETED',
-            actorUserId: currentUser?.id,
-          },
-        })
-        if (notifyError) {
-          console.warn('알림 발송 실패:', notifyError)
-          setDeleteError('일정이 삭제되었습니다. 카카오 알림 발송에 실패했습니다.')
-          deleteTimerRef.current = setTimeout(() => {
-            console.log('onDeleted() 호출 (알림 발송 실패)')
-            onDeleted()
-          }, 2000)
-          return
-        }
-      } catch (err) {
-        console.warn('알림 발송 실패:', err)
-        setDeleteError('일정이 삭제되었습니다. 카카오 알림 발송에 실패했습니다.')
-        deleteTimerRef.current = setTimeout(() => {
-          console.log('onDeleted() 호출 (알림 발송 예외)')
-          onDeleted()
-        }, 2000)
-        return
-      }
 
       onDeleted()
     } catch (err) {

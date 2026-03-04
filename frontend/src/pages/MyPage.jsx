@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import Navbar from '../components/Navbar'
-import NotificationSettings from '../components/settings/NotificationSettings'
 import LoadingPopup from '../components/LoadingPopup'
 
 function MyPage() {
@@ -69,10 +68,6 @@ function MyPage() {
               &larr; 뒤로가기
             </button>
             <h2 className="mypage-title">마이페이지</h2>
-          </div>
-
-          <div className="mypage-section">
-            <NotificationSettings />
           </div>
 
           <div className="mypage-withdraw-section">
