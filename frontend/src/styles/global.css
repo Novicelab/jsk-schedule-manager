@@ -1164,10 +1164,22 @@ select {
   line-height: 1.2;
 }
 
-/* 모바일: 이벤트를 텍스트로 표시 */
+/* 모바일: 캘린더 여백 축소 (셀 너비 확보) */
 @media (max-width: 767px) {
+  .calendar-main {
+    padding: 8px;
+  }
+
+  .calendar-custom-header {
+    padding: 10px 8px 6px;
+  }
+
+  .calendar-container {
+    padding: 0 4px 8px;
+  }
+
   .calendar-container .fc-daygrid-day-events {
-    padding: 2px 3px;
+    padding: 1px 2px;
   }
 
   /* 시각적 스타일만 적용 (margin/height는 FullCalendar 레이아웃 엔진에 위임) */
