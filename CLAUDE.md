@@ -13,7 +13,7 @@
 |------|------|
 | 일정 CRUD | 일정 생성, 조회, 수정, 삭제 |
 | 팀원 초대/권한 관리 | 팀 구성원 관리 및 역할(관리자/일반) 분리 |
-| 알림/리마인더 | 일정 전 알림 및 마감 리마인더 발송 |
+| 알림/리마인더 | 일정 전 알림 (현재 비활성화, 알림톡 전환 예정) |
 | 캘린더 뷰 | 월간/주간/일간 캘린더 형태의 시각화 |
 
 ---
@@ -33,8 +33,9 @@
 - 과거 일정은 삭제하지 않고 아카이브 처리한다.
 
 ### 알림 정책
-- 알림은 CRUD가 발생할 때마다 발송된다. (즉, 일정의 등록, 수정, 삭제 시 알림 발송)
-- 알림 채널은 카카오톡을 기준으로 한다.
+- 알림 기능은 현재 비활성화 상태 (카카오 알림톡 전환 예정)
+- 전환 완료 시: 일정 CRUD 발생 시 카카오 알림톡으로 발송
+- 알림 채널은 카카오톡 알림톡을 기준으로 한다.
 
 ### 데이터 정책
 - 모든 데이터는 데이터베이스(DB)에 영구 저장한다.
@@ -60,7 +61,7 @@
 | 배포 URL | Frontend: https://jsk-schedule-frontend.onrender.com | Live |
 | 소스관리/CI·CD | GitHub | 코드 버전관리 및 자동 배포 연동 |
 | 인증 | 카카오톡 OAuth 2.0 + Supabase Auth | 세션 자동 갱신 (Supabase Client 내장) |
-| 알림 | 카카오톡 알림톡 API | Supabase Edge Function에서 비동기 처리 |
+| 알림 | 카카오톡 알림톡 API (현재 비활성화, 전환 예정) | Supabase Edge Function 코드 보존 |
 
 ---
 
@@ -72,7 +73,7 @@
                                 ├── Auth (세션 관리, 토큰 자동 갱신)
                                 └── Edge Functions
                                     ├── kakao-auth (카카오 OAuth 처리)
-                                    ├── send-notification (알림톡 발송)
+                                    ├── send-notification (알림톡 발송, 현재 비활성화)
                                     ├── update-user-name (사용자 이름 저장, RLS 우회)
                                     ├── delete-user (회원 탈퇴, 민감정보 삭제)
                                     └── soft-delete-schedule (일정 soft delete, RLS 우회)
@@ -81,7 +82,7 @@
 - **프론트엔드**: React SPA → Supabase JS Client로 DB 직접 접근
 - **인증**: Supabase Auth (카카오 OAuth는 Edge Function 경유)
 - **보안**: RLS(Row Level Security)로 행 수준 접근 제어
-- **알림**: Edge Function에서 카카오 알림톡 API 호출
+- **알림**: 비활성화 (알림톡 전환 예정, send-notification Edge Function 코드 보존)
 - **DB 트리거**: VACATION 일정 제목 자동 생성 (`[이름] 부제목`)
 
 ---
@@ -201,6 +202,15 @@
   - ✅ CallbackPage 에러 표시 개선: `FunctionsHttpError` response body 파싱으로 실제 에러 메시지 표시
   - ✅ iOS bfcache 이중 실행 방지: `sessionStorage`에 authorization_code 사용 여부 기록
   - ✅ kakao-auth Edge Function v24 배포 완료
+- [x] 알림 메시지 개선 및 알림 기능 fade-out (2026-03-04)
+  - ✅ 알림 메시지 📅 아이콘 제거 (모든 케이스 공통)
+  - ✅ 알림 메시지 [자세히보기] 링크: 해당 월 캘린더로 이동 (?month=YYYY-MM)
+  - ✅ CalendarPage: URL 쿼리 파라미터 month로 초기 월 이동
+  - ✅ 카카오톡 알림 발송 기능 비활성화 (알림톡 전환 예정)
+    - ScheduleModal: 생성/수정 시 send-notification 호출 제거
+    - ScheduleDetail: 삭제 시 send-notification 호출 제거
+    - MyPage: NotificationSettings 컴포넌트 제거
+    - send-notification Edge Function 코드는 보존 (재활성화 대비)
 
 ---
 

@@ -4,6 +4,34 @@
 
 ---
 
+## [2026-03-04] 알림 메시지 개선 및 알림 기능 fade-out
+
+### 변경사항
+
+#### 1. 알림 메시지 개선
+- `supabase/functions/send-notification/index.ts`
+  - 📅 아이콘 제거 (모든 알림 메시지 공통)
+  - [자세히보기] 링크에 해당 월 캘린더 URL 설정 (`?month=YYYY-MM`)
+- `frontend/src/pages/CalendarPage.jsx`
+  - URL 쿼리 파라미터 `?month=YYYY-MM`으로 해당 월 초기 이동 지원
+
+#### 2. 카카오톡 알림 발송 기능 비활성화 (알림톡 전환 예정)
+- `frontend/src/components/schedule/ScheduleModal.jsx`
+  - 일정 생성/수정 시 send-notification 호출 제거
+  - notifyWarning 관련 state/UI 제거
+- `frontend/src/components/schedule/ScheduleDetail.jsx`
+  - 일정 삭제 시 send-notification 호출 제거
+  - deleteTimerRef 및 관련 클린업 코드 제거
+- `frontend/src/pages/MyPage.jsx`
+  - NotificationSettings 컴포넌트 import 및 렌더링 제거
+
+### 비고
+- send-notification Edge Function 코드는 보존 (알림톡 전환 시 재활성화)
+- NotificationSettings 컴포넌트 파일도 보존 (재활성화 대비)
+- 알림톡 전환 시 필요 절차: 카카오톡 채널 생성 → 비즈니스 전환 → 템플릿 검수 → API 전환
+
+---
+
 ## [2026-03-03] 캘린더 UX + 다일 일정 + iOS 로그인 근본 수정
 
 ### 변경사항
