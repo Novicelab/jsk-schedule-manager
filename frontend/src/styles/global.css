@@ -1168,7 +1168,6 @@ select {
 @media (max-width: 767px) {
   .calendar-container .fc-daygrid-day-events {
     padding: 2px 3px;
-    min-height: auto !important;
   }
 
   .calendar-container .fc-daygrid-event-harness {

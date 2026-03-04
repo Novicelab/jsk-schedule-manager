@@ -282,8 +282,16 @@ function CalendarPage() {
   const handleEventClick = useCallback(
     async (info) => {
       if (isMobile) {
-        // 클릭한 이벤트의 시작일 기준으로 해당 날짜의 이벤트 필터링 후 바텀시트 표시
-        const dateStr = dayjs(info.event.start).format('YYYY-MM-DD')
+        // 다일 이벤트: 클릭한 위치의 날짜 셀(data-date)을 탐지하여 해당 날짜 바텀시트 표시
+        let dateStr = dayjs(info.event.start).format('YYYY-MM-DD')
+        const jsEvent = info.jsEvent
+        if (jsEvent) {
+          const elements = document.elementsFromPoint(jsEvent.clientX, jsEvent.clientY)
+          const dateCell = elements.find(el => el.hasAttribute('data-date'))
+          if (dateCell) {
+            dateStr = dateCell.getAttribute('data-date')
+          }
+        }
         const dayEvents = events.filter(e => {
           const startStr = dayjs(e.start).format('YYYY-MM-DD')
           const endStr = e.end ? dayjs(e.end).format('YYYY-MM-DD') : startStr
