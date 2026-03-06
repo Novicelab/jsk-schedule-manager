@@ -4,6 +4,37 @@
 
 ---
 
+## [2026-03-07] 카카오 로그인 에러 근본 수정 + UX 개선 2건
+
+### 변경사항
+
+#### 1. 카카오 로그인 에러 근본 수정 (접속 정보 확인 필요)
+- `frontend/src/components/Navbar.jsx`
+  - Kakao logout_redirect_uri 엔드포인트 제거 (비등록으로 인한 세션 손상)
+  - `supabase.auth.signOut()` + `navigate('/login')` 복원
+  - 카카오톡 앱 SSO 로그인 정상 복원
+- **근본 원인**: 03-02 17:55 추가된 `kauth.kakao.com/oauth/logout` 호출이 logout_redirect_uri 미등록으로 Kakao 세션/쿠키를 비정상 상태로 남겨서, 다음 로그인 시 "네트워크 정보가 변경되었거나 올바르지 않은 접근" 에러 발생
+
+#### 2. 일정 등록/수정 모달 버튼 UX 개선
+- `frontend/src/styles/global.css`
+  - `.modal-footer .btn`: `flex: 1`, `padding: 14px 16px`, `font-size: 16px 700`
+  - 버튼을 화면 전체 너비에 맞춰 확대 (모바일 터치 친화적)
+  - `.modal-footer`: `justify-content: flex-end` → `space-between` (양쪽 배치)
+
+#### 3. 회원가입 필수 입력 강화
+- `frontend/src/components/auth/NameInputModal.jsx`
+  - 배경 클릭 핸들러 제거 (배경 클릭 불가 명확화)
+- `frontend/src/components/auth/NameInputModal.css`
+  - `.name-modal-overlay`: `pointer-events: none` (배경 클릭 불가)
+  - `.name-modal-content`: `pointer-events: auto` (모달 내부 클릭 가능)
+  - 결과: 사용자명 입력 후 확인 버튼으로만 진행 가능
+
+### 비고
+- 빌드 확인 완료
+- 자동 배포 트리거 (Render)
+
+---
+
 ## [2026-03-06] 카카오 로그인 보안 강화 + UI 개선 3건
 
 ### 변경사항
