@@ -6,13 +6,15 @@ import './LoginPage.css'
 // prompt=login 제거: Kakao 로그아웃 엔드포인트 도입으로 Kakao 세션이 이미 종료되어 있음
 // prompt=login은 Android에서 카카오톡 앱 연동 로그인과 충돌하므로 사용하지 않음
 const buildKakaoAuthUrl = () => {
-  // state 파라미터: 카카오톡 앱 연동 로그인 시 CSRF 검증에 필요
+  // state 파라미터: CSRF 검증용
   const state = crypto.randomUUID()
   sessionStorage.setItem('kakao_oauth_state', state)
-  const redirectUri = encodeURIComponent(import.meta.env.VITE_KAKAO_REDIRECT_URI)
+  // scope=talk_message 제거: 알림 기능 비활성화 상태, 비즈앱 미전환 시 KOE205 에러 유발
+  // encodeURIComponent 제거: 카카오 OAuth는 redirect_uri 평문 전달 표준
+  const redirectUri = import.meta.env.VITE_KAKAO_REDIRECT_URI
   return `https://kauth.kakao.com/oauth/authorize?client_id=${
     import.meta.env.VITE_KAKAO_CLIENT_ID
-  }&redirect_uri=${redirectUri}&response_type=code&scope=talk_message&state=${state}`
+  }&redirect_uri=${redirectUri}&response_type=code&state=${state}`
 }
 
 function LoginPage() {
