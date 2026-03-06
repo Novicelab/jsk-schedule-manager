@@ -121,9 +121,9 @@ function ScheduleDetail({ schedule, onEdit, onDeleted, onClose }) {
           )}
 
           {schedule.description && (
-            <div className="detail-row detail-row-column">
+            <div className="detail-row">
               <span className="detail-label">설명</span>
-              <p className="detail-description">{schedule.description}</p>
+              <span className="detail-value">{schedule.description}</span>
             </div>
           )}
 
