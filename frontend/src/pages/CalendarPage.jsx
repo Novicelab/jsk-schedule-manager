@@ -71,7 +71,7 @@ function CalendarPage() {
       const vacationTypeClass = `vacation-${vacationType || 'FULL'}`
       return (
         <div className={`mobile-event-content vacation-event ${vacationTypeClass}`}>
-          <div className="event-name">[{createdByName}]</div>
+          <div className="event-name">{createdByName}</div>
           <div className="event-type">{vacLabel}</div>
         </div>
       )

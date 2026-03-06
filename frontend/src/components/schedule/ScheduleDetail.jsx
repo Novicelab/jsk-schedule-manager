@@ -127,7 +127,7 @@ function ScheduleDetail({ schedule, onEdit, onDeleted, onClose }) {
             </div>
           )}
 
-          {schedule.createdByName && (
+          {schedule.type === 'WORK' && schedule.createdByName && (
             <div className="detail-row">
               <span className="detail-label">등록자</span>
               <span className="detail-value">{schedule.createdByName}</span>
