@@ -4,6 +4,33 @@
 
 ---
 
+## [2026-03-06] 카카오 로그인 보안 강화 + UI 개선 3건
+
+### 변경사항
+
+#### 1. 카카오 로그인 보안 강화 (CSRF 방어)
+- `frontend/src/pages/LoginPage.jsx`
+  - 정적 `KAKAO_AUTH_URL` → `buildKakaoAuthUrl()` 함수로 변경
+  - `state` 파라미터 추가 (`crypto.randomUUID()`, sessionStorage 저장)
+  - `redirect_uri`에 `encodeURIComponent` 적용
+- `frontend/src/pages/CallbackPage.jsx`
+  - 콜백 시 `state` 파라미터 검증 로직 추가 (불일치 시 에러 표시 후 로그인 페이지 이동)
+
+#### 2. 캘린더 이벤트 이름 말줄임표 제거
+- `frontend/src/styles/global.css`
+  - `.event-name`에서 `text-overflow: ellipsis` 제거 (overflow: hidden clip 방식)
+
+#### 3. 일정 유형 선택 UI 개선
+- `frontend/src/components/schedule/ScheduleModal.css`
+  - radio 버튼 시각적 숨김 (position: absolute, opacity: 0)
+  - 유형 카드 2×2 그리드 레이아웃 (flex-wrap + calc(50% - 5px))
+
+### 비고
+- 빌드 확인 완료
+- 자동 배포 트리거 (Render)
+
+---
+
 ## [2026-03-04] 조퇴 유형 추가 + 모바일 UX 개선
 
 ### 변경사항
