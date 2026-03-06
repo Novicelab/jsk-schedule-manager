@@ -119,14 +119,10 @@ function NameInputModal({ onComplete }) {
     }
   }
 
-  const handleBackgroundClick = (e) => {
-    e.stopPropagation()
-  }
-
   return (
     <>
       <LoadingPopup isOpen={submitting} message="이름 저장 중..." />
-      <div className="name-modal-overlay" onClick={handleBackgroundClick}>
+      <div className="name-modal-overlay">
         <div className="name-modal-content">
         <div className="name-modal-header">
           <h2>이름을 입력해주세요</h2>
