@@ -156,19 +156,21 @@
 /* Type Selection Box Group */
 .type-box-group {
   display: flex;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 10px;
   margin-top: 12px;
 }
 
 .type-box {
-  flex: 1;
-  padding: 16px;
+  flex: 1 1 calc(50% - 5px);
+  max-width: calc(50% - 5px);
+  padding: 14px 16px;
   border: 2px solid #d1d5db;
   border-radius: 8px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: center;
   transition: all 0.2s ease;
   user-select: none;
 }
@@ -185,11 +187,11 @@
 }
 
 .type-radio {
-  width: 20px;
-  height: 20px;
-  cursor: pointer;
-  accent-color: #9c27b0;
-  flex-shrink: 0;
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
 }
 
 .type-box-label {

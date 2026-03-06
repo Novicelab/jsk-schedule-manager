@@ -23,6 +23,18 @@ function CallbackPage() {
       return
     }
 
+    // CSRF 검증: state 파라미터 확인
+    const returnedState = searchParams.get('state')
+    const savedState = sessionStorage.getItem('kakao_oauth_state')
+    if (savedState && returnedState !== savedState) {
+      console.error('OAuth state mismatch:', { returnedState, savedState })
+      setErrorMessage('보안 검증에 실패했습니다. 다시 로그인해주세요.')
+      sessionStorage.removeItem('kakao_oauth_state')
+      setTimeout(() => navigate('/login', { replace: true }), 2000)
+      return
+    }
+    sessionStorage.removeItem('kakao_oauth_state')
+
     // iOS Safari bfcache 이중 실행 방지: 동일 code 재사용 차단
     const usedKey = `auth_code_used_${code}`
     if (sessionStorage.getItem(usedKey)) {
