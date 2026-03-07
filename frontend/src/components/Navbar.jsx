@@ -9,7 +9,11 @@ function Navbar() {
     try {
       console.log('=== 로그아웃 시작 ===')
 
-      // 1. Supabase Auth signOut
+      // 1. 로그아웃 플래그 설정 (LoginPage의 자동 리다이렉트 방지)
+      sessionStorage.setItem('_just_logged_out', 'true')
+      console.log('✓ 로그아웃 플래그 설정')
+
+      // 2. Supabase Auth signOut
       await supabase.auth.signOut()
       console.log('✓ Supabase Auth signOut 완료')
 

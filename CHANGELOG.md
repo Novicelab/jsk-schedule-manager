@@ -4,39 +4,52 @@
 
 ---
 
-## [2026-03-07] 로그아웃 세션 정리 버그 수정 4건
+## [2026-03-07] 로그아웃 레이스 컨디션 근본 수정 + 중복 구현 통일
 
 ### 변경사항
 
-#### 1. 로그아웃 토큰 미정리 버그 수정 (BUG-01)
-- `frontend/src/lib/sessionCleanup.js`
-  - 문제: `getSupabaseProjectId()` 실패 시 토큰 정리 코드 건너뜀
-  - 해결: 동적 localStorage 반복으로 변경 (패턴 기반: `sb-*-auth-*`)
-  - 효과: SDK 버전 변경 시에도 자동 대응 (하드코딩 키 목록 제거)
-  - 코드: `localStorage.key(i)` 반복 → `startsWith('sb-') && includes('auth')` 조건 검사
+#### 1. 로그아웃 후 자동 리다이렉트 버그 수정 (BUG-01 Critical)
+- **문제**: `signOut()` 비동기 처리 후 `/login` 이동 사이의 레이스 컨디션
+  - Navbar에서 `signOut()` 호출 중 window.location.href로 이동
+  - LoginPage 로드 시 `getSession()`이 아직 유효한 세션 반환
+  - 자동으로 `/`(캘린더)로 리다이렉트 → 카카오 로그인 화면 미표시
 
-#### 2. 회원 탈퇴 시 토큰 미정리 버그 수정 (BUG-04)
+- **해결책**: sessionStorage 플래그를 통한 타이밍 보호
+  - `frontend/src/components/Navbar.jsx`
+    - 로그아웃 시작 시 `sessionStorage.setItem('_just_logged_out', 'true')` 설정
+  - `frontend/src/pages/LoginPage.jsx`
+    - 플래그 확인 시 자동 리다이렉트 스킵
+    - 플래그 제거 후 정상 로그인 화면 표시
+
+#### 2. 회원 탈퇴 흐름 통일 (BUG-02 High)
 - `frontend/src/pages/MyPage.jsx`
-  - 추가: `cleanupSession()` import 및 호출 (탈퇴 경로)
-  - 효과: 탈퇴 시에도 Supabase 토큰 완전 정리
+  - 탈퇴 후에도 로그아웃 플래그 설정
+  - `navigate('/login')` → `window.location.href = '/login'` 변경 (페이지 새로고침)
+  - 효과: 로그아웃과 동일한 안전한 흐름 보장
 
-#### 3. 비공식 API 제거 (BUG-05)
-- `frontend/src/components/Navbar.jsx`
-  - 제거: `setSession(null)` (Supabase 비공식 메서드)
-  - 유지: `supabase.auth.signOut()` + `cleanupSession()`
+#### 3. useAuth.js logout 함수 통일 (BUG-05 High)
+- `frontend/src/hooks/useAuth.js`
+  - Navbar와 동일한 방식으로 수정
+  - 로그아웃 플래그 설정 추가
+  - `navigate('/login')` → `window.location.href = '/login'` 변경
+  - 데드코드 방지 (혹시 모르니 같은 구현 유지)
 
-#### 4. 죽은 코드 제거 (BUG-07)
-- `frontend/src/lib/config.js` 삭제
-  - 미사용 함수: `getBackendUrl()` (Spring Boot 시대 유산)
-  - 현재: Supabase BaaS 중심이므로 필요 없음
+#### 4. 로그아웃 프로세스 통일 (BUG-03 High)
+- 모든 로그아웃 경로 통일:
+  1. sessionStorage 플래그 설정
+  2. `signOut()` 호출
+  3. `cleanupSession()` (localStorage 정리)
+  4. 100ms 딜레이 후 `window.location.href = '/login'` (강제 새로고침)
+  5. LoginPage에서 플래그 확인 → 자동 리다이렉트 스킵
 
 ### 효과
-- 로그아웃 → localStorage 완전 정리 → 재로그인 시 Kakao 인증 화면 표시
-- 멀티 디바이스 계정 혼동 방지
+✅ 로그아웃 → localStorage 완전 정리
+✅ /login 도달 → 카카오 로그인 화면 표시 (자동 로그인 방지)
+✅ 모든 로그아웃 경로 (Navbar, useAuth, MyPage 탈퇴) 통일
 
 ### 비고
 - 로컬 테스트 완료
-- QA 팀 재검증 필요 (로그아웃 흐름)
+- QA 팀 재검증 필수 (로그아웃 → 로그인 흐름)
 - 자동 배포 트리거 (Render)
 
 ---

@@ -19,6 +19,15 @@ function LoginPage() {
   const navigate = useNavigate()
 
   useEffect(() => {
+    // 로그아웃 직후는 자동 리다이렉트 방지
+    // (signOut() 비동기 처리 후 getSession()이 아직 유효한 세션을 반환할 수 있는 레이스 컨디션 방지)
+    const justLoggedOut = sessionStorage.getItem('_just_logged_out')
+    if (justLoggedOut) {
+      console.log('로그아웃 직후 자동 리다이렉트 스킵')
+      sessionStorage.removeItem('_just_logged_out')
+      return
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         navigate('/', { replace: true })
