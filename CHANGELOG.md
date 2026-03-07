@@ -4,6 +4,45 @@
 
 ---
 
+## [2026-03-07] 로그아웃 레이스 컨디션 긴급 패치 (BUG-03 근본 수정)
+
+### 긴급 재진단 결과
+
+**BUG-03 (Critical)**: PrivateRoute의 window.location.href가 오히려 경합을 악화
+- **문제**: PrivateRoute와 Navbar의 두 개 window.location.href 이동이 경합
+  - PrivateRoute의 `setTimeout(0)` vs Navbar의 `setTimeout(100)` 경합
+  - LoginPage가 2번 마운트되면서 `_just_logged_out` 플래그를 첫 번째에서 소비
+  - 두 번째 마운트에서 플래그 없이 getSession() 호출 → 자동 리다이렉트
+
+- **수정**:
+  1. `frontend/src/components/PrivateRoute.jsx`
+     - `window.location.href` 제거
+     - React Router의 `<Navigate to="/login" replace />` 복원
+     - 로그아웃 책임을 Navbar에만 부여
+
+  2. `frontend/src/pages/LoginPage.jsx`
+     - getSession() 호출 전 200ms 지연 추가
+     - signOut() 완료 + localStorage 정리 완료 대기
+     - 주석 추가로 레이스 컨디션 설명
+
+### 수정된 흐름
+```
+로그아웃:
+├─ Navbar: _just_logged_out 설정
+├─ Navbar: signOut() 호출
+├─ Navbar: cleanupSession() (localStorage 정리)
+├─ 100ms 후: window.location.href = '/login' (단일 경로)
+│
+/login 도달:
+├─ PrivateRoute 없음 (SPA 라우팅)
+├─ LoginPage: _just_logged_out 확인
+├─ 플래그 있으면: 제거 후 return (카카오 버튼)
+├─ 플래그 없으면: 200ms 대기 후 getSession()
+└─ signOut() 완료 + localStorage 정리 보장
+```
+
+---
+
 ## [2026-03-07] 로그아웃 레이스 컨디션 최종 수정 (BUG-06, BUG-05 패치)
 
 ### 추가 수정사항 (재진단)

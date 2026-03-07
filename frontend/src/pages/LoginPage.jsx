@@ -28,11 +28,20 @@ function LoginPage() {
       return
     }
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        navigate('/', { replace: true })
-      }
-    })
+    // signOut() 완료 후 localStorage 정리까지의 지연을 보장하기 위해
+    // 200ms 후 getSession() 호출 (100ms는 window.location.href delay, 추가 100ms는 signOut 완료 대기)
+    const timer = setTimeout(() => {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) {
+          console.log('세션 있음, 캘린더로 이동')
+          navigate('/', { replace: true })
+        } else {
+          console.log('세션 없음, 로그인 페이지 유지')
+        }
+      })
+    }, 200)
+
+    return () => clearTimeout(timer)
   }, [navigate])
 
   const handleKakaoLogin = () => {
