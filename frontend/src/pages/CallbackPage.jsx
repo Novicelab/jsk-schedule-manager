@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import NameInputModal from '../components/auth/NameInputModal'
 import LoadingPopup from '../components/LoadingPopup'
+import { cleanupBeforeLogin } from '../lib/sessionCleanup'
 
 function CallbackPage() {
   const navigate = useNavigate()
@@ -74,8 +75,8 @@ function CallbackPage() {
     const processCallback = async () => {
       try {
         console.log('=== 카카오 로그인 콜백 시작 ===')
-        // 이전 사용자 정보 즉시 클리어 (멀티 단말 계정 혼동 방지)
-        localStorage.removeItem('user')
+        // 이전 사용자 정보 및 세션 초기화 (멀티 단말 계정 혼동 방지)
+        cleanupBeforeLogin()
         const redirectUri = import.meta.env.VITE_KAKAO_REDIRECT_URI
 
         // Edge Function 호출: supabase.functions.invoke() 사용

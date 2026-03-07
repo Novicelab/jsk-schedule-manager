@@ -1,16 +1,21 @@
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { cleanupSession } from '../lib/sessionCleanup'
 
 function Navbar() {
   const navigate = useNavigate()
 
   const handleLogout = async () => {
     try {
+      console.log('=== 로그아웃 시작 ===')
       await supabase.auth.signOut()
+      console.log('Supabase Auth signOut 완료')
     } catch (err) {
       console.error('로그아웃 실패:', err)
     } finally {
-      localStorage.removeItem('user')
+      // 모든 세션 및 저장소 완전 초기화
+      cleanupSession()
+      console.log('=== 로그아웃 완료, /login으로 이동 ===')
       navigate('/login', { replace: true })
     }
   }
