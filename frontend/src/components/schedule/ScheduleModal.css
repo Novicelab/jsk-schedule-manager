@@ -243,3 +243,29 @@
   font-weight: 700;
   color: #666;
 }
+
+/* Schedule Modal Footer - 버튼 레이아웃 커스텀 */
+.schedule-modal-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid #eaecee;
+}
+
+.schedule-modal-footer .btn-secondary {
+  flex: 0 0 auto;
+  min-width: 80px;
+  padding: 14px 16px;
+  font-size: 16px;
+  font-weight: 700;
+  border-radius: 8px;
+}
+
+.schedule-modal-footer .btn-primary {
+  flex: 1;
+  padding: 14px 16px;
+  font-size: 16px;
+  font-weight: 700;
+  border-radius: 8px;
+}

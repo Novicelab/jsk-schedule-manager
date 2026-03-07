@@ -453,7 +453,7 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
             </>
           )}
 
-          <div className="modal-footer">
+          <div className="modal-footer schedule-modal-footer">
             <button
               type="button"
               className="btn btn-secondary"
