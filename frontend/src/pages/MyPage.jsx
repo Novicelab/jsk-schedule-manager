@@ -49,7 +49,14 @@ function MyPage() {
       // 로그아웃 플래그 설정 (LoginPage의 자동 리다이렉트 방지)
       sessionStorage.setItem('_just_logged_out', 'true')
 
-      await supabase.auth.signOut()
+      try {
+        await supabase.auth.signOut()
+      } catch (logoutErr) {
+        console.warn('탈퇴 후 로그아웃 실패 (계속 진행):', logoutErr)
+        // signOut 실패해도 계속 진행 (delete-user는 성공했으므로 세션은 무효)
+      }
+
+      // 모든 세션 및 저장소 완전 초기화
       cleanupSession()
 
       // 페이지 새로고침으로 메모리 초기화

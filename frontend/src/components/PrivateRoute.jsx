@@ -26,7 +26,18 @@ const PrivateRoute = ({ children }) => {
     return <LoadingPopup isOpen={true} message="세션 확인 중..." />
   }
 
-  return session ? children : <Navigate to="/login" replace />
+  if (!session) {
+    // 세션 만료/로그아웃 시 강제 페이지 새로고침으로 이동
+    // (SPA 내부 navigate 사용 시 메모리 상태가 남아있을 수 있으므로 제거)
+    // LoginPage의 _just_logged_out 플래그와의 경합을 피하기 위해
+    // window.location.href 사용 (강제 새로고침)
+    setTimeout(() => {
+      window.location.href = '/login'
+    }, 0)
+    return <LoadingPopup isOpen={true} message="로그인이 필요합니다..." />
+  }
+
+  return children
 }
 
 export default PrivateRoute

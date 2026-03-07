@@ -4,6 +4,29 @@
 
 ---
 
+## [2026-03-07] 로그아웃 레이스 컨디션 최종 수정 (BUG-06, BUG-05 패치)
+
+### 추가 수정사항 (재진단)
+
+#### 1. PrivateRoute와 Navbar 경합 해결 (BUG-06 High)
+- `frontend/src/components/PrivateRoute.jsx`
+  - 문제: `onAuthStateChange` Navigate와 `window.location.href`의 타이밍 경합
+    - PrivateRoute가 /login에 먼저 도달 → _just_logged_out 플래그 소비
+    - 100ms 후 window.location.href 새로고침 → 플래그 없이 getSession() 호출
+  - 해결: `<Navigate to="/login" replace />` 제거
+    - `window.location.href = '/login'` 직접 사용 (강제 새로고침)
+    - 경합 제거 + 메모리 상태 초기화
+  - 결과: 단일 강제 새로고침 경로로 통일
+
+#### 2. MyPage 탈퇴 후 로그아웃 에러 처리 (BUG-05 Medium)
+- `frontend/src/pages/MyPage.jsx`
+  - 문제: `signOut()` 실패 시 `cleanupSession()` 호출 안 됨
+  - 해결: `signOut()` 호출을 try-catch로 감싸기
+    - 실패해도 `cleanupSession()` 보장 실행
+    - delete-user는 성공했으므로 세션은 무효 (signOut 실패 무시 가능)
+
+---
+
 ## [2026-03-07] 로그아웃 레이스 컨디션 근본 수정 + 중복 구현 통일
 
 ### 변경사항
