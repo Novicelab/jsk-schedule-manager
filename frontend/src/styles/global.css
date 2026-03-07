@@ -169,13 +169,21 @@ select {
   line-height: 1.4;
 }
 
-/* Modal footer 버튼 (일정 생성/수정 등) - 전체 너비 확장 */
+/* Modal footer 버튼 (일정 생성/수정 등) */
 .modal-footer .btn {
-  flex: 1;
   padding: 14px 16px;
   font-size: 16px;
   font-weight: 700;
   border-radius: 8px;
+}
+
+.modal-footer .btn-secondary {
+  flex: 0 0 auto;
+  min-width: 80px;
+}
+
+.modal-footer .btn-primary {
+  flex: 1;
 }
 
 .btn:disabled {

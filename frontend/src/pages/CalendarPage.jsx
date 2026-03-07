@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import interactionPlugin from '@fullcalendar/interaction'
@@ -19,6 +19,7 @@ const SCHEDULE_COLORS = {
 }
 
 function CalendarPage() {
+  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [events, setEvents] = useState([])
   const [currentRange, setCurrentRange] = useState(null)
@@ -129,6 +130,53 @@ function CalendarPage() {
     }
   }, [])
 
+  // 회원가입 완료 확인 & 세션 만료 감지
+  useEffect(() => {
+    // 1. 회원가입 완료 확인: 사용자명이 입력되었는지 검증
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
+    if (!currentUser.name || currentUser.name === '__PENDING__') {
+      console.warn('회원가입 미완료: 사용자명 미입력')
+      navigate('/login', { replace: true })
+      return
+    }
+
+    console.log('회원가입 완료 확인:', { userName: currentUser.name })
+
+    // 2. 세션 모니터링: 주기적으로 세션 유효성 검증
+    const checkSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) {
+          console.warn('세션 만료: 로그인 페이지로 이동')
+          localStorage.removeItem('user')
+          navigate('/login', { replace: true })
+        }
+      } catch (err) {
+        console.error('세션 확인 오류:', err)
+      }
+    }
+
+    // 초기 세션 확인
+    checkSession()
+
+    // 주기적 세션 검증 (10초마다)
+    const sessionCheckInterval = setInterval(checkSession, 10000)
+
+    // 세션 상태 변경 감지
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) {
+        console.warn('인증 상태 변경: 세션 없음, 로그인 페이지로 이동')
+        localStorage.removeItem('user')
+        navigate('/login', { replace: true })
+      }
+    })
+
+    return () => {
+      clearInterval(sessionCheckInterval)
+      subscription?.unsubscribe()
+    }
+  }, [navigate])
+
   // 윈도우 리사이즈 감지 (debounced)
   useEffect(() => {
     const handleResize = () => {
@@ -149,6 +197,15 @@ function CalendarPage() {
   const loadSchedules = useCallback(async (range) => {
     if (!range) return
     try {
+      // 세션 검증: 토큰 만료 시 감지
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        console.warn('세션 만료: 로그인 페이지로 이동')
+        localStorage.removeItem('user')
+        navigate('/login', { replace: true })
+        return
+      }
+
       const startDate = dayjs(range.start).startOf('day').format('YYYY-MM-DDTHH:mm:ss')
       const endDate = dayjs(range.end).endOf('day').format('YYYY-MM-DDTHH:mm:ss')
 
@@ -158,6 +215,14 @@ function CalendarPage() {
         .select('*')
         .gte('end_at', startDate)
         .lte('start_at', endDate)
+
+      // 401 Unauthorized: 토큰 만료
+      if (error?.status === 401) {
+        console.warn('인증 오류 (401): 세션 만료')
+        localStorage.removeItem('user')
+        navigate('/login', { replace: true })
+        return
+      }
 
       if (error) throw error
 
@@ -192,7 +257,7 @@ function CalendarPage() {
       console.error('일정 로드 실패:', err)
       setSchedulesError('일정을 불러오지 못했습니다.')
     }
-  }, [])
+  }, [navigate])
 
   // 날짜 범위 변경 시 재조회
   useEffect(() => {
@@ -243,11 +308,28 @@ function CalendarPage() {
   // 일정 상세 정보 조회 (공통 로직)
   const handleEventDetail = useCallback(async (scheduleId) => {
     try {
+      // 세션 검증: 토큰 만료 시 감지
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        console.warn('세션 만료: 로그인 페이지로 이동')
+        localStorage.removeItem('user')
+        navigate('/login', { replace: true })
+        return
+      }
+
       const { data, error } = await supabase
         .from('schedules_with_user')
         .select('*')
         .eq('id', scheduleId)
         .single()
+
+      // 401 Unauthorized: 토큰 만료
+      if (error?.status === 401) {
+        console.warn('인증 오류 (401): 세션 만료')
+        localStorage.removeItem('user')
+        navigate('/login', { replace: true })
+        return
+      }
 
       if (error) throw error
 
@@ -276,7 +358,7 @@ function CalendarPage() {
       console.error('일정 상세 조회 실패:', err)
       setSchedulesError('일정 상세 정보를 불러오지 못했습니다.')
     }
-  }, [])
+  }, [navigate])
 
   // 이벤트 클릭 → 모바일: 바텀시트 표시, PC: 상세 모달 표시
   const handleEventClick = useCallback(

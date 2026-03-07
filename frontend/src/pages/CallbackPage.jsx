@@ -12,6 +12,33 @@ function CallbackPage() {
   // StrictMode 이중 실행 방지
   const called = useRef(false)
 
+  // 회원가입 필수 입력: 사용자명 입력 모달 렌더링 중 뒤로가기/이탈 차단
+  useEffect(() => {
+    if (!showNameModal) return
+
+    const handlePopState = (e) => {
+      e.preventDefault()
+      // 뒤로가기 시도 시 모달 유지 (네비게이션 수행 안 함)
+      console.warn('회원가입 필수 입력: 사용자명 입력 전까지 이탈 불가능')
+    }
+
+    // 뒤로가기 차단
+    window.addEventListener('popstate', handlePopState)
+
+    // beforeunload: 창 닫기/탭 닫기 시도 시 경고
+    const handleBeforeUnload = (e) => {
+      e.preventDefault()
+      e.returnValue = '회원가입을 완료해주세요.'
+      return '회원가입을 완료해주세요.'
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState)
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [showNameModal])
+
   useEffect(() => {
     if (called.current) return
     called.current = true
