@@ -2,6 +2,7 @@ import { useState } from 'react'
 import dayjs from 'dayjs'
 import { supabase } from '../../lib/supabase'
 import LoadingPopup from '../LoadingPopup'
+import './ScheduleDetail.css'
 
 const TYPE_LABEL = {
   VACATION: '휴가',
@@ -144,7 +145,7 @@ function ScheduleDetail({ schedule, onEdit, onDeleted, onClose }) {
           )}
         </div>
 
-        <div className="modal-footer">
+        <div className="modal-footer detail-modal-footer">
           <button
             className="btn btn-secondary"
             onClick={handleClose}

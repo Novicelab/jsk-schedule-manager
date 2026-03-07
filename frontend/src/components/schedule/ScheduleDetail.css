@@ -1,0 +1,26 @@
+/* ScheduleDetail Modal Footer - 버튼 레이아웃 커스텀 */
+.detail-modal-footer {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid #eaecee;
+}
+
+/* 닫기, 수정 버튼: 고정 너비 */
+.detail-modal-footer .btn-secondary,
+.detail-modal-footer .btn-primary {
+  flex: 0 0 auto;
+  min-width: 60px;
+  height: auto;
+  white-space: nowrap;
+}
+
+/* 삭제 버튼: 남은 공간 전체 차지 */
+.detail-modal-footer .btn-danger {
+  flex: 1;
+  height: auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
