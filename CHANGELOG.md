@@ -4,6 +4,43 @@
 
 ---
 
+## [2026-03-07] 로그아웃 세션 정리 버그 수정 4건
+
+### 변경사항
+
+#### 1. 로그아웃 토큰 미정리 버그 수정 (BUG-01)
+- `frontend/src/lib/sessionCleanup.js`
+  - 문제: `getSupabaseProjectId()` 실패 시 토큰 정리 코드 건너뜀
+  - 해결: 동적 localStorage 반복으로 변경 (패턴 기반: `sb-*-auth-*`)
+  - 효과: SDK 버전 변경 시에도 자동 대응 (하드코딩 키 목록 제거)
+  - 코드: `localStorage.key(i)` 반복 → `startsWith('sb-') && includes('auth')` 조건 검사
+
+#### 2. 회원 탈퇴 시 토큰 미정리 버그 수정 (BUG-04)
+- `frontend/src/pages/MyPage.jsx`
+  - 추가: `cleanupSession()` import 및 호출 (탈퇴 경로)
+  - 효과: 탈퇴 시에도 Supabase 토큰 완전 정리
+
+#### 3. 비공식 API 제거 (BUG-05)
+- `frontend/src/components/Navbar.jsx`
+  - 제거: `setSession(null)` (Supabase 비공식 메서드)
+  - 유지: `supabase.auth.signOut()` + `cleanupSession()`
+
+#### 4. 죽은 코드 제거 (BUG-07)
+- `frontend/src/lib/config.js` 삭제
+  - 미사용 함수: `getBackendUrl()` (Spring Boot 시대 유산)
+  - 현재: Supabase BaaS 중심이므로 필요 없음
+
+### 효과
+- 로그아웃 → localStorage 완전 정리 → 재로그인 시 Kakao 인증 화면 표시
+- 멀티 디바이스 계정 혼동 방지
+
+### 비고
+- 로컬 테스트 완료
+- QA 팀 재검증 필요 (로그아웃 흐름)
+- 자동 배포 트리거 (Render)
+
+---
+
 ## [2026-03-07] 카카오 로그인 에러 근본 수정 + UX 개선 2건
 
 ### 변경사항

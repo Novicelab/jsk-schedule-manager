@@ -13,14 +13,6 @@ function Navbar() {
       await supabase.auth.signOut()
       console.log('✓ Supabase Auth signOut 완료')
 
-      // 2. 세션 명시적으로 null로 설정 (clearAuth)
-      try {
-        await supabase.auth.setSession(null)
-        console.log('✓ Supabase Auth setSession(null) 완료')
-      } catch (err) {
-        console.warn('setSession(null) 실패 (무시):', err.message)
-      }
-
     } catch (err) {
       console.error('로그아웃 중 에러:', err)
     } finally {

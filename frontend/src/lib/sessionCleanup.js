@@ -25,23 +25,22 @@ export const cleanupSession = () => {
   console.log('✓ localStorage.user 제거')
 
   // 2. localStorage 정리: Supabase Auth 토큰 (중요)
-  // Supabase JS 클라이언트가 저장하는 모든 인증 관련 localStorage 키
-  // 이 토큰들을 남겨두면 로그아웃 후에도 자동 로그인될 수 있음
-  const projectId = getSupabaseProjectId()
-  if (projectId) {
-    const supabaseAuthKeys = [
-      `sb-${projectId}-auth-token`,
-      `sb-${projectId}-auth-token.2`,
-      `sb-${projectId}-auth-state`,
-      `sb-${projectId}-auth-code-verifier`,
-      `sb-${projectId}-auth-pkce`,
-    ]
-    supabaseAuthKeys.forEach(key => {
-      localStorage.removeItem(key)
-      console.log(`✓ localStorage.${key} 제거`)
-    })
-  } else {
-    console.warn('Supabase 프로젝트 ID를 추출할 수 없어 auth 토큰 정리 불가')
+  // sb-로 시작하고 auth를 포함하는 모든 키를 동적으로 탐지하여 제거
+  // - 하드코딩 키 목록 방식의 문제: projectId 파싱 실패 시 토큰 미제거
+  // - SDK 버전 업그레이드로 키 이름이 바뀌어도 자동 대응 가능
+  const supabaseAuthKeysToRemove = []
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i)
+    if (key && key.startsWith('sb-') && key.includes('auth')) {
+      supabaseAuthKeysToRemove.push(key)
+    }
+  }
+  supabaseAuthKeysToRemove.forEach(key => {
+    localStorage.removeItem(key)
+    console.log(`✓ localStorage.${key} 제거`)
+  })
+  if (supabaseAuthKeysToRemove.length === 0) {
+    console.log('ℹ localStorage에서 제거할 Supabase auth 키 없음')
   }
 
   // 3. sessionStorage 정리: OAuth 관련
@@ -64,6 +63,7 @@ export const cleanupSession = () => {
 
   // 5. 브라우저 캐시 정리 (필요시)
   // IndexedDB에도 Supabase 데이터가 저장될 수 있음
+  const projectId = getSupabaseProjectId()
   if (projectId && window.indexedDB) {
     try {
       const supabaseDbName = `sb_${projectId}_realtime` // 예시

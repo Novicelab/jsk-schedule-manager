@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { cleanupSession } from '../lib/sessionCleanup'
 import Navbar from '../components/Navbar'
 import LoadingPopup from '../components/LoadingPopup'
 
@@ -46,7 +47,7 @@ function MyPage() {
       }
 
       await supabase.auth.signOut()
-      localStorage.removeItem('user')
+      cleanupSession()
       navigate('/login', { replace: true })
     } catch (err) {
       console.error('탈퇴 실패:', err)
