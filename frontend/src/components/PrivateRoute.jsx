@@ -26,11 +26,7 @@ const PrivateRoute = ({ children }) => {
     return <LoadingPopup isOpen={true} message="세션 확인 중..." />
   }
 
-  if (!session) {
-    return <Navigate to="/login" replace />
-  }
-
-  return children
+  return session ? children : <Navigate to="/login" replace />
 }
 
 export default PrivateRoute

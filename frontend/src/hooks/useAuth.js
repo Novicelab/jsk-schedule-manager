@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { cleanupSession } from '../lib/sessionCleanup'
 
 const useAuth = () => {
   const navigate = useNavigate()
@@ -40,17 +39,12 @@ const useAuth = () => {
     } catch (err) {
       console.error('로그아웃 실패:', err)
     } finally {
-      // 모든 세션 및 저장소 완전 초기화
-      cleanupSession()
+      localStorage.removeItem('user')
       setUser(null)
       setIsLoggedIn(false)
-
-      // 페이지 전체 새로고침 (Navbar와 동일)
-      setTimeout(() => {
-        window.location.reload()
-      }, 100)
+      navigate('/login', { replace: true })
     }
-  }, [])
+  }, [navigate])
 
   return { user, isLoggedIn, logout }
 }

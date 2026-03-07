@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { cleanupSession } from '../lib/sessionCleanup'
 import Navbar from '../components/Navbar'
 import LoadingPopup from '../components/LoadingPopup'
 
@@ -46,20 +45,9 @@ function MyPage() {
         throw new Error(errData.error || '탈퇴 처리에 실패했습니다.')
       }
 
-      try {
-        await supabase.auth.signOut()
-      } catch (logoutErr) {
-        console.warn('탈퇴 후 로그아웃 실패 (계속 진행):', logoutErr)
-        // signOut 실패해도 계속 진행 (delete-user는 성공했으므로 세션은 무효)
-      }
-
-      // 모든 세션 및 저장소 완전 초기화
-      cleanupSession()
-
-      // 페이지 전체 새로고침 (메모리 상태 완전 초기화)
-      setTimeout(() => {
-        window.location.reload()
-      }, 100)
+      await supabase.auth.signOut()
+      localStorage.removeItem('user')
+      navigate('/login', { replace: true })
     } catch (err) {
       console.error('탈퇴 실패:', err)
       setDeleteError(err.message || '탈퇴 처리 중 오류가 발생했습니다.')
