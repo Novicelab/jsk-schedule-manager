@@ -8,15 +8,34 @@ function Navbar() {
   const handleLogout = async () => {
     try {
       console.log('=== 로그아웃 시작 ===')
+
+      // 1. Supabase Auth signOut
       await supabase.auth.signOut()
-      console.log('Supabase Auth signOut 완료')
+      console.log('✓ Supabase Auth signOut 완료')
+
+      // 2. 세션 명시적으로 null로 설정 (clearAuth)
+      try {
+        await supabase.auth.setSession(null)
+        console.log('✓ Supabase Auth setSession(null) 완료')
+      } catch (err) {
+        console.warn('setSession(null) 실패 (무시):', err.message)
+      }
+
     } catch (err) {
-      console.error('로그아웃 실패:', err)
+      console.error('로그아웃 중 에러:', err)
     } finally {
-      // 모든 세션 및 저장소 완전 초기화
+      // 3. 모든 세션 및 저장소 완전 초기화
       cleanupSession()
-      console.log('=== 로그아웃 완료, /login으로 이동 ===')
-      navigate('/login', { replace: true })
+
+      // 4. 페이지 새로고침으로 메모리 초기화 (추가 안전성)
+      // localStorage 정리 후 페이지를 새로고침하면
+      // React 컴포넌트가 다시 마운트될 때 인증 상태를 새로 인식
+      console.log('=== 로그아웃 완료, 페이지 초기화 중 ===')
+
+      // 짧은 딜레이 후 로그인 페이지로 이동 (localStorage 정리 보장)
+      setTimeout(() => {
+        window.location.href = '/login'
+      }, 100)
     }
   }
 
