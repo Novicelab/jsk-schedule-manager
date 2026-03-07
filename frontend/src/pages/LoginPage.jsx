@@ -8,11 +8,11 @@ const buildKakaoAuthUrl = () => {
   const state = crypto.randomUUID()
   sessionStorage.setItem('kakao_oauth_state', state)
   const redirectUri = import.meta.env.VITE_KAKAO_REDIRECT_URI
-  // 주의: prompt=login은 카카오 OAuth 표준 파라미터가 아님 (제거)
-  // 카카오톡 간편로그인 UI 방지는 Kakao SDK 설정이나 별도 파라미터로 처리
+  // prompt=login: 카카오 브라우저 세션이 남아있어도 강제로 로그인 화면 표시
+  // 이 파라미터 없으면 로그아웃 후에도 카카오 자동 로그인됨
   return `https://kauth.kakao.com/oauth/authorize?client_id=${
     import.meta.env.VITE_KAKAO_CLIENT_ID
-  }&redirect_uri=${redirectUri}&response_type=code&state=${state}`
+  }&redirect_uri=${redirectUri}&response_type=code&state=${state}&prompt=login`
 }
 
 function LoginPage() {
