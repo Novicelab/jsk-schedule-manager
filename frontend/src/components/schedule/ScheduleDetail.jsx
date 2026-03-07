@@ -146,13 +146,22 @@ function ScheduleDetail({ schedule, onEdit, onDeleted, onClose }) {
         </div>
 
         <div className="modal-footer detail-modal-footer">
-          <button
-            className="btn btn-secondary"
-            onClick={handleClose}
-          >
-            닫기
-          </button>
+          {/* 1. 삭제 버튼 (좌측) */}
+          {schedule.canDelete && (
+            <button
+              className={`btn btn-danger${confirmDelete ? ' btn-danger-confirm' : ''}`}
+              onClick={handleDelete}
+              disabled={deleting}
+            >
+              {deleting
+                ? '삭제 중...'
+                : confirmDelete
+                ? '삭제하시겠어요?'
+                : '삭제'}
+            </button>
+          )}
 
+          {/* 2. 수정 버튼 (중앙) */}
           {schedule.canEdit && (
             <button
               className="btn btn-primary"
@@ -162,19 +171,13 @@ function ScheduleDetail({ schedule, onEdit, onDeleted, onClose }) {
             </button>
           )}
 
-          {schedule.canDelete && (
-            <button
-              className="btn btn-danger"
-              onClick={handleDelete}
-              disabled={deleting}
-            >
-              {deleting
-                ? '삭제 중...'
-                : confirmDelete
-                ? '정말 삭제하시겠습니까?'
-                : '삭제'}
-            </button>
-          )}
+          {/* 3. 닫기 버튼 (우측) */}
+          <button
+            className="btn btn-secondary"
+            onClick={handleClose}
+          >
+            닫기
+          </button>
         </div>
       </div>
     </div>
