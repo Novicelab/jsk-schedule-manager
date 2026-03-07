@@ -169,14 +169,6 @@ select {
   line-height: 1.4;
 }
 
-/* Modal footer 버튼 - 기본 (모든 modal에서 버튼들이 균등하게 배치) */
-.modal-footer .btn {
-  flex: 1;
-  padding: 14px 16px;
-  font-size: 16px;
-  font-weight: 700;
-  border-radius: 8px;
-}
 
 .btn:disabled {
   opacity: 0.55;
