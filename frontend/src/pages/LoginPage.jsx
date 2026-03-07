@@ -19,29 +19,13 @@ function LoginPage() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    // 로그아웃 직후는 자동 리다이렉트 방지
-    // (signOut() 비동기 처리 후 getSession()이 아직 유효한 세션을 반환할 수 있는 레이스 컨디션 방지)
-    const justLoggedOut = sessionStorage.getItem('_just_logged_out')
-    if (justLoggedOut) {
-      console.log('로그아웃 직후 자동 리다이렉트 스킵')
-      sessionStorage.removeItem('_just_logged_out')
-      return
-    }
-
-    // signOut() 완료 후 localStorage 정리까지의 지연을 보장하기 위해
-    // 200ms 후 getSession() 호출 (100ms는 window.location.href delay, 추가 100ms는 signOut 완료 대기)
-    const timer = setTimeout(() => {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session) {
-          console.log('세션 있음, 캘린더로 이동')
-          navigate('/', { replace: true })
-        } else {
-          console.log('세션 없음, 로그인 페이지 유지')
-        }
-      })
-    }, 200)
-
-    return () => clearTimeout(timer)
+    // 세션 확인 (로그인되어 있으면 캘린더로 이동)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        console.log('세션 있음, 캘린더로 이동')
+        navigate('/', { replace: true })
+      }
+    })
   }, [navigate])
 
   const handleKakaoLogin = () => {

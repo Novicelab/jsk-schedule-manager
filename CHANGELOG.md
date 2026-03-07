@@ -4,6 +4,69 @@
 
 ---
 
+## [2026-03-07] 로그아웃 문제 최종 근본 해결 (window.location.reload 도입)
+
+### 최종 해결책
+
+**핵심 전환:**
+- ❌ `window.location.href = '/login'` (불안정, 메모리 상태 유지)
+- ✅ `window.location.reload()` (확실함, 모든 상태 초기화)
+
+**window.location.reload()의 효과:**
+1. Supabase JS Client 싱글턴 완전 재생성 (메모리 캐시 초기화)
+2. localStorage 다시 읽음 (이미 cleanupSession()으로 정리됨)
+3. sessionStorage 다시 읽음
+4. 브라우저 캐시 무시
+5. 모든 React 컴포넌트 새로 마운트
+6. App → PrivateRoute → session 없음 → 자동으로 /login 이동
+
+**수정 파일:**
+- `frontend/src/components/Navbar.jsx`
+  - `window.location.href = '/login'` → `window.location.reload()`
+
+- `frontend/src/hooks/useAuth.js`
+  - `window.location.href = '/login'` → `window.location.reload()`
+  - 불필요한 플래그 설정 제거
+
+- `frontend/src/pages/MyPage.jsx`
+  - `window.location.href = '/login'` → `window.location.reload()`
+  - 불필요한 플래그 설정 제거
+
+- `frontend/src/pages/LoginPage.jsx`
+  - _just_logged_out 플래그 처리 제거 (불필요)
+  - signOut() 완료 후 reload이므로 지연 불필요
+  - 단순 세션 확인만 유지
+
+- `frontend/src/components/PrivateRoute.jsx`
+  - 불필요한 복잡성 제거
+
+### 최종 흐름 (단순하고 확실)
+
+```
+로그아웃:
+├─ Navbar.handleLogout()
+│  ├─ await supabase.auth.signOut()
+│  ├─ cleanupSession() (localStorage 정리)
+│  └─ 100ms 후 window.location.reload()
+│
+페이지 새로고침:
+├─ Supabase 싱글턴 재생성
+├─ App 렌더링 → PrivateRoute
+├─ session = null (새로운 getSession() 호출)
+├─ <Navigate to="/login" /> 자동 실행
+│
+/login 페이지:
+└─ 항상 카카오 로그인 버튼 표시 (자동 리다이렉트 없음)
+```
+
+### 성공 보장
+- ✅ localStorage 완전 정리 (cleanupSession)
+- ✅ 메모리 상태 완전 초기화 (reload)
+- ✅ Supabase 클라이언트 재생성 (reload)
+- ✅ 레이스 컨디션 제거 (단순 흐름)
+
+---
+
 ## [2026-03-07] 로그아웃 레이스 컨디션 긴급 패치 (BUG-03 근본 수정)
 
 ### 긴급 재진단 결과

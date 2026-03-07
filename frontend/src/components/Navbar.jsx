@@ -9,28 +9,29 @@ function Navbar() {
     try {
       console.log('=== 로그아웃 시작 ===')
 
-      // 1. 로그아웃 플래그 설정 (LoginPage의 자동 리다이렉트 방지)
-      sessionStorage.setItem('_just_logged_out', 'true')
-      console.log('✓ 로그아웃 플래그 설정')
-
-      // 2. Supabase Auth signOut
+      // 1. Supabase Auth signOut (서버 세션 무효화)
       await supabase.auth.signOut()
       console.log('✓ Supabase Auth signOut 완료')
 
     } catch (err) {
       console.error('로그아웃 중 에러:', err)
     } finally {
-      // 3. 모든 세션 및 저장소 완전 초기화
+      // 2. 모든 세션 및 저장소 완전 초기화
       cleanupSession()
+      console.log('✓ 세션 및 저장소 완전 정리')
 
-      // 4. 페이지 새로고침으로 메모리 초기화 (추가 안전성)
-      // localStorage 정리 후 페이지를 새로고침하면
-      // React 컴포넌트가 다시 마운트될 때 인증 상태를 새로 인식
-      console.log('=== 로그아웃 완료, 페이지 초기화 중 ===')
+      // 3. 페이지 전체 새로고침 (유일한 확실한 방법)
+      // window.location.href는 메모리 상태를 유지하므로 불안정
+      // window.location.reload()는 다음을 보장:
+      // - Supabase JS Client 싱글턴 재생성
+      // - localStorage 다시 읽음 (이미 정리됨)
+      // - 메모리의 모든 상태 초기화
+      // - App → PrivateRoute → session 없음 → /login 자동 이동
+      console.log('=== 페이지 새로고침 중 ===')
 
-      // 짧은 딜레이 후 로그인 페이지로 이동 (localStorage 정리 보장)
+      // 짧은 딜레이 후 새로고침 (cleanupSession 완료 보장)
       setTimeout(() => {
-        window.location.href = '/login'
+        window.location.reload()
       }, 100)
     }
   }

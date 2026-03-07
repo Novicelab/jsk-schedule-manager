@@ -26,9 +26,11 @@ const PrivateRoute = ({ children }) => {
     return <LoadingPopup isOpen={true} message="세션 확인 중..." />
   }
 
-  // 세션 없으면 /login으로 이동 (SPA 내부 라우팅)
-  // 로그아웃 시 강제 새로고침은 Navbar에서 단독 처리하므로 여기서는 경합 없음
-  return session ? children : <Navigate to="/login" replace />
+  if (!session) {
+    return <Navigate to="/login" replace />
+  }
+
+  return children
 }
 
 export default PrivateRoute
