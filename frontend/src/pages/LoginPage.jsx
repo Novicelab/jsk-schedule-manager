@@ -3,15 +3,13 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import './LoginPage.css'
 
-// prompt=login 제거: Kakao 로그아웃 엔드포인트 도입으로 Kakao 세션이 이미 종료되어 있음
-// prompt=login은 Android에서 카카오톡 앱 연동 로그인과 충돌하므로 사용하지 않음
 const buildKakaoAuthUrl = () => {
   // state 파라미터: CSRF 검증용
   const state = crypto.randomUUID()
   sessionStorage.setItem('kakao_oauth_state', state)
-  // scope=talk_message 제거: 알림 기능 비활성화 상태, 비즈앱 미전환 시 KOE205 에러 유발
-  // encodeURIComponent 제거: 카카오 OAuth는 redirect_uri 평문 전달 표준
   const redirectUri = import.meta.env.VITE_KAKAO_REDIRECT_URI
+  // 주의: prompt=login은 카카오 OAuth 표준 파라미터가 아님 (제거)
+  // 카카오톡 간편로그인 UI 방지는 Kakao SDK 설정이나 별도 파라미터로 처리
   return `https://kauth.kakao.com/oauth/authorize?client_id=${
     import.meta.env.VITE_KAKAO_CLIENT_ID
   }&redirect_uri=${redirectUri}&response_type=code&state=${state}`
