@@ -27,10 +27,10 @@ function MyPage() {
         }
         setUser(storedUser)
 
-        // Query created_at from Supabase users table
+        // Query name and created_at from Supabase users table
         const { data, error } = await supabase
           .from('users')
-          .select('created_at')
+          .select('name, created_at')
           .eq('id', storedUser.id)
           .single()
 
@@ -38,6 +38,8 @@ function MyPage() {
           console.error('Failed to fetch user info:', error)
           setUserInfoError('사용자 정보를 불러올 수 없습니다.')
         } else if (data) {
+          // Update user name from DB
+          setUser(prev => ({ ...prev, name: data.name }))
           setCreatedAt(data.created_at)
         }
       } catch (err) {
@@ -116,7 +118,7 @@ function MyPage() {
             <button className="btn btn-back" onClick={handleBack}>
               &larr; 뒤로가기
             </button>
-            <h2 className="mypage-title">마이페이지</h2>
+            <h2 className="mypage-title">설정</h2>
           </div>
 
           {/* User Information Section */}
@@ -126,10 +128,6 @@ function MyPage() {
             )}
             {user && (
               <div className="user-info-card">
-                <div className="user-info-item">
-                  <span className="user-info-label">로그인 계정</span>
-                  <span className="user-info-value">{user.email || '이메일 미제공'}</span>
-                </div>
                 <div className="user-info-item">
                   <span className="user-info-label">이름</span>
                   <span className="user-info-value">{user.name || '-'}</span>
