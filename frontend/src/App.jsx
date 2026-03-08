@@ -5,9 +5,11 @@ import CalendarPage from './pages/CalendarPage'
 import MyPage from './pages/MyPage'
 import NotFoundPage from './pages/NotFoundPage'
 import PrivateRoute from './components/PrivateRoute'
+import ErrorBoundary from './components/ErrorBoundary'
 
 function App() {
   return (
+    <ErrorBoundary>
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
@@ -31,6 +33,7 @@ function App() {
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
+    </ErrorBoundary>
   )
 }
 

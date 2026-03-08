@@ -171,51 +171,29 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
         vacation_type = form.vacationType
       }
 
-      // localStorage에서 현재 사용자 ID 조회 (auth_id 대신 직접 사용)
-      const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
-
-      if (isEdit) {
-        const updatePayload = {
-          description: form.type === 'WORK' ? (form.description.trim() || null) : null,
-          type: form.type,
-          start_at,
-          end_at,
-          all_day,
-        }
-        // WORK 일정만 title 업데이트 (VACATION은 vacation_type 기반 DB 트리거로 자동 생성)
-        if (form.type === 'WORK') {
-          updatePayload.title = title
-        }
-        if (form.type === 'VACATION') {
-          updatePayload.vacation_type = vacation_type
-        }
-        const { error } = await supabase
-          .from('schedules')
-          .update(updatePayload)
-          .eq('id', schedule.id)
-
-        if (error) throw error
-      } else {
-        const insertPayload = {
-          title,
-          description: form.type === 'WORK' ? (form.description.trim() || null) : null,
-          type: form.type,
-          start_at,
-          end_at,
-          all_day,
-          created_by: currentUser.id,
-        }
-        if (form.type === 'VACATION') {
-          insertPayload.vacation_type = vacation_type
-        }
-        const { data: newSchedule, error } = await supabase
-          .from('schedules')
-          .insert(insertPayload)
-          .select()
-          .single()
-
-        if (error) throw error
+      // Edge Function을 통한 서버사이드 검증 (created_by는 서버에서 auth_id 기반으로 설정)
+      const schedulePayload = {
+        title,
+        description: form.type === 'WORK' ? (form.description.trim() || null) : null,
+        type: form.type,
+        start_at,
+        end_at,
+        all_day,
       }
+      if (form.type === 'VACATION') {
+        schedulePayload.vacation_type = vacation_type
+      }
+
+      const { data: result, error } = await supabase.functions.invoke('update-schedule', {
+        body: {
+          action: isEdit ? 'update' : 'create',
+          scheduleId: isEdit ? schedule.id : undefined,
+          payload: schedulePayload,
+        },
+      })
+
+      if (error) throw error
+      if (result?.error) throw new Error(result.error)
 
       onSaved()
     } catch (err) {

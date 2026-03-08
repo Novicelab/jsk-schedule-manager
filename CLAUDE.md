@@ -76,7 +76,8 @@
                                     ├── send-notification (알림톡 발송, 현재 비활성화)
                                     ├── update-user-name (사용자 이름 저장, RLS 우회)
                                     ├── delete-user (회원 탈퇴, 민감정보 삭제)
-                                    └── soft-delete-schedule (일정 soft delete, RLS 우회)
+                                    ├── soft-delete-schedule (일정 soft delete, RLS 우회)
+                                    └── update-schedule (일정 생성/수정, 서버사이드 소유권 검증)
 ```
 
 - **프론트엔드**: React SPA → Supabase JS Client로 DB 직접 접근
@@ -231,6 +232,15 @@
   - ✅ HTML 타이틀: "JSK 일정 관리" → "간호부 일정 관리 시스템" 변경
   - ✅ CSS: .user-info-card, .user-info-item 스타일 추가
   - ✅ 브라우저 탭/북마크에 서비스명 정확히 표시
+- [x] QA 종합 점검 및 보안/버그 수정 (2026-03-09)
+  - ✅ [Critical] CORS 와일드카드 → Origin 화이트리스트 (5개 Edge Function)
+  - ✅ [Critical] kakao-auth 디버그 정보 노출 제거
+  - ✅ [Critical] 결정적 비밀번호 → HMAC-SHA256 기반 생성
+  - ✅ [High] signOut 레이스 컨디션 수정 + __PENDING__ 사용자 세션 정리
+  - ✅ [High] update-schedule Edge Function 생성 (일정 CRUD 서버사이드 검증)
+  - ✅ [Medium] CallbackPage 백버튼/CSRF/StrictMode/Admin 권한 등 6건
+  - ✅ [Low] 폴링 단축, 미사용 파일 삭제, Error Boundary 등 5건
+  - ✅ 총 18건 이슈 처리 완료 (상세 → docs/qa/QA_ISSUE_TRACKER_2026-03-08.md)
 
 ---
 
@@ -373,6 +383,7 @@ supabase functions deploy send-notification --project-ref qphhpfolrbsyiyoevaoe -
 supabase functions deploy update-user-name --project-ref qphhpfolrbsyiyoevaoe
 supabase functions deploy delete-user --project-ref qphhpfolrbsyiyoevaoe
 supabase functions deploy soft-delete-schedule --project-ref qphhpfolrbsyiyoevaoe
+supabase functions deploy update-schedule --project-ref qphhpfolrbsyiyoevaoe
 ```
 
 ---

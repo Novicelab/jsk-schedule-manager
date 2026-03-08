@@ -280,8 +280,10 @@ function CalendarPage() {
       if (error) throw error
 
       // 내 일정 여부: localStorage의 user.id와 created_by 비교
+      // 관리자(ADMIN)는 모든 일정 수정/삭제 가능 (CLAUDE.md 정책)
       const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
       const isMySchedule = data.created_by === currentUser.id
+      const isAdmin = currentUser.role === 'ADMIN'
 
       // 필드명 매핑 (snake_case → camelCase)
       setSelectedSchedule({
@@ -296,8 +298,8 @@ function CalendarPage() {
         createdBy: data.created_by,
         createdByName: data.created_by_name,
         createdAt: data.created_at,
-        canEdit: isMySchedule,
-        canDelete: isMySchedule,
+        canEdit: isMySchedule || isAdmin,
+        canDelete: isMySchedule || isAdmin,
       })
       setShowScheduleDetail(true)
     } catch (err) {

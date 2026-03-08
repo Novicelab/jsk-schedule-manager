@@ -79,22 +79,25 @@ function MyPage() {
       const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
       if (!currentUser.id) throw new Error('사용자 정보를 찾을 수 없습니다.')
 
-      const { data: sessionData } = await supabase.auth.getSession()
-      if (!sessionData.session?.access_token) throw new Error('세션이 만료되었습니다. 다시 로그인해주세요.')
-
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-      const res = await fetch(`${supabaseUrl}/functions/v1/delete-user`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${sessionData.session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userId: currentUser.id }),
+      const { data, error: invokeError } = await supabase.functions.invoke('delete-user', {
+        body: { userId: currentUser.id },
       })
 
-      if (!res.ok) {
-        const errData = await res.json()
-        throw new Error(errData.error || '탈퇴 처리에 실패했습니다.')
+      if (invokeError) {
+        let errorMessage = invokeError.message
+        if (invokeError.context && typeof invokeError.context.json === 'function') {
+          try {
+            const errorBody = await invokeError.context.json()
+            errorMessage = errorBody?.error || invokeError.message
+          } catch {
+            // body 파싱 실패 시 원본 메시지 사용
+          }
+        }
+        throw new Error(errorMessage)
+      }
+
+      if (data?.error) {
+        throw new Error(data.error)
       }
 
       await supabase.auth.signOut()

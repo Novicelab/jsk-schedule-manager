@@ -20,9 +20,12 @@ function CallbackPage() {
 
     // 더미 history 엔트리 추가 (백버튼 트랩)
     // 백버튼 1회 누르면 이 더미 엔트리가 pop되어 외부 URL(Kakao OAuth)로 이탈 방지
-    window.history.pushState({ nameModalTrap: true }, '', window.location.href)
+    // StrictMode 이중 실행 시 pushState 중복 방지: 이미 더미 엔트리가 있으면 스킵
+    if (!window.history.state?.nameModalTrap) {
+      window.history.pushState({ nameModalTrap: true }, '', window.location.href)
+    }
 
-    const cleanupAndRedirect = (reason) => {
+    const cleanupAndRedirect = async (reason) => {
       if (isExiting.current) return
       isExiting.current = true
 
@@ -31,10 +34,16 @@ function CallbackPage() {
       // localStorage 먼저 정리 (동기)
       localStorage.removeItem('user')
 
-      // signOut: fire-and-forget (await하지 않음 - WebView 이중 popstate 타이밍 이슈 방지)
-      supabase.auth.signOut().catch(() => {})
+      // signOut 완료 대기 (최대 2초 타임아웃)
+      try {
+        await Promise.race([
+          supabase.auth.signOut(),
+          new Promise(resolve => setTimeout(resolve, 2000))
+        ])
+      } catch {
+        // signOut 실패해도 계속 진행
+      }
 
-      // 즉시 로그인 페이지로 이동 (/login은 PrivateRoute 비보호 라우트이므로 SIGNED_OUT 이중 발화 없음)
       navigate('/login', { replace: true })
     }
 
@@ -73,7 +82,7 @@ function CallbackPage() {
     // CSRF 검증: state 파라미터 확인
     const returnedState = searchParams.get('state')
     const savedState = sessionStorage.getItem('kakao_oauth_state')
-    if (savedState && returnedState !== savedState) {
+    if (!savedState || returnedState !== savedState) {
       console.error('OAuth state mismatch:', { returnedState, savedState })
       setErrorMessage('보안 검증에 실패했습니다. 다시 로그인해주세요.')
       sessionStorage.removeItem('kakao_oauth_state')
@@ -149,10 +158,10 @@ function CallbackPage() {
           refresh_token: session.refresh_token,
         })
 
-        // 세션 완전 로드 대기 (최대 10초)
+        // 세션 완전 로드 대기 (최대 3초)
         let sessionLoaded = false
         let attempts = 0
-        const maxAttempts = 100 // 10초 (100ms * 100)
+        const maxAttempts = 30 // 3초 (100ms * 30)
 
         while (!sessionLoaded && attempts < maxAttempts) {
           const { data: currentSession } = await supabase.auth.getSession()
@@ -171,7 +180,7 @@ function CallbackPage() {
         }
 
         if (!sessionLoaded) {
-          console.warn('세션 로드 타임아웃 (10초), 계속 진행')
+          console.warn('세션 로드 타임아웃 (3초), 계속 진행')
         }
 
         // user 정보를 localStorage에 저장 (표시용)
@@ -209,7 +218,19 @@ function CallbackPage() {
   if (showNameModal) {
     return (
       <NameInputModal
-        onComplete={() => navigate('/', { replace: true })}
+        onComplete={() => {
+          // M-2: 레이스 방지 - 백버튼 핸들러(cleanupAndRedirect)가 동시 실행되지 않도록 차단
+          isExiting.current = true
+          // M-1: pushState로 추가한 더미 history 엔트리 정리
+          // back() 완료 시 popstate가 발생하지만 isExiting=true로 cleanupAndRedirect는 차단됨
+          // popstate 리스너에서 navigate를 실행하여 back() 완료를 보장
+          const onBackDone = () => {
+            window.removeEventListener('popstate', onBackDone)
+            navigate('/', { replace: true })
+          }
+          window.addEventListener('popstate', onBackDone)
+          window.history.back()
+        }}
       />
     )
   }

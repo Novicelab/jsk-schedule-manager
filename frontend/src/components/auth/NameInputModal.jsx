@@ -20,8 +20,8 @@ function NameInputModal({ onComplete }) {
       setError('이름을 입력해주세요.')
       return
     }
-    if (name.trim().length > 50) {
-      setError('이름은 50자 이내로 입력해주세요.')
+    if (name.trim().length > 20) {
+      setError('이름은 20자 이내로 입력해주세요.')
       return
     }
 
@@ -143,8 +143,8 @@ function NameInputModal({ onComplete }) {
                 className={`name-input ${error ? 'input-error' : ''}`}
                 value={name}
                 onChange={handleInputChange}
-                placeholder="이름 입력 (최대 50자)"
-                maxLength={50}
+                placeholder="이름 입력 (최대 20자)"
+                maxLength={20}
                 autoFocus
                 disabled={submitting}
               />

@@ -1,15 +1,24 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+const ALLOWED_ORIGINS = [
+  'https://jsk-schedule-frontend.onrender.com',
+  'http://localhost:5173',
+]
+
+const getCorsHeaders = (req: Request) => {
+  const origin = req.headers.get('origin') || ''
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  }
 }
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: getCorsHeaders(req) })
   }
 
   try {
@@ -18,7 +27,7 @@ serve(async (req) => {
     if (!userId) {
       return new Response(
         JSON.stringify({ error: '사용자 ID가 필요합니다.' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 400, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
       )
     }
 
@@ -29,7 +38,7 @@ serve(async (req) => {
     if (!token) {
       return new Response(
         JSON.stringify({ error: '인증 토큰이 필요합니다.' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 401, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
       )
     }
 
@@ -47,7 +56,7 @@ serve(async (req) => {
     if (authError || !authUser) {
       return new Response(
         JSON.stringify({ error: '유효하지 않은 인증 토큰입니다.' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 401, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
       )
     }
 
@@ -66,7 +75,7 @@ serve(async (req) => {
     if (userError || !targetUser) {
       return new Response(
         JSON.stringify({ error: '사용자를 찾을 수 없습니다.' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 404, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
       )
     }
 
@@ -74,7 +83,7 @@ serve(async (req) => {
     if (targetUser.auth_id !== authUser.id) {
       return new Response(
         JSON.stringify({ error: '본인 계정만 탈퇴할 수 있습니다.' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 403, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
       )
     }
 
@@ -101,7 +110,7 @@ serve(async (req) => {
       console.error('users 정보 초기화 실패:', clearUserError)
       return new Response(
         JSON.stringify({ error: '사용자 데이터 처리에 실패했습니다.' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 500, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
       )
     }
 
@@ -117,13 +126,13 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({ success: true }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 200, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
     )
   } catch (error) {
     console.error('delete-user 에러:', error)
     return new Response(
       JSON.stringify({ error: '서버 오류가 발생했습니다.' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 500, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
     )
   }
 })

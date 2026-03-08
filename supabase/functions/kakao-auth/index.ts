@@ -1,16 +1,40 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+// HMAC-SHA256 기반 비밀번호 생성 (결정적이지만 역추적 불가)
+const generateAuthPassword = async (kakaoId: number, secret: string): Promise<string> => {
+  const encoder = new TextEncoder()
+  const key = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  )
+  const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(`kakao_auth_${kakaoId}`))
+  const hashArray = Array.from(new Uint8Array(signature))
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
+const ALLOWED_ORIGINS = [
+  'https://jsk-schedule-frontend.onrender.com',
+  'http://localhost:5173',
+]
+
+const getCorsHeaders = (req: Request) => {
+  const origin = req.headers.get('origin') || ''
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  }
 }
 
 serve(async (req) => {
   // CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: getCorsHeaders(req) })
   }
 
   try {
@@ -19,7 +43,7 @@ serve(async (req) => {
     if (!code) {
       return new Response(
         JSON.stringify({ error: '인가 코드가 필요합니다.' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 400, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
       )
     }
 
@@ -65,11 +89,8 @@ serve(async (req) => {
           await new Promise(resolve => setTimeout(resolve, 500))
         } else {
           return new Response(
-            JSON.stringify({
-              error: '카카오 인증에 실패했습니다.',
-              debug: { status: tokenResponse.status, body: errorText }
-            }),
-            { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            JSON.stringify({ error: '카카오 인증에 실패했습니다.' }),
+            { status: 401, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
           )
         }
       } catch (fetchError) {
@@ -77,7 +98,7 @@ serve(async (req) => {
         if (attempt >= 2) {
           return new Response(
             JSON.stringify({ error: '카카오 서버 연결에 실패했습니다.' }),
-            { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            { status: 503, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
           )
         }
         await new Promise(resolve => setTimeout(resolve, 500))
@@ -87,7 +108,7 @@ serve(async (req) => {
     if (!tokenData) {
       return new Response(
         JSON.stringify({ error: '카카오 토큰 데이터를 받지 못했습니다.' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 500, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
       )
     }
 
@@ -95,11 +116,8 @@ serve(async (req) => {
     if (tokenData.error) {
       console.error('카카오 토큰 에러 응답:', tokenData)
       return new Response(
-        JSON.stringify({
-          error: '카카오 인가 코드가 유효하지 않습니다. 다시 로그인해주세요.',
-          debug: { kakaoError: tokenData.error, description: tokenData.error_description }
-        }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: '카카오 인가 코드가 유효하지 않습니다. 다시 로그인해주세요.' }),
+        { status: 401, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
       )
     }
     const kakaoAccessToken = tokenData.access_token as string
@@ -119,11 +137,8 @@ serve(async (req) => {
         body: userInfoError
       })
       return new Response(
-        JSON.stringify({
-          error: '카카오 사용자 정보 조회에 실패했습니다.',
-          debug: { status: userInfoResponse.status }
-        }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: '카카오 사용자 정보 조회에 실패했습니다.' }),
+        { status: 401, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
       )
     }
 
@@ -149,12 +164,13 @@ serve(async (req) => {
     let isNewUser = false
     let supabaseSession
 
-    // Supabase Auth용 이메일/비밀번호 (결정적, 강화된 버전)
+    // Supabase Auth용 이메일/비밀번호 (HMAC-SHA256 기반, 역추적 불가)
     const authEmail = `kakao_${kakaoId}@kakao.local`
+    const newAuthPassword = await generateAuthPassword(kakaoId, SUPABASE_SERVICE_ROLE_KEY)
+    // 기존 사용자 호환성: 마이그레이션 완료까지 유지 (기존 결정적 비밀번호 2가지)
     const SERVICE_KEY_SUFFIX = SUPABASE_SERVICE_ROLE_KEY.slice(-12)
-    const newAuthPassword = `kakao_${kakaoId}_${KAKAO_CLIENT_SECRET}_${SERVICE_KEY_SUFFIX}`
-    // 기존 사용자 호환성: 마이그레이션 시 사용
-    const oldAuthPassword = `kakao_${kakaoId}_${KAKAO_CLIENT_SECRET.substring(0, 8)}`
+    const legacyPasswordV2 = `kakao_${kakaoId}_${KAKAO_CLIENT_SECRET}_${SERVICE_KEY_SUFFIX}`
+    const legacyPasswordV1 = `kakao_${kakaoId}_${KAKAO_CLIENT_SECRET.substring(0, 8)}`
 
     if (!existingUser) {
       // 5a. 신규 사용자: Supabase Auth 계정 생성
@@ -205,12 +221,8 @@ serve(async (req) => {
               details: JSON.stringify(upsertError)
             })
             return new Response(
-              JSON.stringify({
-                error: '사용자 정보 저장에 실패했습니다.',
-                details: upsertError.message,
-                code: upsertError.code
-              }),
-              { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+              JSON.stringify({ error: '사용자 정보 저장에 실패했습니다.' }),
+              { status: 500, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
             )
           }
 
@@ -221,7 +233,7 @@ serve(async (req) => {
             console.error('users 테이블 upsert 실패 (no data)')
             return new Response(
               JSON.stringify({ error: '사용자 정보 저장에 실패했습니다.' }),
-              { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+              { status: 500, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
             )
           }
         } else {
@@ -232,15 +244,8 @@ serve(async (req) => {
             details: JSON.stringify(authError)
           })
           return new Response(
-            JSON.stringify({
-              error: '사용자 생성에 실패했습니다.',
-              details: authError.message,
-              debug: {
-                email: authEmail,
-                errorStatus: authError.status
-              }
-            }),
-            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            JSON.stringify({ error: '사용자 생성에 실패했습니다.' }),
+            { status: 500, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
           )
         }
       } else {
@@ -292,19 +297,15 @@ serve(async (req) => {
               details: JSON.stringify(upsertError)
             })
             return new Response(
-              JSON.stringify({
-                error: '사용자 정보 저장에 실패했습니다.',
-                details: upsertError.message,
-                code: upsertError.code
-              }),
-              { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+              JSON.stringify({ error: '사용자 정보 저장에 실패했습니다.' }),
+              { status: 500, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
             )
           }
 
           if (!upsertedUser) {
             return new Response(
               JSON.stringify({ error: '사용자 정보 저장에 실패했습니다.' }),
-              { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+              { status: 500, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
             )
           }
           user = upsertedUser
@@ -397,22 +398,57 @@ serve(async (req) => {
 
     // 실패 시 기존 비밀번호로 재시도 (마이그레이션 - 기존 사용자만)
     if (sessionData.error && !isNewUser) {
-      console.warn('새 비밀번호 로그인 실패, 기존 비밀번호로 재시도:', sessionData.error)
+      console.warn('HMAC 비밀번호 로그인 실패, 레거시 비밀번호로 재시도:', sessionData.error)
+
+      // legacyV2 (강화 버전) 시도
+      let legacyVersion: string | null = null
       sessionData = await supabaseClient.auth.signInWithPassword({
         email: authEmail,
-        password: oldAuthPassword,
+        password: legacyPasswordV2,
       })
 
-      // 기존 비밀번호로 성공했다면 새 비밀번호로 자동 업그레이드
+      if (!sessionData.error) {
+        legacyVersion = 'V2'
+      }
+
+      // legacyV2 실패 시 legacyV1 (초기 버전) 시도
+      if (sessionData.error) {
+        console.warn('legacyV2 비밀번호도 실패, legacyV1으로 재시도:', sessionData.error)
+        sessionData = await supabaseClient.auth.signInWithPassword({
+          email: authEmail,
+          password: legacyPasswordV1,
+        })
+        if (!sessionData.error) {
+          legacyVersion = 'V1'
+        }
+      }
+
+      // 레거시 비밀번호로 성공했다면 HMAC 비밀번호로 자동 업그레이드
       if (!sessionData.error && sessionData.data.user) {
-        console.log('기존 사용자 자동 마이그레이션 시작:', sessionData.data.user.id)
+        // [마이그레이션 추적] 레거시 비밀번호로 로그인한 사용자 로깅
+        // 이 로그가 더 이상 출력되지 않으면 모든 사용자가 HMAC 비밀번호로 마이그레이션 완료된 것
+        console.warn(`[PASSWORD_MIGRATION] 레거시 비밀번호(${legacyVersion}) 로그인 감지 → HMAC 업그레이드 진행`, {
+          authUserId: sessionData.data.user.id,
+          kakaoId,
+          legacyVersion,
+          timestamp: new Date().toISOString(),
+        })
         try {
           await supabaseAdmin.auth.admin.updateUserById(sessionData.data.user.id, {
             password: newAuthPassword,
           })
-          console.log('기존 사용자 비밀번호 업그레이드 완료')
+          console.warn(`[PASSWORD_MIGRATION] HMAC 업그레이드 완료`, {
+            authUserId: sessionData.data.user.id,
+            kakaoId,
+            legacyVersion,
+          })
         } catch (migrationError) {
-          console.warn('비밀번호 업그레이드 실패 (로그인은 진행):', migrationError)
+          console.warn(`[PASSWORD_MIGRATION] HMAC 업그레이드 실패 (로그인은 진행)`, {
+            authUserId: sessionData.data.user.id,
+            kakaoId,
+            legacyVersion,
+            error: migrationError,
+          })
         }
       }
     }
@@ -458,15 +494,8 @@ serve(async (req) => {
         userIdInDb: user?.id
       })
       return new Response(
-        JSON.stringify({
-          error: '로그인 처리에 실패했습니다.',
-          debug: {
-            reason: sessionData.error.message,
-            isNewUser,
-            hasUserInDb: !!user
-          }
-        }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: '로그인 처리에 실패했습니다.' }),
+        { status: 500, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
       )
     }
 
@@ -498,17 +527,14 @@ serve(async (req) => {
         },
         isNewUser: finalIsNewUser,
       }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 200, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
     )
   } catch (error) {
     console.error('kakao-auth 에러:', error)
     const errorMessage = error instanceof Error ? error.message : String(error)
     return new Response(
-      JSON.stringify({
-        error: '서버 오류가 발생했습니다.',
-        debug: { message: errorMessage }
-      }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: '서버 오류가 발생했습니다.' }),
+      { status: 500, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
     )
   }
 })

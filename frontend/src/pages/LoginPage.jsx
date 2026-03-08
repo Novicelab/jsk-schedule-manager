@@ -21,6 +21,13 @@ function LoginPage() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
+        // 회원가입 미완료 사용자(__PENDING__) 세션 정리
+        const storedUser = JSON.parse(localStorage.getItem('user') || '{}')
+        if (storedUser.name === '__PENDING__') {
+          supabase.auth.signOut().catch(() => {})
+          localStorage.removeItem('user')
+          return
+        }
         navigate('/', { replace: true })
       }
     })
