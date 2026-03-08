@@ -217,6 +217,12 @@
   - ✅ 바텀시트 UI 개선: 이벤트 우측 기간 표시 + 일정 추가 버튼 강조
   - ✅ send-notification 조퇴 라벨/시간 지원 (코드 보존, 비활성화 상태)
   - ⚠️ DB 트리거 수동 업데이트 필요: auto_vacation_title()에 EARLY_LEAVE 분기 추가
+- [x] 카카오톡 인앱 브라우저 백키 무한 렌더링 수정 (2026-03-08)
+  - ✅ 원인: PrivateRoute + CalendarPage 이중 onAuthStateChange 구독 충돌
+  - ✅ 수정: PrivateRoute에서 SIGNED_OUT 이벤트만 감지 (TOKEN_REFRESHED 등 무시)
+  - ✅ 수정: CalendarPage의 중복 onAuthStateChange 구독 제거
+  - ✅ 수정: CalendarPage의 10초 주기 세션 체크 제거 (PrivateRoute 담당)
+  - ✅ 결과: 세션 감지 책임 단일화로 무한 렌더링 제거
 
 ---
 

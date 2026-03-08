@@ -130,50 +130,14 @@ function CalendarPage() {
     }
   }, [])
 
-  // 회원가입 완료 확인 & 세션 만료 감지
+  // 회원가입 완료 확인
+  // 세션 감지 및 만료 처리는 PrivateRoute에서 단일 관리 (중복 구독으로 인한 무한 렌더링 방지)
+  // 카카오톡 인앱 브라우저 백키 시 onAuthStateChange가 일시적으로 발행되므로
+  // CalendarPage에서 별도 구독 시 PrivateRoute와 충돌하여 무한 렌더링 발생
   useEffect(() => {
-    // 1. 회원가입 완료 확인: 사용자명이 입력되었는지 검증
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
     if (!currentUser.name || currentUser.name === '__PENDING__') {
-      console.warn('회원가입 미완료: 사용자명 미입력')
       navigate('/login', { replace: true })
-      return
-    }
-
-    console.log('회원가입 완료 확인:', { userName: currentUser.name })
-
-    // 2. 세션 모니터링: 주기적으로 세션 유효성 검증
-    const checkSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession()
-        if (!session) {
-          console.warn('세션 만료: 로그인 페이지로 이동')
-          localStorage.removeItem('user')
-          navigate('/login', { replace: true })
-        }
-      } catch (err) {
-        console.error('세션 확인 오류:', err)
-      }
-    }
-
-    // 초기 세션 확인
-    checkSession()
-
-    // 주기적 세션 검증 (10초마다)
-    const sessionCheckInterval = setInterval(checkSession, 10000)
-
-    // 세션 상태 변경 감지
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session) {
-        console.warn('인증 상태 변경: 세션 없음, 로그인 페이지로 이동')
-        localStorage.removeItem('user')
-        navigate('/login', { replace: true })
-      }
-    })
-
-    return () => {
-      clearInterval(sessionCheckInterval)
-      subscription?.unsubscribe()
     }
   }, [navigate])
 
@@ -194,18 +158,10 @@ function CalendarPage() {
   }, [])
 
   // 일정 목록 로드
+  // 세션 선제 검증은 PrivateRoute에서 처리하므로 여기서는 401 응답만 처리
   const loadSchedules = useCallback(async (range) => {
     if (!range) return
     try {
-      // 세션 검증: 토큰 만료 시 감지
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
-        console.warn('세션 만료: 로그인 페이지로 이동')
-        localStorage.removeItem('user')
-        navigate('/login', { replace: true })
-        return
-      }
-
       const startDate = dayjs(range.start).startOf('day').format('YYYY-MM-DDTHH:mm:ss')
       const endDate = dayjs(range.end).endOf('day').format('YYYY-MM-DDTHH:mm:ss')
 
@@ -216,9 +172,8 @@ function CalendarPage() {
         .gte('end_at', startDate)
         .lte('start_at', endDate)
 
-      // 401 Unauthorized: 토큰 만료
+      // 401 Unauthorized: PrivateRoute가 처리하지 못한 토큰 만료
       if (error?.status === 401) {
-        console.warn('인증 오류 (401): 세션 만료')
         localStorage.removeItem('user')
         navigate('/login', { replace: true })
         return
@@ -306,26 +261,17 @@ function CalendarPage() {
   }, [isMobile, events])
 
   // 일정 상세 정보 조회 (공통 로직)
+  // 세션 선제 검증은 PrivateRoute에서 처리하므로 여기서는 401 응답만 처리
   const handleEventDetail = useCallback(async (scheduleId) => {
     try {
-      // 세션 검증: 토큰 만료 시 감지
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
-        console.warn('세션 만료: 로그인 페이지로 이동')
-        localStorage.removeItem('user')
-        navigate('/login', { replace: true })
-        return
-      }
-
       const { data, error } = await supabase
         .from('schedules_with_user')
         .select('*')
         .eq('id', scheduleId)
         .single()
 
-      // 401 Unauthorized: 토큰 만료
+      // 401 Unauthorized: PrivateRoute가 처리하지 못한 토큰 만료
       if (error?.status === 401) {
-        console.warn('인증 오류 (401): 세션 만료')
         localStorage.removeItem('user')
         navigate('/login', { replace: true })
         return
