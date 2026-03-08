@@ -35,11 +35,28 @@ function ScheduleDetail({ schedule, onEdit, onDeleted, onClose }) {
 
     try {
       // Soft delete: Edge Function 사용 (RLS 우회, Service Role)
-      const { error } = await supabase.functions.invoke('soft-delete-schedule', {
+      const { data, error: invokeError } = await supabase.functions.invoke('soft-delete-schedule', {
         body: { scheduleId: schedule.id },
       })
 
-      if (error) throw error
+      if (invokeError) {
+        // FunctionsHttpError인 경우 response body에서 실제 에러 정보 추출
+        let errorMessage = invokeError.message
+        if (invokeError.context && typeof invokeError.context.json === 'function') {
+          try {
+            const errorBody = await invokeError.context.json()
+            errorMessage = errorBody?.error || errorBody?.message || invokeError.message
+            console.error('Edge Function 에러 상세:', errorBody)
+          } catch (parseErr) {
+            console.warn('Edge Function 에러 body 파싱 실패:', parseErr)
+          }
+        }
+        throw new Error(errorMessage)
+      }
+
+      if (data?.error) {
+        throw new Error(data.error)
+      }
 
       onDeleted()
     } catch (err) {

@@ -175,28 +175,10 @@ serve(async (req) => {
             kakaoId: kakaoId
           })
 
-          // Auth 사용자는 이미 있으므로, users 테이블에 복구 로직
-          // (isNewUser는 이후 user.name 값으로 결정됨)
-
-          // 이 시점에서는 Auth 사용자가 이미 생성되었음
-          // 따라서 auth_id는 AuthError에서 추출 가능 (이메일로 조회 후 가져옴)
-          // 하지만 간단하게, Supabase Auth 사용자 이메일로 조회하여 ID 얻기
-          const { data: existingAuthData } = await supabaseAdmin.auth.admin.getUserByEmail(authEmail)
-          const authId = existingAuthData?.user?.id || null
-          console.log('422 복구: Auth 사용자 조회 결과:', { authId, hasData: !!existingAuthData })
-
-          // 기존 Auth 사용자의 비밀번호를 현재 newAuthPassword로 갱신
-          // (이전 실패 시도에서 다른 비밀번호로 생성되었을 수 있음)
-          if (authId) {
-            try {
-              await supabaseAdmin.auth.admin.updateUserById(authId, {
-                password: newAuthPassword,
-              })
-              console.log('422 복구: Auth 비밀번호 갱신 완료:', authId)
-            } catch (pwdError) {
-              console.warn('422 복구: Auth 비밀번호 갱신 실패 (로그인 진행):', pwdError)
-            }
-          }
+          // 422: Auth 사용자가 이미 존재함
+          // 이 경우 users 테이블만 먼저 복구
+          // auth_id는 Step 7 (로그인 후)에서 동기화됨
+          console.log('422 복구: Auth 사용자 이미 존재, users 테이블 복구 중...')
 
           const { data: updatedUser, error: upsertError } = await supabaseAdmin
             .from('users')
@@ -208,7 +190,7 @@ serve(async (req) => {
               kakao_access_token: kakaoAccessToken,
               kakao_refresh_token: kakaoRefreshToken,
               kakao_token_expires_at: kakaoTokenExpiresAt,
-              auth_id: authId,
+              auth_id: null, // Step 7 동기화에서 설정됨
               role: 'USER',
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
@@ -392,28 +374,14 @@ serve(async (req) => {
           user.auth_id = authData.user.id
         } else if (authError?.status === 422) {
           // 422: 이메일이 이미 등록됨 (이전 시도의 잔존 사용자)
-          console.warn('기존 사용자 Auth 중복 감지, 비밀번호 갱신 및 매핑:', {
+          console.warn('기존 사용자 Auth 중복 감지, 로그인 시 ID 매핑:', {
             userId: user.id,
             email: authEmail
           })
-          // Auth 사용자 조회 후 비밀번호 갱신 + auth_id 매핑
-          const { data: existingAuthData2 } = await supabaseAdmin.auth.admin.getUserByEmail(authEmail)
-          const existingAuthUserId = existingAuthData2?.user?.id
-          if (existingAuthUserId) {
-            try {
-              await supabaseAdmin.auth.admin.updateUserById(existingAuthUserId, {
-                password: newAuthPassword,
-              })
-              await supabaseAdmin
-                .from('users')
-                .update({ auth_id: existingAuthUserId })
-                .eq('id', user.id)
-              user.auth_id = existingAuthUserId
-              console.log('기존 사용자 Auth 복구 완료:', existingAuthUserId)
-            } catch (recoveryError) {
-              console.warn('기존 사용자 Auth 복구 실패:', recoveryError)
-            }
-          }
+          // 이 경우 나중에 signInWithPassword()로 로그인할 때
+          // 응답에서 user.id를 받으므로, 여기서는 로깅만 수행
+          // (회차를 넘기고 로그인 섹션에서 auth_id 동기화)
+          console.log('기존 사용자 Auth 422 처리: 로그인 후 auth_id 동기화 예정')
         }
       }
     }
@@ -453,12 +421,13 @@ serve(async (req) => {
     if (sessionData.error && isNewUser) {
       console.warn('신규 사용자 로그인 실패, Auth 비밀번호 강제 갱신 후 재시도:', {
         error: sessionData.error.message,
-        authEmail
+        authEmail,
+        userAuthId: user?.auth_id
       })
       try {
-        const { data: authLookup } = await supabaseAdmin.auth.admin.getUserByEmail(authEmail)
-        const lookupAuthId = authLookup?.user?.id
+        const lookupAuthId = user?.auth_id
         if (lookupAuthId) {
+          // users 테이블의 auth_id 사용 (이미 저장된 ID)
           await supabaseAdmin.auth.admin.updateUserById(lookupAuthId, {
             password: newAuthPassword,
           })
@@ -469,7 +438,11 @@ serve(async (req) => {
           })
           if (!sessionData.error) {
             console.log('신규 사용자 비밀번호 갱신 후 로그인 성공')
+          } else {
+            console.error('신규 사용자 비밀번호 갱신 후에도 로그인 실패:', sessionData.error.message)
           }
+        } else {
+          console.warn('신규 사용자 auth_id 없음, 로그인 재시도 불가')
         }
       } catch (retryError) {
         console.error('신규 사용자 로그인 재시도 실패:', retryError)

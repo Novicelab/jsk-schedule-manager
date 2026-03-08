@@ -176,12 +176,15 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
 
       if (isEdit) {
         const updatePayload = {
-          title,
           description: form.type === 'WORK' ? (form.description.trim() || null) : null,
           type: form.type,
           start_at,
           end_at,
           all_day,
+        }
+        // WORK 일정만 title 업데이트 (VACATION은 vacation_type 기반 DB 트리거로 자동 생성)
+        if (form.type === 'WORK') {
+          updatePayload.title = title
         }
         if (form.type === 'VACATION') {
           updatePayload.vacation_type = vacation_type
@@ -362,7 +365,7 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
                       value={form.earlyLeaveHour}
                       onChange={(e) => setForm((prev) => ({ ...prev, earlyLeaveHour: Number(e.target.value) }))}
                     >
-                      {Array.from({ length: 23 }, (_, i) => i + 1).map((h) => (
+                      {Array.from({ length: 24 }, (_, i) => i).map((h) => (
                         <option key={h} value={h}>{String(h).padStart(2, '0')}시</option>
                       ))}
                     </select>

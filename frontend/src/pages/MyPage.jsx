@@ -10,6 +10,7 @@ function MyPage() {
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState(null)
   const [user, setUser] = useState(null)
+  const [email, setEmail] = useState(null)
   const [createdAt, setCreatedAt] = useState(null)
   const [loadingUserInfo, setLoadingUserInfo] = useState(true)
   const [userInfoError, setUserInfoError] = useState(null)
@@ -27,10 +28,10 @@ function MyPage() {
         }
         setUser(storedUser)
 
-        // Query name and created_at from Supabase users table
+        // Query name, email, and created_at from Supabase users table
         const { data, error } = await supabase
           .from('users')
-          .select('name, created_at')
+          .select('name, email, created_at')
           .eq('id', storedUser.id)
           .single()
 
@@ -40,6 +41,7 @@ function MyPage() {
         } else if (data) {
           // Update user name from DB
           setUser(prev => ({ ...prev, name: data.name }))
+          setEmail(data.email)
           setCreatedAt(data.created_at)
         }
       } catch (err) {
@@ -128,6 +130,10 @@ function MyPage() {
             )}
             {user && (
               <div className="user-info-card">
+                <div className="user-info-item">
+                  <span className="user-info-label">이메일</span>
+                  <span className="user-info-value">{email || '-'}</span>
+                </div>
                 <div className="user-info-item">
                   <span className="user-info-label">이름</span>
                   <span className="user-info-value">{user.name || '-'}</span>
