@@ -223,6 +223,14 @@
   - ✅ 수정: CalendarPage의 중복 onAuthStateChange 구독 제거
   - ✅ 수정: CalendarPage의 10초 주기 세션 체크 제거 (PrivateRoute 담당)
   - ✅ 결과: 세션 감지 책임 단일화로 무한 렌더링 제거
+- [x] MyPage 개선 및 서비스명 변경 (2026-03-08)
+  - ✅ MyPage: 로그인 계정 정보(이메일) 표시
+  - ✅ MyPage: 사용자명 표시 (localStorage)
+  - ✅ MyPage: 가입일자 표시 (Supabase users 테이블 조회)
+  - ✅ MyPage: 사용자 정보 로딩 상태 UI + 에러 처리
+  - ✅ HTML 타이틀: "JSK 일정 관리" → "간호부 일정 관리 시스템" 변경
+  - ✅ CSS: .user-info-card, .user-info-item 스타일 추가
+  - ✅ 브라우저 탭/북마크에 서비스명 정확히 표시
 
 ---
 
