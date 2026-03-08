@@ -49,11 +49,11 @@
    ───────────────────────────────────────
 
    변수명: KAKAO_REDIRECT_URI
-   값: https://jsk-schedule-frontend.onrender.com/auth/callback
+   값: https://schedule.onrender.com/auth/callback
    ───────────────────────────────────────
 
    변수명: APP_CORS_ALLOWED_ORIGINS
-   값: https://jsk-schedule-frontend.onrender.com
+   값: https://schedule.onrender.com
    ───────────────────────────────────────
    ```
 
@@ -66,7 +66,7 @@
 
 1. **Frontend 서비스 선택**
    ```
-   jsk-schedule-frontend 클릭
+   schedule 클릭
    ```
 
 2. **Environment 탭 이동**
@@ -81,7 +81,7 @@
    ───────────────────────────────────────
 
    변수명: VITE_KAKAO_REDIRECT_URI
-   값: https://jsk-schedule-frontend.onrender.com/auth/callback
+   값: https://schedule.onrender.com/auth/callback
    ───────────────────────────────────────
 
    변수명: VITE_API_BASE_URL
@@ -98,7 +98,7 @@
 
 1. **Frontend 서비스 대시보드로 이동**
    ```
-   https://dashboard.render.com → jsk-schedule-frontend
+   https://dashboard.render.com → schedule
    ```
 
 2. **"Clear Build Cache & Deploy" 버튼 클릭**
@@ -145,7 +145,7 @@
 ### **1️⃣ 프론트엔드 접속 확인**
 ```
 1. 브라우저 열기
-2. https://jsk-schedule-frontend.onrender.com 접속
+2. https://schedule.onrender.com 접속
 3. 페이지가 정상적으로 로드되는지 확인
 
 ✅ 성공: 로그인 페이지가 보임
@@ -162,7 +162,7 @@ curl https://jsk-schedule-backend.onrender.com/health
 
 ### **3️⃣ 환경 변수 확인** (중요!)
 ```
-1. https://jsk-schedule-frontend.onrender.com 접속
+1. https://schedule.onrender.com 접속
 2. 브라우저 개발자 도구 열기 (F12)
 3. Console 탭 클릭
 4. 다음 명령어 입력:
@@ -171,7 +171,7 @@ curl https://jsk-schedule-backend.onrender.com/health
 
 ✅ 성공:
    https://jsk-schedule-backend.onrender.com
-   https://jsk-schedule-frontend.onrender.com/auth/callback
+   https://schedule.onrender.com/auth/callback
 
 ❌ 실패: localhost가 표시되면 캐시 문제
 해결: [3단계]에서 "Clear Build Cache & Deploy" 다시 실행
@@ -179,7 +179,7 @@ curl https://jsk-schedule-backend.onrender.com/health
 
 ### **4️⃣ 카카오 로그인 테스트** (최종 검증!)
 ```
-1. https://jsk-schedule-frontend.onrender.com 접속
+1. https://schedule.onrender.com 접속
 2. "카카오로 시작하기" 클릭
 3. Kakao 인증 페이지 → 승인
 4. 신규 사용자면 이름 입력
@@ -213,7 +213,7 @@ curl https://jsk-schedule-backend.onrender.com/health
 | 링크 | 용도 |
 |------|------|
 | https://dashboard.render.com | Render 대시보드 |
-| https://jsk-schedule-frontend.onrender.com | 프로덕션 프론트엔드 |
+| https://schedule.onrender.com | 프로덕션 프론트엔드 |
 | https://jsk-schedule-backend.onrender.com | 프로덕션 백엔드 API |
 | https://developers.kakao.com | Kakao 콘솔 (참고용) |
 
@@ -256,7 +256,7 @@ curl https://jsk-schedule-backend.onrender.com/health
 ```
 확인사항:
 1. KAKAO_REDIRECT_URI 값이 정확한지 확인
-   값: https://jsk-schedule-frontend.onrender.com/auth/callback
+   값: https://schedule.onrender.com/auth/callback
    (http 아니고 https여야 함!)
 
 2. VITE_KAKAO_REDIRECT_URI도 동일한지 확인
@@ -290,7 +290,7 @@ curl https://jsk-schedule-backend.onrender.com/health
 
 ```
 ✅ 프로덕션 서비스 시작!
-   - 프론트엔드: https://jsk-schedule-frontend.onrender.com
+   - 프론트엔드: https://schedule.onrender.com
    - 백엔드: https://jsk-schedule-backend.onrender.com
 
 ✅ 사용자가 카카오로 로그인 가능

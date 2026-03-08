@@ -67,15 +67,15 @@ Render Dashboard → jsk-schedule-backend → Environment
 추가:
 KAKAO_CLIENT_ID=240f33554023d9ab4957b2d638fb0d71
 KAKAO_CLIENT_SECRET=[시크릿]
-KAKAO_REDIRECT_URI=https://jsk-schedule-frontend.onrender.com/auth/callback
+KAKAO_REDIRECT_URI=https://schedule.onrender.com/auth/callback
 ```
 
 ### 2단계: Render 프론트엔드 환경 변수 설정
 ```
-Render Dashboard → jsk-schedule-frontend → Environment
+Render Dashboard → schedule → Environment
 추가:
 VITE_KAKAO_CLIENT_ID=240f33554023d9ab4957b2d638fb0d71
-VITE_KAKAO_REDIRECT_URI=https://jsk-schedule-frontend.onrender.com/auth/callback
+VITE_KAKAO_REDIRECT_URI=https://schedule.onrender.com/auth/callback
 VITE_API_BASE_URL=https://jsk-schedule-backend.onrender.com
 ```
 
@@ -84,7 +84,7 @@ VITE_API_BASE_URL=https://jsk-schedule-backend.onrender.com
 1. Render 환경 변수 저장
 2. "Clear Build Cache & Deploy" 클릭
 3. 배포 완료 대기 (5-10분)
-4. https://jsk-schedule-frontend.onrender.com 방문하여 로그인 테스트
+4. https://schedule.onrender.com 방문하여 로그인 테스트
 ```
 
 ---
@@ -103,7 +103,7 @@ VITE_API_BASE_URL=https://jsk-schedule-backend.onrender.com
 - [ ] Render 프론트엔드 환경 변수 설정
 - [ ] Kakao 콘솔에 Redirect URI 등록
   - [ ] http://localhost:5173/auth/callback
-  - [ ] https://jsk-schedule-frontend.onrender.com/auth/callback
+  - [ ] https://schedule.onrender.com/auth/callback
 - [ ] Render 배포 완료
 - [ ] 프로덕션 로그인 테스트 성공
 

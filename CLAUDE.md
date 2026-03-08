@@ -58,7 +58,7 @@
 | 빌드 도구 | Vite | |
 | 배포 플랫폼 | Render (Static Site) | 클라우드 앱 호스팅 플랫폼 (Singapore 리전) |
 | 배포 구성 | Static Site (Frontend Only) | 자동 배포 (GitHub 연동) |
-| 배포 URL | Frontend: https://jsk-schedule-frontend.onrender.com | Live |
+| 배포 URL | Frontend: https://schedule.onrender.com | Live |
 | 소스관리/CI·CD | GitHub | 코드 버전관리 및 자동 배포 연동 |
 | 인증 | 카카오톡 OAuth 2.0 + Supabase Auth | 세션 자동 갱신 (Supabase Client 내장) |
 | 알림 | 카카오톡 알림톡 API (현재 비활성화, 전환 예정) | Supabase Edge Function 코드 보존 |
@@ -429,7 +429,7 @@ echo $RENDER_API_TOKEN
 ```bash
 # curl로 마지막 배포 상태 조회
 curl -s -H "Authorization: Bearer $RENDER_API_TOKEN" \
-  https://api.render.com/v1/services/jsk-schedule-frontend/latest-deployment | jq '.status'
+  https://api.render.com/v1/services/schedule/latest-deployment | jq '.status'
 # SUCCEEDED, IN_PROGRESS, FAILED 중 하나
 ```
 
@@ -506,14 +506,14 @@ echo $KAKAO_CLIENT_ID
 ```bash
 # Kakao Developers Console → [앱 이름] → 플랫폼
 # 리다이렉트 URI: http://localhost:5173/auth/callback (로컬)
-#             https://jsk-schedule-frontend.onrender.com/auth/callback (배포)
+#             https://schedule.onrender.com/auth/callback (배포)
 ```
 
 **⚠️ Logout Redirect URI 등록 (로그아웃 기능 정상 작동 필수)**
 ```
 Kakao Developers Console → [앱 이름] → 카카오 로그인 → 고급
 → Logout Redirect URI 등록:
-  - 배포: https://jsk-schedule-frontend.onrender.com/login
+  - 배포: https://schedule.onrender.com/login
   - 로컬: http://localhost:5173/login
 ```
 > 등록하지 않으면 로그아웃 후 로그인 페이지로 이동하지 못함

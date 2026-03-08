@@ -16,7 +16,7 @@
    - Render 배포 시 여전히 `localhost:5173` 주소로 작동
 
 2. **Redirect URI 불일치**
-   - Kakao 콘솔에 등록된 URI: `https://jsk-schedule-frontend.onrender.com/auth/callback`
+   - Kakao 콘솔에 등록된 URI: `https://schedule.onrender.com/auth/callback`
    - 배포된 프론트엔드가 보내는 URI: `http://localhost:5173/auth/callback` ❌
    - Kakao가 거부 → 에러 페이지
 
@@ -55,7 +55,7 @@ VITE_KAKAO_REDIRECT_URI=http://localhost:5173/auth/callback  # ✅ 5173
 VITE_API_BASE_URL=http://localhost:9090  # ✅ 9090
 
 # 프로덕션 환경 (Render 배포 시 참고용)
-# VITE_KAKAO_REDIRECT_URI=https://jsk-schedule-frontend.onrender.com/auth/callback
+# VITE_KAKAO_REDIRECT_URI=https://schedule.onrender.com/auth/callback
 # VITE_API_BASE_URL=https://jsk-schedule-backend.onrender.com
 ```
 
@@ -134,8 +134,8 @@ Dashboard → Backend Service → Environment
 
 KAKAO_CLIENT_ID=240f33554023d9ab4957b2d638fb0d71
 KAKAO_CLIENT_SECRET=[시크릿 값]
-KAKAO_REDIRECT_URI=https://jsk-schedule-frontend.onrender.com/auth/callback
-APP_CORS_ALLOWED_ORIGINS=https://jsk-schedule-frontend.onrender.com
+KAKAO_REDIRECT_URI=https://schedule.onrender.com/auth/callback
+APP_CORS_ALLOWED_ORIGINS=https://schedule.onrender.com
 
 (기타 변수: JWT_SECRET, SUPABASE_DB_PASSWORD 등)
 ```
@@ -146,7 +146,7 @@ Dashboard → Frontend Service → Environment
 추가할 변수:
 
 VITE_KAKAO_CLIENT_ID=240f33554023d9ab4957b2d638fb0d71
-VITE_KAKAO_REDIRECT_URI=https://jsk-schedule-frontend.onrender.com/auth/callback
+VITE_KAKAO_REDIRECT_URI=https://schedule.onrender.com/auth/callback
 VITE_API_BASE_URL=https://jsk-schedule-backend.onrender.com
 ```
 
@@ -156,7 +156,7 @@ VITE_API_BASE_URL=https://jsk-schedule-backend.onrender.com
 2. 제품 설정 → Kakao Login
 3. Redirect URI에 등록:
    ✅ http://localhost:5173/auth/callback (로컬 개발)
-   ✅ https://jsk-schedule-frontend.onrender.com/auth/callback (프로덕션)
+   ✅ https://schedule.onrender.com/auth/callback (프로덕션)
 ```
 
 ### Step 4: 배포 및 검증
@@ -168,7 +168,7 @@ git push origin main
 Render Dashboard → Manual Deploy
 
 # 배포 완료 확인
-https://jsk-schedule-frontend.onrender.com → 로그인 테스트
+https://schedule.onrender.com → 로그인 테스트
 ```
 
 ---
@@ -177,10 +177,10 @@ https://jsk-schedule-frontend.onrender.com → 로그인 테스트
 
 | 항목 | 로컬 개발 | 프로덕션 |
 |------|---------|---------|
-| **프론트엔드 URL** | http://localhost:5173 | https://jsk-schedule-frontend.onrender.com |
+| **프론트엔드 URL** | http://localhost:5173 | https://schedule.onrender.com |
 | **백엔드 URL** | http://localhost:9090 | https://jsk-schedule-backend.onrender.com |
-| **Kakao Redirect** | http://localhost:5173/auth/callback | https://jsk-schedule-frontend.onrender.com/auth/callback |
-| **CORS Origin** | http://localhost:5173 | https://jsk-schedule-frontend.onrender.com |
+| **Kakao Redirect** | http://localhost:5173/auth/callback | https://schedule.onrender.com/auth/callback |
+| **CORS Origin** | http://localhost:5173 | https://schedule.onrender.com |
 | **DB** | H2 In-Memory | Supabase PostgreSQL |
 | **프로파일** | `local` | `prod` |
 
@@ -240,7 +240,7 @@ netstat -ano | findstr :9090
 ```bash
 1. Render 백엔드/프론트엔드 환경 변수 설정
 2. GitHub 푸시 또는 Render 수동 배포
-3. https://jsk-schedule-frontend.onrender.com에서 테스트
+3. https://schedule.onrender.com에서 테스트
 4. Kakao 로그인 정상 확인
 ```
 

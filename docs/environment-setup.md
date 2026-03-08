@@ -137,10 +137,10 @@ JWT_SECRET=[32자 이상의 보안 키]
 # Kakao OAuth
 KAKAO_CLIENT_ID=240f33554023d9ab4957b2d638fb0d71
 KAKAO_CLIENT_SECRET=[Kakao Client Secret]
-KAKAO_REDIRECT_URI=https://jsk-schedule-frontend.onrender.com/auth/callback
+KAKAO_REDIRECT_URI=https://schedule.onrender.com/auth/callback
 
 # CORS
-APP_CORS_ALLOWED_ORIGINS=https://jsk-schedule-frontend.onrender.com
+APP_CORS_ALLOWED_ORIGINS=https://schedule.onrender.com
 ```
 
 ### 2. Render 프론트엔드 환경 변수
@@ -149,7 +149,7 @@ Render Dashboard에서 Frontend 서비스 선택 → **Environment** 탭:
 
 ```
 VITE_KAKAO_CLIENT_ID=240f33554023d9ab4957b2d638fb0d71
-VITE_KAKAO_REDIRECT_URI=https://jsk-schedule-frontend.onrender.com/auth/callback
+VITE_KAKAO_REDIRECT_URI=https://schedule.onrender.com/auth/callback
 VITE_API_BASE_URL=https://jsk-schedule-backend.onrender.com
 ```
 
@@ -157,7 +157,7 @@ VITE_API_BASE_URL=https://jsk-schedule-backend.onrender.com
 
 | 서비스 | URL |
 |--------|-----|
-| 프론트엔드 | https://jsk-schedule-frontend.onrender.com |
+| 프론트엔드 | https://schedule.onrender.com |
 | 백엔드 API | https://jsk-schedule-backend.onrender.com |
 
 #### 배포 후 테스트:
@@ -166,7 +166,7 @@ VITE_API_BASE_URL=https://jsk-schedule-backend.onrender.com
 curl https://jsk-schedule-backend.onrender.com/health
 
 # 프론트엔드 로그인 페이지
-https://jsk-schedule-frontend.onrender.com
+https://schedule.onrender.com
 ```
 
 ---
@@ -182,7 +182,7 @@ https://jsk-schedule-frontend.onrender.com
 
 ```
 ✅ http://localhost:5173/auth/callback          (로컬 개발)
-✅ https://jsk-schedule-frontend.onrender.com/auth/callback  (프로덕션)
+✅ https://schedule.onrender.com/auth/callback  (프로덕션)
 ```
 
 #### 등록 방법:
@@ -245,7 +245,7 @@ Kakao 앱 설정에서 **앱 정보** 탭:
 1. Kakao 콘솔의 리다이렉트 URI 확인
    ```
    ✅ http://localhost:5173/auth/callback
-   ✅ https://jsk-schedule-frontend.onrender.com/auth/callback
+   ✅ https://schedule.onrender.com/auth/callback
    ```
 2. 프론트엔드 `.env` 파일 확인
    ```
@@ -280,7 +280,7 @@ app:
 # application-prod.yml
 app:
   cors:
-    allowed-origins: https://jsk-schedule-frontend.onrender.com
+    allowed-origins: https://schedule.onrender.com
 ```
 
 ### 문제 4: 프론트엔드 포트 충돌 (Port 5173 already in use)

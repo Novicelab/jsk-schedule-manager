@@ -45,6 +45,6 @@ jobs:
                 {"key": "PORT", "value": "3001"},
                 {"key": "SUPABASE_URL", "value": "https://qphhpfolrbsyiyoevaoe.supabase.co"},
                 {"key": "SUPABASE_SERVICE_ROLE_KEY", "value": "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}"},
-                {"key": "ALLOWED_ORIGINS", "value": "https://jsk-schedule-frontend.onrender.com"}
+                {"key": "ALLOWED_ORIGINS", "value": "https://schedule.onrender.com"}
               ]
             }'

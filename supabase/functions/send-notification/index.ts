@@ -219,7 +219,7 @@ serve(async (req) => {
       try {
         // 일정 시작일 기준 월로 캘린더 이동 URL 생성
         const scheduleMonth = new Date(schedule.start_at).toISOString().slice(0, 7) // YYYY-MM
-        const calendarUrl = `https://jsk-schedule-frontend.onrender.com/?month=${scheduleMonth}`
+        const calendarUrl = `https://schedule.onrender.com/?month=${scheduleMonth}`
 
         const templateObject = JSON.stringify({
           object_type: 'text',

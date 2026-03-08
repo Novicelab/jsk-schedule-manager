@@ -11,7 +11,7 @@
 ### **[1단계] 프로덕션 프론트엔드 접속**
 
 ```
-URL: https://jsk-schedule-frontend.onrender.com
+URL: https://schedule.onrender.com
 
 ✅ 확인 사항:
    - 페이지가 정상적으로 로드되는가?
@@ -55,7 +55,7 @@ https://jsk-schedule-backend.onrender.com/health
 ### **[3단계] 프론트엔드 환경 변수 확인**
 
 ```
-1. https://jsk-schedule-frontend.onrender.com 접속
+1. https://schedule.onrender.com 접속
 2. F12 키 눌러서 개발자 도구 열기
 3. "Console" 탭 클릭
 4. 다음 코드 입력:
@@ -64,7 +64,7 @@ https://jsk-schedule-backend.onrender.com/health
 
 ✅ 성공 (다음이 보여야 함):
    https://jsk-schedule-backend.onrender.com
-   https://jsk-schedule-frontend.onrender.com/auth/callback
+   https://schedule.onrender.com/auth/callback
 
 ❌ 실패 (localhost가 보이면):
    → Render Dashboard → Frontend → "Clear Build Cache & Deploy" 다시 실행
@@ -84,7 +84,7 @@ https://jsk-schedule-backend.onrender.com/health
 
 #### **Step 1: 로그인 시도**
 ```
-1. https://jsk-schedule-frontend.onrender.com 접속
+1. https://schedule.onrender.com 접속
 2. "카카오로 시작하기" 버튼 클릭
 3. Kakao 인증 페이지로 리다이렉트 확인
 
@@ -107,7 +107,7 @@ https://jsk-schedule-backend.onrender.com/health
 신규 카카오 계정으로 로그인 시:
 
 ✅ 기대하는 흐름:
-   1. Kakao 인증 완료 → https://jsk-schedule-frontend.onrender.com/auth/callback으로 리다이렉트
+   1. Kakao 인증 완료 → https://schedule.onrender.com/auth/callback으로 리다이렉트
    2. NameInputModal 팝업 표시 (이름 입력하세요)
    3. 이름 입력 후 "확인" 클릭
    4. 캘린더 페이지 표시 (메인 페이지)
@@ -132,7 +132,7 @@ https://jsk-schedule-backend.onrender.com/health
 위 신규 가입한 계정으로 다시 로그인 시:
 
 ✅ 기대하는 흐름:
-   1. Kakao 인증 완료 → https://jsk-schedule-frontend.onrender.com/auth/callback로 리다이렉트
+   1. Kakao 인증 완료 → https://schedule.onrender.com/auth/callback로 리다이렉트
    2. NameInputModal 표시 안 됨 (이미 등록된 사용자이므로)
    3. 바로 캘린더 페이지 표시
 
@@ -315,12 +315,12 @@ https://jsk-schedule-backend.onrender.com/health
 1. Kakao 콘솔 확인:
    - https://developers.kakao.com/console/app
    - Redirect URI에 다음 등록되었는지 확인:
-     ✅ https://jsk-schedule-frontend.onrender.com/auth/callback
+     ✅ https://schedule.onrender.com/auth/callback
 
 2. 환경 변수 확인:
    - KAKAO_REDIRECT_URI (백엔드)
    - VITE_KAKAO_REDIRECT_URI (프론트엔드)
-   - 둘 다 https://jsk-schedule-frontend.onrender.com/auth/callback인지 확인
+   - 둘 다 https://schedule.onrender.com/auth/callback인지 확인
 
 3. 프론트엔드 캐시 제거:
    - Render Dashboard → Frontend → "Clear Build Cache & Deploy"
@@ -330,7 +330,7 @@ https://jsk-schedule-backend.onrender.com/health
 ### 환경 변수가 localhost
 ```
 1. 프론트엔드 캐시 제거:
-   Render Dashboard → jsk-schedule-frontend → "Clear Build Cache & Deploy"
+   Render Dashboard → schedule → "Clear Build Cache & Deploy"
 
 2. 5-10분 대기
 
@@ -341,7 +341,7 @@ https://jsk-schedule-backend.onrender.com/health
 ### CORS 에러
 ```
 1. 백엔드 환경 변수 확인:
-   APP_CORS_ALLOWED_ORIGINS = https://jsk-schedule-frontend.onrender.com
+   APP_CORS_ALLOWED_ORIGINS = https://schedule.onrender.com
 
 2. 백엔드 재배포:
    Render Dashboard → Backend → "Manual Deploy"
@@ -366,7 +366,7 @@ https://jsk-schedule-backend.onrender.com/health
 ```
 🎉 프로덕션 서비스 시작!
 
-📱 프론트엔드: https://jsk-schedule-frontend.onrender.com
+📱 프론트엔드: https://schedule.onrender.com
 🔌 백엔드: https://jsk-schedule-backend.onrender.com
 
 ✅ 모든 기능 정상 작동 중

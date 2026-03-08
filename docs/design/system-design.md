@@ -87,7 +87,7 @@
 | 배포 구성 | **Docker (Backend) + Static Site (Frontend)** | Backend: Spring Boot Docker, Frontend: Vite 빌드 정적 파일 (Tailwind 통합) |
 | 배포 지역 | **Singapore** | 아시아 지역 최적 성능, 낮은 레이턴시 |
 | 소스관리/CI·CD | **GitHub** | 코드 버전관리 및 Render 자동 배포 트리거 (push 시 자동 배포) |
-| 배포 URL (Live) | **Backend**: https://jsk-schedule-backend.onrender.com<br/>**Frontend**: https://jsk-schedule-frontend.onrender.com | 프로덕션 배포 완료 ✅ |
+| 배포 URL (Live) | **Backend**: https://jsk-schedule-backend.onrender.com<br/>**Frontend**: https://schedule.onrender.com | 프로덕션 배포 완료 ✅ |
 
 ### 1.2 레이어드 아키텍처 상세
 

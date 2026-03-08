@@ -51,7 +51,7 @@
 
 | 서비스 | URL | 상태 |
 |--------|-----|------|
-| 프론트엔드 | https://jsk-schedule-frontend.onrender.com | 🟢 **HTTP 200 OK** |
+| 프론트엔드 | https://schedule.onrender.com | 🟢 **HTTP 200 OK** |
 | 백엔드 API | https://jsk-schedule-backend.onrender.com | 🟢 **정상** |
 | 데이터베이스 | Supabase PostgreSQL | 🟢 **정상** |
 
@@ -74,7 +74,7 @@
 
 ### 1️⃣ **마이페이지 UI**
 ```
-https://jsk-schedule-frontend.onrender.com
+https://schedule.onrender.com
 → 상단 GNB의 "설정" 버튼 클릭
 → /mypage 이동
 → 마이페이지 화면 표시
