@@ -914,6 +914,41 @@ select {
   border-color: #aab7c4;
 }
 
+/* User Info Section */
+.mypage-user-info-section {
+  margin-bottom: 28px;
+}
+
+.user-info-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.user-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.user-info-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #7f8c8d;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.user-info-value {
+  font-size: 14px;
+  color: #2c3e50;
+  font-weight: 500;
+}
+
 .mypage-section {
   background: #fff;
   border-radius: 10px;
