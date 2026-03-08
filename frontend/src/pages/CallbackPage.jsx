@@ -14,42 +14,36 @@ function CallbackPage() {
   // 백버튼 핸들러 중복 실행 방지
   const isExiting = useRef(false)
 
-  // 회원가입 필수 입력: 사용자명 입력 모달 렌더링 중 뒤로가기/이탈 시 세션 정리 후 로그인 페이지로 강제 이동
+  // 회원가입 필수 입력: 사용자명 입력 모달 렌더링 중 뒤로가기 시 세션 정리 후 로그인 페이지로 강제 이동
   useEffect(() => {
     if (!showNameModal) return
 
-    const cleanupAndRedirect = async (reason) => {
-      // 중복 실행 방지 (popstate 무한 루프 차단)
+    // 더미 history 엔트리 추가 (백버튼 트랩)
+    // 백버튼 1회 누르면 이 더미 엔트리가 pop되어 외부 URL(Kakao OAuth)로 이탈 방지
+    window.history.pushState({ nameModalTrap: true }, '', window.location.href)
+
+    const cleanupAndRedirect = (reason) => {
       if (isExiting.current) return
       isExiting.current = true
 
       console.warn(`회원가입 중 이탈 감지 (${reason}): 세션 정리 후 로그인 페이지로 이동`)
 
-      // 세션 로그아웃
-      await supabase.auth.signOut({ scope: 'global' }).catch(() => {})
-
-      // localStorage 정리
+      // localStorage 먼저 정리 (동기)
       localStorage.removeItem('user')
 
-      // 하드 리다이렉트 (React Router navigate 대신 사용하여 popstate 재트리거 방지)
-      window.location.replace('/login')
+      // signOut: fire-and-forget (await하지 않음 - WebView 이중 popstate 타이밍 이슈 방지)
+      supabase.auth.signOut().catch(() => {})
+
+      // 즉시 로그인 페이지로 이동 (/login은 PrivateRoute 비보호 라우트이므로 SIGNED_OUT 이중 발화 없음)
+      navigate('/login', { replace: true })
     }
 
-    const handlePopState = (e) => {
-      e.preventDefault()
+    // popstate는 non-cancelable 이벤트이므로 e.preventDefault() 불필요
+    const handlePopState = () => {
       cleanupAndRedirect('백버튼')
     }
 
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape' || e.keyCode === 27) {
-        e.preventDefault()
-        cleanupAndRedirect('ESC키')
-      }
-    }
-
-    // 뒤로가기 시도 감지
     window.addEventListener('popstate', handlePopState)
-    window.addEventListener('keydown', handleKeyDown)
 
     // beforeunload: 창 닫기/탭 닫기 시도 시 경고
     const handleBeforeUnload = (e) => {
@@ -61,10 +55,9 @@ function CallbackPage() {
 
     return () => {
       window.removeEventListener('popstate', handlePopState)
-      window.removeEventListener('keydown', handleKeyDown)
       window.removeEventListener('beforeunload', handleBeforeUnload)
     }
-  }, [showNameModal])
+  }, [showNameModal, navigate])
 
   useEffect(() => {
     if (called.current) return
