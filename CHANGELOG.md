@@ -856,7 +856,7 @@ const { data, error: invokeError } = await supabase.functions.invoke('send-notif
 - Git commit & push 완료
 
 ### 테스트 방법
-1. https://schedule.onrender.com 접속
+1. https://jsk-schedule-frontend.onrender.com 접속
 2. "카카오로 시작하기" 클릭
 3. 카카오 계정으로 로그인
 4. **예상**: 세션 발급 성공 → 메인 페이지/이름 입력 모달로 이동
@@ -883,7 +883,7 @@ const { data, error: invokeError } = await supabase.functions.invoke('send-notif
 
 ### 검증
 - Supabase CLI로 Edge Function 재배포 완료
-- 프로덕션 배포 URL: https://schedule.onrender.com
+- 프로덕션 배포 URL: https://jsk-schedule-frontend.onrender.com
 - 카카오 OAuth 콜백 로직 검증 완료
 
 ### 결과
@@ -1533,7 +1533,7 @@ const { data, error: invokeError } = await supabase.functions.invoke('send-notif
 
 **백엔드:**
 - `CorsConfig.java` 수정:
-  - 환경 변수 누락 시 기본값 추가 (https://schedule.onrender.com)
+  - 환경 변수 누락 시 기본값 추가 (https://jsk-schedule-frontend.onrender.com)
   - 콤마 구분 origins 정규식 개선 (공백 처리)
   - allowedMethods를 "*"로 확대 (모든 HTTP 메서드 지원)
   - CORS preflight 요청 캐시 타임 추가 (3600초)
@@ -1660,7 +1660,7 @@ const { data, error: invokeError } = await supabase.functions.invoke('send-notif
 
 ### 비고
 - 로컬 개발 환경: 프론트엔드 5173, 백엔드 9090 → Kakao 리다이렉트 `http://localhost:5173/auth/callback`
-- 프로덕션 (Render): 프론트엔드 `https://schedule.onrender.com`, 백엔드 `https://jsk-schedule-backend.onrender.com`
+- 프로덕션 (Render): 프론트엔드 `https://jsk-schedule-frontend.onrender.com`, 백엔드 `https://jsk-schedule-backend.onrender.com`
 - Kakao 콘솔에 두 Redirect URI 모두 등록 필수
 - Render 환경 변수 설정 시 `VITE_*` 변수는 빌드 시점에 컴파일되므로, 변경 후 반드시 "Clear Build Cache & Deploy" 실행
 

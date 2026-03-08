@@ -28,7 +28,7 @@ Render에 JSK 일정 관리 서비스를 배포하는 단계별 가이드입니�
 2. 내 애플리케이션 → "JSK 일정 관리"
 3. 제품 설정 → Kakao Login
 4. Redirect URI에 추가:
-   ✅ https://schedule.onrender.com/auth/callback
+   ✅ https://jsk-schedule-frontend.onrender.com/auth/callback
 ```
 
 ---
@@ -72,8 +72,8 @@ git push origin main
 | `JWT_SECRET` | [32자 이상의 보안 키] | JWT 서명 키 (최소 32자) |
 | `KAKAO_CLIENT_ID` | `240f33554023d9ab4957b2d638fb0d71` | Kakao REST API Key |
 | `KAKAO_CLIENT_SECRET` | [Kakao Client Secret] | Kakao 앱 시크릿 |
-| `KAKAO_REDIRECT_URI` | `https://schedule.onrender.com/auth/callback` | Kakao 콜백 주소 |
-| `APP_CORS_ALLOWED_ORIGINS` | `https://schedule.onrender.com` | CORS 허용 도메인 |
+| `KAKAO_REDIRECT_URI` | `https://jsk-schedule-frontend.onrender.com/auth/callback` | Kakao 콜백 주소 |
+| `APP_CORS_ALLOWED_ORIGINS` | `https://jsk-schedule-frontend.onrender.com` | CORS 허용 도메인 |
 
 **저장** 클릭 후 **Manual Deploy** 선택 (또는 GitHub 푸시 시 자동 배포)
 
@@ -100,7 +100,7 @@ curl -X GET https://jsk-schedule-backend.onrender.com/api/schedules \
 ```bash
 # frontend/.env
 VITE_KAKAO_CLIENT_ID=240f33554023d9ab4957b2d638fb0d71
-VITE_KAKAO_REDIRECT_URI=https://schedule.onrender.com/auth/callback
+VITE_KAKAO_REDIRECT_URI=https://jsk-schedule-frontend.onrender.com/auth/callback
 VITE_API_BASE_URL=https://jsk-schedule-backend.onrender.com
 ```
 
@@ -120,12 +120,12 @@ git push origin main
 2. **+ New** → **Static Site**
 3. GitHub 저장소 선택
 4. 다음 설정:
-   - **Name**: schedule
+   - **Name**: jsk-schedule-frontend
    - **Publish directory**: `frontend/dist`
    - **Build Command**: `cd frontend && npm install && npm run build`
 
 #### 기존 서비스 수정:
-1. **Render 대시보드** → **schedule**
+1. **Render 대시보드** → **jsk-schedule-frontend**
 2. **Settings** 탭 → 위 설정 확인
 
 ### Step 4: 환경 변수 설정
@@ -135,7 +135,7 @@ git push origin main
 | 변수명 | 값 |
 |--------|-----|
 | `VITE_KAKAO_CLIENT_ID` | `240f33554023d9ab4957b2d638fb0d71` |
-| `VITE_KAKAO_REDIRECT_URI` | `https://schedule.onrender.com/auth/callback` |
+| `VITE_KAKAO_REDIRECT_URI` | `https://jsk-schedule-frontend.onrender.com/auth/callback` |
 | `VITE_API_BASE_URL` | `https://jsk-schedule-backend.onrender.com` |
 
 **저장** 클릭 후 **Clear Build Cache & Deploy** 선택 (환경 변수 변경 시 캐시 제거 필수)
@@ -144,10 +144,10 @@ git push origin main
 
 ```bash
 # 1. 배포 로그 확인
-Render Dashboard → schedule → Logs
+Render Dashboard → jsk-schedule-frontend → Logs
 
 # 2. 프론트엔드 접속 확인
-https://schedule.onrender.com
+https://jsk-schedule-frontend.onrender.com
 
 # 3. 콘솔에서 환경 변수 확인 (브라우저 DevTools)
 console.log(import.meta.env.VITE_API_BASE_URL)
@@ -202,7 +202,7 @@ const apiBaseUrl = import.meta.env.VITE_API_BASE_URL
 
 ```bash
 # 1. 프론트엔드 접속
-https://schedule.onrender.com
+https://jsk-schedule-frontend.onrender.com
 
 # 2. "카카오로 시작하기" 클릭
 # 3. Kakao 인증 페이지에서 승인
@@ -281,11 +281,11 @@ npm run build
 **확인 사항:**
 ```
 1. Kakao 콘솔의 Redirect URI 등록 확인
-   ✅ https://schedule.onrender.com/auth/callback
+   ✅ https://jsk-schedule-frontend.onrender.com/auth/callback
 
 2. 환경 변수 확인
-   VITE_KAKAO_REDIRECT_URI = https://schedule.onrender.com/auth/callback
-   KAKAO_REDIRECT_URI = https://schedule.onrender.com/auth/callback
+   VITE_KAKAO_REDIRECT_URI = https://jsk-schedule-frontend.onrender.com/auth/callback
+   KAKAO_REDIRECT_URI = https://jsk-schedule-frontend.onrender.com/auth/callback
 
 3. 캐시 제거 후 재배포
    Render Dashboard → Frontend → "Clear Build Cache & Deploy"
@@ -296,7 +296,7 @@ npm run build
 **확인 사항:**
 ```
 1. 백엔드 환경 변수 확인
-   APP_CORS_ALLOWED_ORIGINS = https://schedule.onrender.com
+   APP_CORS_ALLOWED_ORIGINS = https://jsk-schedule-frontend.onrender.com
 
 2. 백엔드 재배포
    Render Dashboard → Backend → Manual Deploy
@@ -342,7 +342,7 @@ curl https://jsk-schedule-backend.onrender.com/health
 
 | 서비스 | URL |
 |--------|-----|
-| 프론트엔드 | https://schedule.onrender.com |
+| 프론트엔드 | https://jsk-schedule-frontend.onrender.com |
 | 백엔드 API | https://jsk-schedule-backend.onrender.com |
 | API 문서 (Swagger) | https://jsk-schedule-backend.onrender.com/swagger-ui.html |
 | 헬스 체크 | https://jsk-schedule-backend.onrender.com/health |

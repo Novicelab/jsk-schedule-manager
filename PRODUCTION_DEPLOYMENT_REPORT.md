@@ -39,14 +39,14 @@
 ```
 ✅ KAKAO_CLIENT_ID=240f33554023d9ab4957b2d638fb0d71
 ✅ KAKAO_CLIENT_SECRET=[설정됨]
-✅ KAKAO_REDIRECT_URI=https://schedule.onrender.com/auth/callback
-✅ APP_CORS_ALLOWED_ORIGINS=https://schedule.onrender.com
+✅ KAKAO_REDIRECT_URI=https://jsk-schedule-frontend.onrender.com/auth/callback
+✅ APP_CORS_ALLOWED_ORIGINS=https://jsk-schedule-frontend.onrender.com
 ```
 
 #### 프론트엔드 (Render)
 ```
 ✅ VITE_KAKAO_CLIENT_ID=240f33554023d9ab4957b2d638fb0d71
-✅ VITE_KAKAO_REDIRECT_URI=https://schedule.onrender.com/auth/callback
+✅ VITE_KAKAO_REDIRECT_URI=https://jsk-schedule-frontend.onrender.com/auth/callback
 ✅ VITE_API_BASE_URL=https://jsk-schedule-backend.onrender.com
 ```
 
@@ -69,7 +69,7 @@
 
 #### Step 1: 프로덕션 프론트엔드 접속
 ```
-URL: https://schedule.onrender.com
+URL: https://jsk-schedule-frontend.onrender.com
 상태: ✅ 정상 로드
 
 결과:
@@ -81,10 +81,10 @@ URL: https://schedule.onrender.com
 #### Step 2: 카카오 로그인 버튼 클릭
 ```
 클릭 전:
-  URL: https://schedule.onrender.com/login
+  URL: https://jsk-schedule-frontend.onrender.com/login
 
 클릭 후 (리다이렉트):
-  URL: https://accounts.kakao.com/login/?continue=https%3A%2F%2Fkauth.kakao.com%2Foauth%2Fauthorize%3Fclient_id%3D240f33554023d9ab4957b2d638fb0d71%26redirect_uri%3Dhttps%253A%252F%252Fschedule.onrender.com%252Fauth%252Fcallback%26response_type%3Dcode
+  URL: https://accounts.kakao.com/login/?continue=https%3A%2F%2Fkauth.kakao.com%2Foauth%2Fauthorize%3Fclient_id%3D240f33554023d9ab4957b2d638fb0d71%26redirect_uri%3Dhttps%253A%252F%252Fjsk-schedule-frontend.onrender.com%252Fauth%252Fcallback%26response_type%3Dcode
 
 상태: ✅ 정상 리다이렉트
 ```
@@ -92,10 +92,10 @@ URL: https://schedule.onrender.com
 #### Step 3: 환경 변수 검증
 ```
 redirect_uri 파라미터 (URL 디코드됨):
-  https://schedule.onrender.com/auth/callback
+  https://jsk-schedule-frontend.onrender.com/auth/callback
 
 기대값:
-  https://schedule.onrender.com/auth/callback
+  https://jsk-schedule-frontend.onrender.com/auth/callback
 
 결과: ✅ 정확히 일치!
 ```
@@ -121,7 +121,7 @@ redirect_uri 파라미터 (URL 디코드됨):
 
 | 서비스 | URL | 상태 |
 |--------|-----|------|
-| **프론트엔드** | https://schedule.onrender.com | 🟢 Live |
+| **프론트엔드** | https://jsk-schedule-frontend.onrender.com | 🟢 Live |
 | **백엔드 API** | https://jsk-schedule-backend.onrender.com | 🟢 Live |
 
 ### 주요 기능
@@ -202,7 +202,7 @@ b03711a - feat: 일정 생성 팝업 UX 개선 + 휴가 제목 자동 설정 ✅
 ║                 🚀 프로덕션 서비스 LIVE 🚀             ║
 ╠════════════════════════════════════════════════════════╣
 ║                                                        ║
-║  프론트엔드: https://schedule.onrender.com ║
+║  프론트엔드: https://jsk-schedule-frontend.onrender.com ║
 ║  백엔드:     https://jsk-schedule-backend.onrender.com  ║
 ║                                                        ║
 ║  ✅ 카카오 로그인: 정상 작동                             ║

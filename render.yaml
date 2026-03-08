@@ -1,7 +1,7 @@
 services:
   # ========== Frontend Web Service (Node.js Server) ==========
   - type: web_service
-    name: schedule
+    name: jsk-schedule-frontend
     plan: free
     region: singapore
     branch: main
@@ -15,7 +15,7 @@ services:
       - key: VITE_KAKAO_CLIENT_ID
         value: "240f33554023d9ab4957b2d638fb0d71"
       - key: VITE_KAKAO_REDIRECT_URI
-        value: https://schedule.onrender.com/auth/callback
+        value: https://jsk-schedule-frontend.onrender.com/auth/callback
       - key: VITE_SUPABASE_URL
         value: https://qphhpfolrbsyiyoevaoe.supabase.co
       - key: VITE_SUPABASE_ANON_KEY
