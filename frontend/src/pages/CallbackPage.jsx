@@ -12,18 +12,45 @@ function CallbackPage() {
   // StrictMode 이중 실행 방지
   const called = useRef(false)
 
-  // 회원가입 필수 입력: 사용자명 입력 모달 렌더링 중 뒤로가기/이탈 차단
+  // 회원가입 필수 입력: 사용자명 입력 모달 렌더링 중 뒤로가기/이탈 시 세션 정리 후 로그인 페이지로 강제 이동
   useEffect(() => {
     if (!showNameModal) return
 
-    const handlePopState = (e) => {
+    const handlePopState = async (e) => {
       e.preventDefault()
-      // 뒤로가기 시도 시 모달 유지 (네비게이션 수행 안 함)
-      console.warn('회원가입 필수 입력: 사용자명 입력 전까지 이탈 불가능')
+      console.warn('회원가입 중 백버튼 감지: 세션 정리 후 로그인 페이지로 이동')
+
+      // 세션 로그아웃
+      await supabase.auth.signOut({ scope: 'global' })
+
+      // localStorage 정리
+      localStorage.removeItem('user')
+
+      // 로그인 페이지로 강제 이동
+      navigate('/login', { replace: true })
     }
 
-    // 뒤로가기 차단
+    // 뒤로가기 시도 감지
     window.addEventListener('popstate', handlePopState)
+
+    // 키보드 이벤트: ESC 키 또는 안드로이드 백버튼 감지
+    const handleKeyDown = async (e) => {
+      // ESC 키 (일부 안드로이드 기기에서 백버튼으로 감지될 수 있음)
+      if (e.key === 'Escape' || e.keyCode === 27) {
+        e.preventDefault()
+        console.warn('회원가입 중 ESC/백버튼 감지: 세션 정리 후 로그인 페이지로 이동')
+
+        // 세션 로그아웃
+        await supabase.auth.signOut({ scope: 'global' })
+
+        // localStorage 정리
+        localStorage.removeItem('user')
+
+        // 로그인 페이지로 강제 이동
+        navigate('/login', { replace: true })
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
 
     // beforeunload: 창 닫기/탭 닫기 시도 시 경고
     const handleBeforeUnload = (e) => {
@@ -35,9 +62,10 @@ function CallbackPage() {
 
     return () => {
       window.removeEventListener('popstate', handlePopState)
+      window.removeEventListener('keydown', handleKeyDown)
       window.removeEventListener('beforeunload', handleBeforeUnload)
     }
-  }, [showNameModal])
+  }, [showNameModal, navigate])
 
   useEffect(() => {
     if (called.current) return
