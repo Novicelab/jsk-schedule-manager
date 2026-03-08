@@ -11,45 +11,44 @@ function CallbackPage() {
   const [showNameModal, setShowNameModal] = useState(false)
   // StrictMode 이중 실행 방지
   const called = useRef(false)
+  // 백버튼 핸들러 중복 실행 방지
+  const isExiting = useRef(false)
 
   // 회원가입 필수 입력: 사용자명 입력 모달 렌더링 중 뒤로가기/이탈 시 세션 정리 후 로그인 페이지로 강제 이동
   useEffect(() => {
     if (!showNameModal) return
 
-    const handlePopState = async (e) => {
-      e.preventDefault()
-      console.warn('회원가입 중 백버튼 감지: 세션 정리 후 로그인 페이지로 이동')
+    const cleanupAndRedirect = async (reason) => {
+      // 중복 실행 방지 (popstate 무한 루프 차단)
+      if (isExiting.current) return
+      isExiting.current = true
+
+      console.warn(`회원가입 중 이탈 감지 (${reason}): 세션 정리 후 로그인 페이지로 이동`)
 
       // 세션 로그아웃
-      await supabase.auth.signOut({ scope: 'global' })
+      await supabase.auth.signOut({ scope: 'global' }).catch(() => {})
 
       // localStorage 정리
       localStorage.removeItem('user')
 
-      // 로그인 페이지로 강제 이동
-      navigate('/login', { replace: true })
+      // 하드 리다이렉트 (React Router navigate 대신 사용하여 popstate 재트리거 방지)
+      window.location.replace('/login')
+    }
+
+    const handlePopState = (e) => {
+      e.preventDefault()
+      cleanupAndRedirect('백버튼')
+    }
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' || e.keyCode === 27) {
+        e.preventDefault()
+        cleanupAndRedirect('ESC키')
+      }
     }
 
     // 뒤로가기 시도 감지
     window.addEventListener('popstate', handlePopState)
-
-    // 키보드 이벤트: ESC 키 또는 안드로이드 백버튼 감지
-    const handleKeyDown = async (e) => {
-      // ESC 키 (일부 안드로이드 기기에서 백버튼으로 감지될 수 있음)
-      if (e.key === 'Escape' || e.keyCode === 27) {
-        e.preventDefault()
-        console.warn('회원가입 중 ESC/백버튼 감지: 세션 정리 후 로그인 페이지로 이동')
-
-        // 세션 로그아웃
-        await supabase.auth.signOut({ scope: 'global' })
-
-        // localStorage 정리
-        localStorage.removeItem('user')
-
-        // 로그인 페이지로 강제 이동
-        navigate('/login', { replace: true })
-      }
-    }
     window.addEventListener('keydown', handleKeyDown)
 
     // beforeunload: 창 닫기/탭 닫기 시도 시 경고
@@ -65,7 +64,7 @@ function CallbackPage() {
       window.removeEventListener('keydown', handleKeyDown)
       window.removeEventListener('beforeunload', handleBeforeUnload)
     }
-  }, [showNameModal, navigate])
+  }, [showNameModal])
 
   useEffect(() => {
     if (called.current) return
