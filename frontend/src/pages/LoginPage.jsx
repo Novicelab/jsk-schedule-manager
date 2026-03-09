@@ -21,9 +21,10 @@ function LoginPage() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        // 회원가입 미완료 사용자(__PENDING__) 세션 정리
         const storedUser = JSON.parse(localStorage.getItem('user') || '{}')
-        if (storedUser.name === '__PENDING__') {
+        // 세션은 있지만 localStorage에 유효한 사용자 데이터가 없는 경우
+        // → stale 세션 정리 (CalendarPage와의 무한 리다이렉트 루프 방지)
+        if (!storedUser.id || !storedUser.name || storedUser.name === '__PENDING__') {
           supabase.auth.signOut().catch(() => {})
           localStorage.removeItem('user')
           return
