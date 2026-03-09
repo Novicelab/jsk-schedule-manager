@@ -65,6 +65,9 @@ function NameInputModal({ onComplete }) {
           kakaoId: currentUser.kakaoId,
           authId: sessionData.session.user.id,
         },
+        headers: {
+          Authorization: `Bearer ${sessionData.session.access_token}`,
+        },
       })
 
       if (invokeError) {
