@@ -34,9 +34,18 @@ function ScheduleDetail({ schedule, onEdit, onDeleted, onClose }) {
     setDeleteError(null)
 
     try {
+      // 세션 취득: Authorization 헤더 명시적 전달 (Edge Function 토큰 검증용)
+      const { data: sessionData } = await supabase.auth.getSession()
+      if (!sessionData.session?.access_token) {
+        throw new Error('세션이 만료되었습니다. 다시 로그인해주세요.')
+      }
+
       // Soft delete: Edge Function 사용 (RLS 우회, Service Role)
       const { data, error: invokeError } = await supabase.functions.invoke('soft-delete-schedule', {
         body: { scheduleId: schedule.id },
+        headers: {
+          Authorization: `Bearer ${sessionData.session.access_token}`,
+        },
       })
 
       if (invokeError) {

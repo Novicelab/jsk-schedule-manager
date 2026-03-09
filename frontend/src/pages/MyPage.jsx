@@ -79,8 +79,17 @@ function MyPage() {
       const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
       if (!currentUser.id) throw new Error('사용자 정보를 찾을 수 없습니다.')
 
+      // 세션 취득: Authorization 헤더 명시적 전달 (Edge Function 토큰 검증용)
+      const { data: sessionData } = await supabase.auth.getSession()
+      if (!sessionData.session?.access_token) {
+        throw new Error('세션이 만료되었습니다. 다시 로그인해주세요.')
+      }
+
       const { data, error: invokeError } = await supabase.functions.invoke('delete-user', {
         body: { userId: currentUser.id },
+        headers: {
+          Authorization: `Bearer ${sessionData.session.access_token}`,
+        },
       })
 
       if (invokeError) {

@@ -531,7 +531,6 @@ serve(async (req) => {
     )
   } catch (error) {
     console.error('kakao-auth 에러:', error)
-    const errorMessage = error instanceof Error ? error.message : String(error)
     return new Response(
       JSON.stringify({ error: '서버 오류가 발생했습니다.' }),
       { status: 500, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }

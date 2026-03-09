@@ -65,10 +65,10 @@ serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false }
     })
 
-    // 요청자의 users 테이블 ID 조회
+    // 요청자의 users 테이블 ID 및 역할 조회
     const { data: currentUser, error: userError } = await supabaseAdmin
       .from('users')
-      .select('id')
+      .select('id, role')
       .eq('auth_id', authUser.id)
       .single()
 
@@ -93,8 +93,8 @@ serve(async (req) => {
       )
     }
 
-    // 본인 일정만 삭제 가능
-    if (schedule.created_by !== currentUser.id) {
+    // 본인 일정이거나 Admin인 경우에만 삭제 가능
+    if (schedule.created_by !== currentUser.id && currentUser.role !== 'ADMIN') {
       return new Response(
         JSON.stringify({ error: '본인이 등록한 일정만 삭제할 수 있습니다.' }),
         { status: 403, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }

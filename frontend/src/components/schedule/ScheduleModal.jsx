@@ -171,6 +171,12 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
         vacation_type = form.vacationType
       }
 
+      // 세션 취득: Authorization 헤더 명시적 전달 (Edge Function 토큰 검증용)
+      const { data: sessionData } = await supabase.auth.getSession()
+      if (!sessionData.session?.access_token) {
+        throw new Error('세션이 만료되었습니다. 다시 로그인해주세요.')
+      }
+
       // Edge Function을 통한 서버사이드 검증 (created_by는 서버에서 auth_id 기반으로 설정)
       const schedulePayload = {
         title,
@@ -189,6 +195,9 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
           action: isEdit ? 'update' : 'create',
           scheduleId: isEdit ? schedule.id : undefined,
           payload: schedulePayload,
+        },
+        headers: {
+          Authorization: `Bearer ${sessionData.session.access_token}`,
         },
       })
 
