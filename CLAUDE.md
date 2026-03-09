@@ -381,9 +381,9 @@ supabase login
 supabase functions deploy kakao-auth --project-ref qphhpfolrbsyiyoevaoe --no-verify-jwt
 supabase functions deploy send-notification --project-ref qphhpfolrbsyiyoevaoe --no-verify-jwt
 supabase functions deploy update-user-name --project-ref qphhpfolrbsyiyoevaoe --no-verify-jwt
-supabase functions deploy delete-user --project-ref qphhpfolrbsyiyoevaoe
-supabase functions deploy soft-delete-schedule --project-ref qphhpfolrbsyiyoevaoe
-supabase functions deploy update-schedule --project-ref qphhpfolrbsyiyoevaoe
+supabase functions deploy delete-user --project-ref qphhpfolrbsyiyoevaoe --no-verify-jwt
+supabase functions deploy soft-delete-schedule --project-ref qphhpfolrbsyiyoevaoe --no-verify-jwt
+supabase functions deploy update-schedule --project-ref qphhpfolrbsyiyoevaoe --no-verify-jwt
 ```
 
 ---
