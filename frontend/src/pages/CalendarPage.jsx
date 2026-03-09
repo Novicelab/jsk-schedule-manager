@@ -42,6 +42,7 @@ function CalendarPage() {
   const [slideDirection, setSlideDirection] = useState(null) // 'left' | 'right' | null
 
   const calendarRef = useRef(null)
+  const calendarContainerRef = useRef(null)
   const resizeTimeoutRef = useRef(null)
   const touchStartXRef = useRef(null)
   const touchStartYRef = useRef(null)
@@ -129,6 +130,16 @@ function CalendarPage() {
       api.prev()  // 오른쪽 스와이프 → 이전 달
     }
   }, [])
+
+  // touchmove를 { passive: false }로 직접 등록 (preventDefault 동작을 위해 필수)
+  // React의 onTouchMove는 passive로 등록되어 preventDefault()가 무시됨
+  useEffect(() => {
+    const el = calendarContainerRef.current
+    if (!el) return
+    const handler = handleTouchMove
+    el.addEventListener('touchmove', handler, { passive: false })
+    return () => el.removeEventListener('touchmove', handler)
+  }, [handleTouchMove])
 
   // 회원가입 완료 확인
   // 세션 감지 및 만료 처리는 PrivateRoute에서 단일 관리 (중복 구독으로 인한 무한 렌더링 방지)
@@ -425,9 +436,9 @@ function CalendarPage() {
 
         {/* 날짜 셀 그리드 영역 - 이 영역만 좌우 플리킹 가능 */}
         <div
+          ref={calendarContainerRef}
           className={`calendar-container${slideDirection ? ` slide-${slideDirection}` : ''}`}
           onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
         >
           <FullCalendar
