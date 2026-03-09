@@ -4,6 +4,60 @@
 
 ---
 
+## [2026-03-10] Edge Function gateway JWT 통합 수정 및 QA
+
+### 변경사항
+
+**[Critical] 전체 Edge Function --no-verify-jwt 일괄 적용**
+- Supabase gateway의 JWT 검증과 `supabase.functions.invoke()` customFetch 래퍼 간 Authorization 헤더 충돌로 401 Invalid JWT 에러 발생
+- 모든 Edge Function을 `--no-verify-jwt`로 배포 (각 함수 내부에 자체 JWT 검증 + 소유권 검증이 있으므로 보안 수준 동일)
+- 대상: kakao-auth, send-notification, update-user-name, update-schedule, delete-user, soft-delete-schedule
+
+**[Critical] 로그인/캘린더 무한 리다이렉트 루프 수정**
+- 원인: Supabase 세션은 존재하지만 localStorage에 user 데이터가 없는 경우 LoginPage → CalendarPage → LoginPage 무한 루프
+- 수정: LoginPage에서 세션 + localStorage user 데이터(id, name) 모두 유효할 때만 리다이렉트, 불일치 시 stale 세션 정리
+
+**[Critical] ScheduleDetail/ScheduleModal/MyPage Authorization 헤더 명시 전달**
+- soft-delete-schedule, update-schedule, delete-user 호출부에 `supabase.auth.getSession()` + Authorization 헤더 명시 추가
+- NameInputModal과 동일 패턴 적용
+
+**[High] update-schedule/soft-delete-schedule Admin 권한 체크 추가**
+- CLAUDE.md 정책 "관리자는 모든 일정 수정/삭제 가능"이 서버에서 미반영되어 Admin도 403 반환
+- users 조회 시 `select('id, role')`, 소유권 체크에 `currentUser.role !== 'ADMIN'` 조건 추가
+
+**[Medium] CallbackPage kakao-auth 호출 시 anon key 명시 전달**
+- 로그인 전 호출이므로 만료된 이전 세션 토큰 대신 anon key를 Authorization 헤더로 전달
+- 게이트웨이 에러 형식 `{message: 'Invalid JWT'}` 파싱 추가
+
+**[Low] 캘린더 스와이프 passive event listener 경고 수정**
+- React onTouchMove는 passive로 등록되어 preventDefault() 무시됨
+- `addEventListener({ passive: false })`로 직접 등록하여 수평 스와이프 시 브라우저 뒤로가기 제스처 차단 정상화
+
+**[Low] config.toml verify_jwt 설정 통일**
+- 모든 Edge Function의 config.toml을 `verify_jwt = false`로 통일 (배포 명령과 일치)
+
+**[Low] kakao-auth 미사용 errorMessage 변수 제거**
+
+### 파일 변경
+- `frontend/src/components/auth/NameInputModal.jsx` - Authorization 헤더 명시
+- `frontend/src/components/schedule/ScheduleDetail.jsx` - Authorization 헤더 추가
+- `frontend/src/components/schedule/ScheduleModal.jsx` - Authorization 헤더 추가
+- `frontend/src/pages/CallbackPage.jsx` - anon key 헤더 + 에러 파싱 개선
+- `frontend/src/pages/LoginPage.jsx` - stale 세션 정리 로직
+- `frontend/src/pages/MyPage.jsx` - Authorization 헤더 추가
+- `frontend/src/pages/CalendarPage.jsx` - passive event listener 수정
+- `supabase/functions/*/config.toml` - verify_jwt = false 통일
+- `supabase/functions/update-schedule/index.ts` - Admin 권한 체크
+- `supabase/functions/soft-delete-schedule/index.ts` - Admin 권한 체크
+- `supabase/functions/kakao-auth/index.ts` - 미사용 변수 제거
+- `CLAUDE.md` - 배포 명령 --no-verify-jwt 추가, 진행 단계 업데이트
+
+### 비고
+- QA 종합 검수 완료: 총 8건 이슈 처리 (Critical 3건, High 1건, Medium 1건, Low 3건)
+- Edge Function 6개 전수 재배포 완료
+
+---
+
 ## [2026-03-07] 로그아웃 문제 최종 근본 해결 (window.location.reload 도입)
 
 ### 최종 해결책
