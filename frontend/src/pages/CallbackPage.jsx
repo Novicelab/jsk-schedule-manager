@@ -108,11 +108,15 @@ function CallbackPage() {
         const redirectUri = import.meta.env.VITE_KAKAO_REDIRECT_URI
 
         // Edge Function 호출: supabase.functions.invoke() 사용
-        // fetch 직접 호출 시 헤더 값에 개행문자 등이 포함되면
-        // "Failed to execute 'fetch' on 'Window': Invalid value" 에러 발생
+        // kakao-auth는 로그인 전 호출되므로 유저 세션이 없음
+        // 만료된 이전 세션 토큰이 남아있을 경우 gateway에서 Invalid JWT 에러 발생
+        // → anon key를 Authorization 헤더로 명시 전달하여 stale 세션 토큰 우회
         console.log('Edge Function 호출 중...')
         const { data, error: invokeError } = await supabase.functions.invoke('kakao-auth', {
           body: { code, redirectUri },
+          headers: {
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY.trim()}`,
+          },
         })
 
         if (invokeError) {
@@ -122,7 +126,7 @@ function CallbackPage() {
           if (invokeError.context && typeof invokeError.context.json === 'function') {
             try {
               const errorBody = await invokeError.context.json()
-              detail = errorBody?.error || errorBody?.debug?.reason || errorBody?.debug?.message || detail
+              detail = errorBody?.error || errorBody?.message || errorBody?.debug?.reason || errorBody?.debug?.message || detail
               console.error('Edge Function 에러 상세 (body):', errorBody)
             } catch (parseErr) {
               console.warn('Edge Function 에러 body 파싱 실패:', parseErr)
