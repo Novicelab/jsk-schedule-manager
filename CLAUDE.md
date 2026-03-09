@@ -241,6 +241,13 @@
   - ✅ [Medium] CallbackPage 백버튼/CSRF/StrictMode/Admin 권한 등 6건
   - ✅ [Low] 폴링 단축, 미사용 파일 삭제, Error Boundary 등 5건
   - ✅ 총 18건 이슈 처리 완료 (상세 → docs/qa/QA_ISSUE_TRACKER_2026-03-08.md)
+- [x] Edge Function gateway JWT 통합 수정 및 QA (2026-03-10)
+  - ✅ 전체 Edge Function --no-verify-jwt 일괄 적용 (내부 자체 JWT 검증으로 보안 유지)
+  - ✅ 로그인/캘린더 무한 리다이렉트 루프 수정 (stale 세션 정리)
+  - ✅ ScheduleDetail/ScheduleModal/MyPage Authorization 헤더 명시 전달
+  - ✅ update-schedule/soft-delete-schedule Admin 권한 체크 추가
+  - ✅ 캘린더 스와이프 passive event listener 경고 수정
+  - ✅ QA 종합 검수 완료 (6건 수정, 2건 버그 추가 발견 및 처리)
 
 ---
 
