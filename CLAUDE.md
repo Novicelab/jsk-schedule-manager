@@ -111,143 +111,19 @@
 
 ## 프로젝트 진행 단계
 
-- [x] 기획: 서비스 컨셉 및 주요 정책 정의 → [기획서](docs/planning/service-planning.md)
-- [x] 설계: 시스템 아키텍처 및 데이터 모델 설계 → [설계서](docs/design/system-design.md)
-- [x] 개발 v1: Spring Boot + React 구현 (총 91개 파일)
-- [x] 테스트 v1: QA 7개 버그 수정, JUnit 47개 케이스
-- [x] 배포 v1: Render (Backend Docker + Frontend Static)
-- [x] 유지보수: 카카오 로그인, UI/UX, CORS 등 개선 (상세 → CHANGELOG.md)
-- [x] 구조 전환 (2026-02-23): Spring Boot → Supabase 중심 구조
-  - ✅ Spring Boot 백엔드 완전 제거 (Java 64개 파일)
-  - ✅ Supabase Edge Functions 생성 (kakao-auth, send-notification)
-  - ✅ RLS 정책 + DB 트리거 마이그레이션 SQL 작성
-  - ✅ 프론트엔드 Axios → Supabase Client 전환 (12개 파일)
-  - ✅ Render 2개 서비스 → 1개 Static Site 축소
-  - ✅ Docker, Gradle, Spring 관련 파일 전체 삭제
-- [x] 에이전트 팀 구성 (2026-02-24): 자동 이슈 처리 시스템
-  - ✅ issue-resolution-team 생성 (Designer + Developer + QA 병렬)
-  - ✅ 에이전트 업데이트 (TypeScript/React/Supabase 기반)
-  - ✅ 자동 호출 트리거 설정 (버그, 에러, 배포, 보안 키워드)
-- [x] 사용자 경험 개선 (2026-03-01): 로딩 팝업 추가
-  - ✅ LoadingPopup 재사용 가능 컴포넌트 생성
-  - ✅ Dimmed 배경 (rgba(0,0,0,0.5)) + 애니메이션 스피너 UI
-  - ✅ 비동기 작업 전반 적용 (로그인, 세션 확인, 일정 CRUD, 이름 저장)
-  - ✅ 프론트엔드 자동 배포 완료
-- [x] RLS 정책 및 세션 관리 개선 (2026-03-01): 신규 사용자 이름 저장 에러 해결
-  - ✅ update-user-name Edge Function 생성 (Service Role로 RLS 우회)
-  - ✅ NameInputModal 세션 검증 및 Edge Function 통합
-  - ✅ CallbackPage 세션 로드 검증 (최대 5초 대기)
-  - ✅ kakao-auth 디버깅 로깅 강화
-  - ✅ Edge Function 배포 완료 (qphhpfolrbsyiyoevaoe)
-  - ✅ 전체 흐름 git commit & push 완료
-- [x] 카카오 알림 발송 안정화 (2026-03-02)
-  - ✅ users 테이블에 kakao_refresh_token, kakao_token_expires_at 컬럼 추가
-  - ✅ kakao-auth: 로그인 시 refresh_token 저장
-  - ✅ send-notification: 토큰 만료 자동 갱신 (만료 5분 전 선제적 갱신)
-  - ✅ send-notification: result_code === 0 기반 실제 성공 여부 검증
-  - ✅ 카카오톡 알림 수신 확인 완료
-- [x] 기능 개선 및 UI/UX 개선 (2026-03-02)
-  - ✅ 로그인 화면 디자인 개선 (핑크/라벤더 그라디언트 + 플로팅 원형 + 글래스모피즘)
-  - ✅ GNB: '캘린더' 메뉴 제거, 브랜드명 '간호부 일정 관리'로 변경
-  - ✅ 일정 상세 팝업: 본인 등록 일정에 수정/삭제 버튼 표시
-  - ✅ 설정(MyPage): 회원 탈퇴 기능 추가 (2단계 확인)
-  - ✅ delete-user Edge Function 생성 (민감정보 null 처리, Auth 계정 삭제)
-  - ✅ 알림 메시지: 휴가 유형 등록 시 '작성자' 항목 제거
-  - ✅ 앱 전체 키 컬러 통일 (보라/핑크 계열 #9c27b0, GNB gradient)
-- [x] 버그 수정 및 안정화 (2026-03-02)
-  - ✅ 탈퇴 시 일정 데이터 보존: users 레코드 삭제 → 민감정보 null 처리로 변경 (name 유지)
-  - ✅ 캘린더 색상 변경: 휴가(일반) 짙은 보라 #7b1fa2 / 업무 연한 그레이 #bdbdbd
-  - ✅ 일정 삭제 RLS 42501 에러 수정: soft-delete-schedule Edge Function 생성 (Service Role)
-  - ✅ 모바일 바텀시트 일정 클릭 → 일정 상세 팝업 연동 복구
-- [x] UI/UX 개선 및 알림 안정화 (2026-03-02)
-  - ✅ GNB 이름/이메일 표시 제거
-  - ✅ 캘린더 월/주/일 뷰 전환 버튼 제거 (월 단위 고정)
-  - ✅ 알림 메시지: '제목:', '일자:' 레이블 제거, 값 바로 표시
-  - ✅ 알림 메시지: 수정 시 변경된 유형/일자 before → after 형식 표시
-  - ✅ send-notification 401 오류 수정: --no-verify-jwt 플래그로 재배포 (config.toml의 verify_jwt=false가 CLI에 자동 적용되지 않는 문제)
-  - ✅ 다일 일정 캘린더 표시: allDay 이벤트 end +1일 처리 (FullCalendar exclusive end 방식)
-  - ✅ 알림 메시지: 수정 시 before→after 레이블('유형:', '일자:') 제거
-- [x] 멀티단말/UX 버그 수정 (2026-03-02)
-  - ✅ 멀티 단말 계정 혼동 수정: CallbackPage 로그인 시작 시 localStorage.removeItem('user') 즉시 실행
-  - ✅ 로그아웃 후 재로그인 카카오 계정 선택 강제: KAKAO_AUTH_URL에 prompt=login 파라미터 추가
-  - ✅ 캘린더 이전/다음 달 버튼 위치: left='prev', center='title', right='next'
-  - ✅ 모바일 캘린더 좌우 스와이프로 이전/다음 달 이동 (50px 이상 감지)
-- [x] 카카오 로그인 에러 수정 (2026-03-02)
-  - ✅ Android prompt=login 충돌: Kakao 로그아웃 엔드포인트 도입 (kauth.kakao.com/oauth/logout), prompt=login 제거
-  - ✅ kakao-auth Edge Function 에러 핸들링 강화: 토큰 교환 최대 2회 재시도, KOE320 명시 처리, 상세 debug 로깅
-  - ⚠️ Kakao Developers Console 수동 설정 필요: logout_redirect_uri 등록 (아래 참고)
-- [x] 캘린더 UI 구조 개선 (2026-03-02)
-  - ✅ FullCalendar headerToolbar 제거, 커스텀 월 네비게이션 헤더 별도 구성 (터치 영역 분리)
-  - ✅ 날짜 셀 그리드 영역에만 좌우 플리킹 터치 이벤트 적용
-  - ✅ 다일 일정 표시: allDay 이벤트 start도 date-only 형식으로 통일 (multi-day bar 정상 표시)
-- [x] QA 선제 테스트 이슈 10건 수정 (2026-03-02)
-  - ✅ [Critical] update-user-name: JWT 검증 + userId 소유권 검증 추가 (타인 이름 변경 방지)
-  - ✅ [High] NameInputModal: userUpdated CustomEvent dead code 제거
-  - ✅ [High] send-notification: 내부 JWT 검증 추가 (인증된 사용자만 알림 발송 가능)
-  - ✅ [Medium] CalendarPage: 모바일 날짜 팝업 이벤트 필터 exclusive end date 방식 수정
-  - ✅ [Medium] 알림 실패 정책 명문화: 롤백 없음 의도적 설계 주석 추가
-  - ✅ [Medium] LoginPage: prompt=login 제거 (localStorage 클리어로 멀티단말 해결, UX 개선)
-  - ✅ [Low] soft-delete-schedule/config.toml 형식 통일 (섹션 헤더 제거)
-  - ✅ [Low] CalendarPage 스와이프: |deltaX| > |deltaY| 조건으로 세로 스크롤 오판 방지
-  - ✅ [Low] CalendarPage 높이: 700px → auto (모바일 반응형)
-  - ✅ [Low] 버그-05(oldData 필드명) 분석 결과 실제 버그 없음 확인
-- [x] 다일 일정 표시 + iOS 로그인 + 캘린더 애니메이션 (2026-03-03)
-  - ✅ 다일 일정 캘린더 표시 수정: CSS overflow:hidden, position:relative, display:flex 제거 (FullCalendar multi-day bar 렌더링 복원)
-  - ✅ iOS 신규 계정 로그인 에러 수정: kakao-auth 422 복구 경로에서 Auth 비밀번호 갱신 추가
-  - ✅ CallbackPage 에러 상세 정보 표시 개선 (debug 데이터 포함)
-  - ✅ 캘린더 좌/우 슬라이드 애니메이션 추가 (300ms CSS 키프레임, 스와이프 + 버튼)
-- [x] 캘린더 UX + 다일 일정 + iOS 로그인 근본 수정 (2026-03-03)
-  - ✅ 캘린더 캐러셀 애니메이션: translateX(100%) 풀 슬라이드 + opacity 제거 (carousel 효과)
-  - ✅ 다일 일정 표시 수정: 모바일 CSS `background:inherit !important` 제거 (multi-day bar 배경색 복원)
-  - ✅ iOS 로그인 근본 수정: `getUserByEmail` 구조 분해 버그 수정 (`.user.id` 2곳), 신규 사용자 비밀번호 강제 갱신 폴백 추가
-  - ✅ CallbackPage 에러 표시 개선: `FunctionsHttpError` response body 파싱으로 실제 에러 메시지 표시
-  - ✅ iOS bfcache 이중 실행 방지: `sessionStorage`에 authorization_code 사용 여부 기록
-  - ✅ kakao-auth Edge Function v24 배포 완료
-- [x] 알림 메시지 개선 및 알림 기능 fade-out (2026-03-04)
-  - ✅ 알림 메시지 📅 아이콘 제거 (모든 케이스 공통)
-  - ✅ 알림 메시지 [자세히보기] 링크: 해당 월 캘린더로 이동 (?month=YYYY-MM)
-  - ✅ CalendarPage: URL 쿼리 파라미터 month로 초기 월 이동
-  - ✅ 카카오톡 알림 발송 기능 비활성화 (알림톡 전환 예정)
-    - ScheduleModal: 생성/수정 시 send-notification 호출 제거
-    - ScheduleDetail: 삭제 시 send-notification 호출 제거
-    - MyPage: NotificationSettings 컴포넌트 제거
-    - send-notification Edge Function 코드는 보존 (재활성화 대비)
-- [x] 조퇴 유형 추가 + 모바일 UX 개선 (2026-03-04)
-  - ✅ 일정 유형에 '조퇴(EARLY_LEAVE)' 추가 (시간 선택 포함, 캘린더 amber #f59e0b)
-  - ✅ 모바일 캘린더 이벤트 클릭 시 바텀시트 출력 (기존 무반응 → 해당 날짜 이벤트 필터링)
-  - ✅ 바텀시트 UI 개선: 이벤트 우측 기간 표시 + 일정 추가 버튼 강조
-  - ✅ send-notification 조퇴 라벨/시간 지원 (코드 보존, 비활성화 상태)
-  - ⚠️ DB 트리거 수동 업데이트 필요: auto_vacation_title()에 EARLY_LEAVE 분기 추가
-- [x] 카카오톡 인앱 브라우저 백키 무한 렌더링 수정 (2026-03-08)
-  - ✅ 원인: PrivateRoute + CalendarPage 이중 onAuthStateChange 구독 충돌
-  - ✅ 수정: PrivateRoute에서 SIGNED_OUT 이벤트만 감지 (TOKEN_REFRESHED 등 무시)
-  - ✅ 수정: CalendarPage의 중복 onAuthStateChange 구독 제거
-  - ✅ 수정: CalendarPage의 10초 주기 세션 체크 제거 (PrivateRoute 담당)
-  - ✅ 결과: 세션 감지 책임 단일화로 무한 렌더링 제거
-- [x] MyPage 개선 및 서비스명 변경 (2026-03-08)
-  - ✅ MyPage: 로그인 계정 정보(이메일) 표시
-  - ✅ MyPage: 사용자명 표시 (localStorage)
-  - ✅ MyPage: 가입일자 표시 (Supabase users 테이블 조회)
-  - ✅ MyPage: 사용자 정보 로딩 상태 UI + 에러 처리
-  - ✅ HTML 타이틀: "JSK 일정 관리" → "간호부 일정 관리 시스템" 변경
-  - ✅ CSS: .user-info-card, .user-info-item 스타일 추가
-  - ✅ 브라우저 탭/북마크에 서비스명 정확히 표시
-- [x] QA 종합 점검 및 보안/버그 수정 (2026-03-09)
-  - ✅ [Critical] CORS 와일드카드 → Origin 화이트리스트 (5개 Edge Function)
-  - ✅ [Critical] kakao-auth 디버그 정보 노출 제거
-  - ✅ [Critical] 결정적 비밀번호 → HMAC-SHA256 기반 생성
-  - ✅ [High] signOut 레이스 컨디션 수정 + __PENDING__ 사용자 세션 정리
-  - ✅ [High] update-schedule Edge Function 생성 (일정 CRUD 서버사이드 검증)
-  - ✅ [Medium] CallbackPage 백버튼/CSRF/StrictMode/Admin 권한 등 6건
-  - ✅ [Low] 폴링 단축, 미사용 파일 삭제, Error Boundary 등 5건
-  - ✅ 총 18건 이슈 처리 완료 (상세 → docs/qa/QA_ISSUE_TRACKER_2026-03-08.md)
-- [x] Edge Function gateway JWT 통합 수정 및 QA (2026-03-10)
-  - ✅ 전체 Edge Function --no-verify-jwt 일괄 적용 (내부 자체 JWT 검증으로 보안 유지)
-  - ✅ 로그인/캘린더 무한 리다이렉트 루프 수정 (stale 세션 정리)
-  - ✅ ScheduleDetail/ScheduleModal/MyPage Authorization 헤더 명시 전달
-  - ✅ update-schedule/soft-delete-schedule Admin 권한 체크 추가
-  - ✅ 캘린더 스와이프 passive event listener 경고 수정
-  - ✅ QA 종합 검수 완료 (6건 수정, 2건 버그 추가 발견 및 처리)
+> 상세 변경 이력은 [CHANGELOG.md](CHANGELOG.md) 참조
+
+- [x] 기획 → [기획서](docs/planning/service-planning.md) / 설계 → [설계서](docs/design/system-design.md)
+- [x] 개발·테스트·배포 v1: Spring Boot + React (Render Docker + Static)
+- [x] 구조 전환 (2026-02-23): Spring Boot → Supabase BaaS 중심 (백엔드 제거, Edge Functions, RLS)
+- [x] 에이전트 팀 구성 (2026-02-24): issue-resolution-team (Designer + Developer + QA 병렬)
+- [x] UX 개선 (2026-03-01): 로딩 팝업, RLS 우회 Edge Function, 세션 관리 개선
+- [x] 기능·UI·알림 안정화 (2026-03-02): 로그인 디자인, 캘린더 스와이프, 알림톡 토큰 갱신, QA 10건
+- [x] iOS 로그인·캘린더 근본 수정 (2026-03-03): bfcache 방지, 다일 일정, 캐러셀 애니메이션
+- [x] 알림 fade-out + 조퇴 유형 (2026-03-04): 알림 비활성화, EARLY_LEAVE 추가
+- [x] 무한 렌더링·MyPage·서비스명 (2026-03-08): 세션 감지 단일화, 사용자 정보 표시
+- [x] QA 종합 점검 (2026-03-09): 보안/버그 18건 (CORS, HMAC, signOut 등)
+- [x] Edge Function JWT 통합 수정 (2026-03-10): --no-verify-jwt 일괄 적용, 무한 리다이렉트 수정
 
 ---
 
@@ -397,197 +273,35 @@ supabase functions deploy update-schedule --project-ref qphhpfolrbsyiyoevaoe --n
 
 ## 외부 서비스 연동 - CLI 확인 & 작업 가이드
 
-**원칙**: 작업 수행 전 항상 CLI 설치, 로그인, 환경변수 상태를 확인하고, **가능할 경우 직접 실행**합니다.
+**원칙**: 작업 수행 전 CLI 설치/로그인/환경변수 확인 후, 가능할 경우 직접 실행.
 
-### 1. Supabase CLI 확인 및 작업
+### 주요 CLI 명령어
 
-**설치 확인**
+| 서비스 | 확인 | 주요 작업 |
+|--------|------|-----------|
+| **Supabase** | `supabase projects list` | `supabase functions deploy [함수명] --project-ref qphhpfolrbsyiyoevaoe --no-verify-jwt` |
+| **GitHub** | `gh auth status` | `git push`, `gh pr create` |
+| **Render** | `render.yaml` 수정 → `git push` (자동 배포) | Dashboard: 수동 배포, 로그 조회 |
+| **Kakao** | 환경변수 확인 (`VITE_KAKAO_CLIENT_ID`) | OAuth 테스트 (localhost:5173) |
+
+### Supabase 추가 명령어
 ```bash
-supabase --version
-# supabase-cli 1.x.x 이상이면 OK
+supabase secrets list --project-ref qphhpfolrbsyiyoevaoe    # 환경변수 조회
+supabase secrets set KEY=VALUE --project-ref qphhpfolrbsyiyoevaoe  # 환경변수 설정
+supabase functions get-logs [함수명] --project-ref qphhpfolrbsyiyoevaoe  # 로그 조회
 ```
 
-**로그인 상태 확인**
+### Kakao OAuth 설정 (수동)
+- **Redirect URI**: `http://localhost:5173/auth/callback` (로컬) / `https://jsk-schedule-frontend.onrender.com/auth/callback` (배포)
+- **Logout Redirect URI** (Kakao Developers Console → 카카오 로그인 → 고급): 배포 `/login`, 로컬 `/login`
+
+### 작업 시작 전 확인
 ```bash
-supabase projects list
-# 프로젝트 목록 나타나면 인증 완료
-```
-
-**프로젝트 연결 확인**
-```bash
-# 현재 작업 디렉토리에 supabase 설정이 있는지 확인
-cat supabase/.env.local  # 로컬 환경변수 확인
-```
-
-**직접 실행할 수 있는 작업**
-| 작업 | 명령어 |
-|------|--------|
-| Edge Functions 배포 | `supabase functions deploy [함수명] --project-ref qphhpfolrbsyiyoevaoe` |
-| 마이그레이션 실행 | `supabase db push` (로컬에서) |
-| 환경변수 조회 | `supabase secrets list --project-ref qphhpfolrbsyiyoevaoe` |
-| 환경변수 설정 | `supabase secrets set KEY=VALUE --project-ref qphhpfolrbsyiyoevaoe` |
-| 함수 로그 조회 | `supabase functions get-logs kakao-auth --project-ref qphhpfolrbsyiyoevaoe` |
-
-**판단 기준**
-- ✅ 직접 실행: CLI 설치 및 로그인 완료 + 프로젝트 ref 확인됨
-- ❌ 수동 작업: Dashboard에서만 가능한 작업 (RLS 정책, 테이블 구조 변경 등)
-
----
-
-### 2. Render API 확인 및 작업
-
-**API 토큰 확인**
-```bash
-# Render Dashboard → Account Settings → API Tokens
-# env에 설정되어 있는지 확인
-echo $RENDER_API_TOKEN
-```
-
-**배포 상태 확인**
-```bash
-# curl로 마지막 배포 상태 조회
-curl -s -H "Authorization: Bearer $RENDER_API_TOKEN" \
-  https://api.render.com/v1/services/jsk-schedule-frontend/latest-deployment | jq '.status'
-# SUCCEEDED, IN_PROGRESS, FAILED 중 하나
-```
-
-**환경변수 확인 (render.yaml 기준)**
-```bash
-# render.yaml의 env 섹션 확인
-cat render.yaml | grep -A 20 "env:"
-```
-
-**직접 실행할 수 있는 작업**
-| 작업 | 방법 |
-|------|------|
-| 배포 상태 조회 | Render Dashboard 또는 위의 curl 명령 |
-| 환경변수 수정 | `render.yaml` 파일 수정 → `git push` (자동 배포) |
-| 수동 배포 트리거 | Render Dashboard (CLI 없음) |
-| 로그 조회 | Render Dashboard |
-
-**판단 기준**
-- ✅ 직접 실행: `render.yaml` 수정 가능 (로컬 파일) → git push
-- ✅ 직접 실행: 배포 상태 조회 가능 (API 토큰 있을 때)
-- ❌ 수동 작업: 수동 배포, 리소스 변경 등 (Dashboard 필수)
-
----
-
-### 3. GitHub CLI 확인 및 작업
-
-**설치 확인**
-```bash
-gh --version
-# gh version X.X.X (2024년 이후 버전 권장)
-```
-
-**로그인 상태 확인**
-```bash
-gh auth status
-# Logged in to github.com as [username]
-```
-
-**Repository 권한 확인**
-```bash
-gh repo view --json nameWithOwner,owner,isPrivate
-# 푸시 권한 있는지 확인
-```
-
-**직접 실행할 수 있는 작업**
-| 작업 | 명령어 |
-|------|--------|
-| Commit & Push | `git commit -m "..."` → `git push` |
-| PR 생성 | `gh pr create --title "..." --body "..."` |
-| Issue 조회 | `gh issue list` |
-| PR 상태 확인 | `gh pr view [PR-Number]` |
-| 배포 상태 조회 | `gh run list --limit 5` (Actions) |
-
-**판단 기준**
-- ✅ 직접 실행: `git push` 권한 확인 완료
-- ✅ 직접 실행: PR/Issue 조회, 생성 가능
-- ❌ 수동 작업: PR Merge, Branch 보호 설정 등 (권한 필요)
-
----
-
-### 4. Kakao API 확인 및 작업
-
-**클라이언트 ID 확인**
-```bash
-# 환경변수에서 확인
-echo $VITE_KAKAO_CLIENT_ID
-# 240f33554023d9ab4957b2d638fb0d71 (프론트엔드)
-
-echo $KAKAO_CLIENT_ID
-# Supabase Edge Functions 환경변수에서 설정
-```
-
-**OAuth 설정 확인**
-```bash
-# Kakao Developers Console → [앱 이름] → 플랫폼
-# 리다이렉트 URI: http://localhost:5173/auth/callback (로컬)
-#             https://jsk-schedule-frontend.onrender.com/auth/callback (배포)
-```
-
-**⚠️ Logout Redirect URI 등록 (로그아웃 기능 정상 작동 필수)**
-```
-Kakao Developers Console → [앱 이름] → 카카오 로그인 → 고급
-→ Logout Redirect URI 등록:
-  - 배포: https://jsk-schedule-frontend.onrender.com/login
-  - 로컬: http://localhost:5173/login
-```
-> 등록하지 않으면 로그아웃 후 로그인 페이지로 이동하지 못함
-
-**알림톡 권한 확인**
-```bash
-# Kakao Developers Console → [앱 이름] → 제품
-# 비즈니스 앱 (구: 플러스친구) → 알림톡 권한 활성화 여부 확인
-```
-
-**직접 실행할 수 있는 작업**
-| 작업 | 방법 |
-|------|------|
-| OAuth 테스트 | 로컬에서 로그인 시도 (localhost:5173) |
-| 알림톡 발송 테스트 | `send-notification` Edge Function 호출 |
-| 환경변수 검증 | Supabase Dashboard → Edge Functions → 환경변수 |
-
-**판단 기준**
-- ✅ 직접 실행: OAuth/알림톡 로그 확인 (Edge Function 로그)
-- ❌ 수동 작업: Kakao Developers 콘솔 설정 변경 (권한 필수)
-
----
-
-### 5. 통합 확인 플로우 (작업 시작 전 필수)
-
-매 작업마다 아래 체크리스트 확인:
-
-```bash
-#!/bin/bash
-echo "=== 외부 서비스 CLI 확인 ==="
-
-# 1. Supabase
-echo "1. Supabase CLI:"
-supabase projects list > /dev/null 2>&1 && echo "  ✅ 로그인됨" || echo "  ❌ 미로그인 (supabase login 필요)"
-
-# 2. GitHub
-echo "2. GitHub CLI:"
-gh auth status | grep -q "Logged in" && echo "  ✅ 로그인됨" || echo "  ❌ 미로그인 (gh auth login 필요)"
-
-# 3. 환경변수 (로컬)
-echo "3. 환경변수:"
-[ -f frontend/.env ] && echo "  ✅ frontend/.env 있음" || echo "  ❌ frontend/.env 없음"
-[ -f supabase/.env.local ] && echo "  ✅ supabase/.env.local 있음" || echo "  ❌ supabase/.env.local 없음"
-
-# 4. Node 버전
-echo "4. Node.js:"
+supabase projects list > /dev/null 2>&1 && echo "Supabase ✅" || echo "Supabase ❌"
+gh auth status 2>&1 | grep -q "Logged in" && echo "GitHub ✅" || echo "GitHub ❌"
+[ -f frontend/.env ] && echo "frontend/.env ✅" || echo "frontend/.env ❌"
 node --version && npm --version
 ```
-
-**직접 작업 가능 판단 기준**
-- [ ] Supabase CLI 로그인됨
-- [ ] GitHub CLI 로그인됨 (푸시 작업 필요 시)
-- [ ] 환경변수 파일 존재
-- [ ] Node.js 18+ 설치됨
-
-모두 확인되면 ✅ **직접 작업 실행 가능**
 
 ---
 
