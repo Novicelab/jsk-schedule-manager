@@ -1,10 +1,10 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { sendWebPush, type PushSubscription, type VapidKeys } from '../_shared/webpush.ts'
 
-const ALLOWED_ORIGINS = [
-  'https://jsk-schedule-frontend.onrender.com',
-  'http://localhost:5173',
-]
+const APP_URL = 'https://jsk-schedule-frontend.onrender.com'
+
+const ALLOWED_ORIGINS = [APP_URL, 'http://localhost:5173']
 
 const getCorsHeaders = (req: Request) => {
   const origin = req.headers.get('origin') || ''
@@ -16,298 +16,301 @@ const getCorsHeaders = (req: Request) => {
   }
 }
 
+const json = (req: Request, body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
+  })
+
+/* ── 메시지 문구 ───────────────────────────────────────── */
+
+const VACATION_LABEL: Record<string, string> = {
+  FULL: '휴가(일반)',
+  HALF_AM: '휴가(오전 반차)',
+  HALF_PM: '휴가(오후 반차)',
+  EARLY_LEAVE: '조퇴',
+}
+
+const ACTION_LABEL: Record<string, string> = {
+  CREATED: '등록',
+  UPDATED: '수정',
+  DELETED: '삭제',
+}
+
+const getTypeLabel = (type: string, vacationType?: string | null) =>
+  type === 'VACATION' ? VACATION_LABEL[vacationType || 'FULL'] || '휴가' : '업무'
+
+const formatDate = (iso: string) =>
+  new Date(iso).toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul' })
+
+const formatDateRange = (start: string, end: string) => {
+  const s = formatDate(start)
+  const e = formatDate(end)
+  return s === e ? s : `${s} ~ ${e}`
+}
+
+const formatTime = (iso: string) =>
+  new Date(iso).toLocaleTimeString('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+
+interface ScheduleRow {
+  id: number
+  title: string
+  type: string
+  vacation_type: string | null
+  start_at: string
+  end_at: string
+  all_day: boolean
+}
+
+interface OldData {
+  type?: string
+  vacationType?: string | null
+  startAt?: string
+  endAt?: string
+}
+
+/** Service Worker가 그대로 표시할 알림 페이로드를 만든다 */
+function buildPayload(
+  schedule: ScheduleRow,
+  actionType: string,
+  actorName: string,
+  oldData?: OldData,
+) {
+  const actionLabel = ACTION_LABEL[actionType] || '변경'
+  const typeLabel = getTypeLabel(schedule.type, schedule.vacation_type)
+  const newDateStr = formatDateRange(schedule.start_at, schedule.end_at)
+
+  const lines: string[] = [schedule.title]
+
+  if (actionType === 'UPDATED' && oldData) {
+    const oldTypeLabel = getTypeLabel(oldData.type || schedule.type, oldData.vacationType)
+    const oldDateStr =
+      oldData.startAt && oldData.endAt ? formatDateRange(oldData.startAt, oldData.endAt) : null
+
+    const changes: string[] = []
+    if (oldTypeLabel !== typeLabel) changes.push(`${oldTypeLabel} → ${typeLabel}`)
+    if (oldDateStr && oldDateStr !== newDateStr) changes.push(`${oldDateStr} → ${newDateStr}`)
+
+    lines.push(changes.length > 0 ? changes.join('\n') : `${typeLabel} · ${newDateStr}`)
+  } else if (actionType === 'DELETED') {
+    lines.push(`${typeLabel} · ${newDateStr} 삭제됨`)
+  } else {
+    let detail = `${typeLabel} · ${newDateStr}`
+    if (schedule.vacation_type === 'EARLY_LEAVE' && schedule.end_at) {
+      detail += ` ${formatTime(schedule.end_at)} 조퇴`
+    } else if (!schedule.all_day) {
+      detail += ` ${formatTime(schedule.start_at)} ~ ${formatTime(schedule.end_at)}`
+    } else {
+      detail += ' 하루 종일'
+    }
+    lines.push(detail)
+  }
+
+  // 알림 클릭 시 해당 일정이 있는 달로 이동
+  const month = new Date(schedule.start_at).toISOString().slice(0, 7)
+
+  return {
+    title: `일정 ${actionLabel} · ${actorName}`,
+    body: lines.join('\n'),
+    url: `${APP_URL}/?month=${month}`,
+    // 같은 일정의 연속 변경은 하나로 합쳐 표시
+    tag: `schedule-${schedule.id}`,
+  }
+}
+
+/* ── 핸들러 ────────────────────────────────────────────── */
+
 serve(async (req) => {
-  // CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: getCorsHeaders(req) })
   }
 
   try {
-    // Authorization 헤더 검증 (토큰 필수)
-    const authHeader = req.headers.get('authorization')
-    const token = authHeader?.replace('Bearer ', '')
-
+    const token = req.headers.get('authorization')?.replace('Bearer ', '')
     if (!token) {
-      return new Response(
-        JSON.stringify({ error: '인증 토큰이 필요합니다.' }),
-        { status: 401, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
-      )
+      return json(req, { error: '인증 토큰이 필요합니다.' }, 401)
     }
 
-    const { scheduleId, actionType, actorUserId, oldData } = await req.json()
+    const { scheduleId, actionType, oldData } = await req.json()
 
-    if (!scheduleId || !actionType || !actorUserId) {
-      return new Response(
-        JSON.stringify({ error: '필수 필드가 누락되었습니다.' }),
-        { status: 400, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
-      )
+    if (!scheduleId || !actionType) {
+      return json(req, { error: '필수 필드가 누락되었습니다.' }, 400)
+    }
+    if (!ACTION_LABEL[actionType]) {
+      return json(req, { error: '지원하지 않는 actionType 입니다.' }, 400)
     }
 
-    // 환경변수
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!
 
-    // 요청자 JWT 검증 (인증된 사용자만 알림 발송 가능)
+    const vapidKeys: VapidKeys = {
+      publicKey: (Deno.env.get('VAPID_PUBLIC_KEY') || '').trim(),
+      privateKey: (Deno.env.get('VAPID_PRIVATE_KEY') || '').trim(),
+      // RFC 8292: mailto: 또는 https: URL. 개인 연락처 대신 서비스 URL을 사용한다.
+      subject: (Deno.env.get('VAPID_SUBJECT') || APP_URL).trim(),
+    }
+
+    if (!vapidKeys.publicKey || !vapidKeys.privateKey) {
+      console.error('VAPID 키가 설정되지 않았습니다.')
+      return json(req, { error: '알림 서버 설정이 완료되지 않았습니다.' }, 500)
+    }
+
+    // 요청자 JWT 검증
     const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       auth: { autoRefreshToken: false, persistSession: false },
       global: { headers: { Authorization: `Bearer ${token}` } },
     })
-    const { data: { user: authUser }, error: authError } = await supabaseClient.auth.getUser()
+    const {
+      data: { user: authUser },
+      error: authError,
+    } = await supabaseClient.auth.getUser()
 
     if (authError || !authUser) {
-      return new Response(
-        JSON.stringify({ error: '유효하지 않은 인증 토큰입니다.' }),
-        { status: 401, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
-      )
+      return json(req, { error: '유효하지 않은 인증 토큰입니다.' }, 401)
     }
 
-    // Supabase Admin Client
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-      auth: { autoRefreshToken: false, persistSession: false }
+      auth: { autoRefreshToken: false, persistSession: false },
     })
 
-    // 1. 일정 정보 조회
+    // 작성자는 클라이언트 입력이 아니라 토큰에서 확정한다 (본인 제외 로직의 신뢰 근거)
+    const { data: actor, error: actorError } = await supabase
+      .from('users')
+      .select('id, name')
+      .eq('auth_id', authUser.id)
+      .single()
+
+    if (actorError || !actor) {
+      console.error('작성자 조회 실패:', actorError)
+      return json(req, { error: '사용자를 찾을 수 없습니다.' }, 404)
+    }
+
+    // 1. 일정 조회
     const { data: schedule, error: scheduleError } = await supabase
       .from('schedules')
-      .select('*')
+      .select('id, title, type, vacation_type, start_at, end_at, all_day')
       .eq('id', scheduleId)
-      .single()
+      .single<ScheduleRow>()
 
     if (scheduleError || !schedule) {
       console.error('일정 조회 실패:', scheduleError)
-      return new Response(
-        JSON.stringify({ error: '일정을 찾을 수 없습니다.' }),
-        { status: 404, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
-      )
+      return json(req, { error: '일정을 찾을 수 없습니다.' }, 404)
     }
 
-    // 2. 작성자(배우자) 정보 조회
-    const { data: actor } = await supabase
-      .from('users')
-      .select('name')
-      .eq('id', actorUserId)
-      .single()
+    // 2. 발송 대상 구독 조회 — 작성자 본인은 제외
+    const { data: subscriptions, error: subError } = await supabase
+      .from('push_subscriptions')
+      .select('id, user_id, endpoint, p256dh, auth')
+      .neq('user_id', actor.id)
 
-    const actorName = actor?.name || '알 수 없음'
-
-    // 3. 알림 대상 사용자 조회 (카카오 토큰이 있는 모든 사용자)
-    const { data: users } = await supabase
-      .from('users')
-      .select('id, kakao_access_token, kakao_refresh_token, kakao_token_expires_at')
-      .not('kakao_access_token', 'is', null)
-
-    if (!users || users.length === 0) {
-      return new Response(
-        JSON.stringify({ sent: 0, failed: 0, message: '알림 대상 사용자가 없습니다.' }),
-        { status: 200, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
-      )
+    if (subError) {
+      console.error('구독 조회 실패:', subError)
+      return json(req, { error: '알림 대상 조회에 실패했습니다.' }, 500)
     }
 
-    // 4. 알림 설정 일괄 조회 (N+1 쿼리 최적화)
-    const scheduleType = schedule.type // VACATION or WORK
-    const actionLabel = actionType === 'CREATED' ? '등록' :
-                        actionType === 'UPDATED' ? '수정' : '삭제'
+    if (!subscriptions || subscriptions.length === 0) {
+      return json(req, { sent: 0, failed: 0, removed: 0, message: '알림 대상이 없습니다.' })
+    }
 
-    const userIds = users.map(u => u.id)
-    const { data: allPrefs = [] } = await supabase
+    // 3. 알림 설정 일괄 조회 (행이 없으면 기본값 ON)
+    const targetUserIds = [...new Set(subscriptions.map((s) => s.user_id))]
+    const { data: prefs } = await supabase
       .from('notification_preferences')
       .select('user_id, enabled')
-      .in('user_id', userIds)
-      .eq('schedule_type', scheduleType)
+      .in('user_id', targetUserIds)
+      .eq('schedule_type', schedule.type)
       .eq('action_type', actionType)
 
-    // user_id → enabled 매핑 (O(1) 조회용)
-    const prefMap = new Map(allPrefs.map(p => [p.user_id, p.enabled]))
-
-    let sentCount = 0
-    let failedCount = 0
-
-    const KAKAO_CLIENT_ID = Deno.env.get('KAKAO_CLIENT_ID')!
-    const KAKAO_CLIENT_SECRET = Deno.env.get('KAKAO_CLIENT_SECRET')!
-
-    // 카카오 토큰 갱신 헬퍼
-    const refreshKakaoToken = async (refreshToken: string) => {
-      const res = await fetch('https://kauth.kakao.com/oauth/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          grant_type: 'refresh_token',
-          client_id: KAKAO_CLIENT_ID,
-          client_secret: KAKAO_CLIENT_SECRET,
-          refresh_token: refreshToken,
-        }),
-      })
-      if (!res.ok) return null
-      return await res.json()
-    }
-
-    // 5. 각 사용자에게 알림 발송
-    for (const user of users) {
-      // 알림 설정 확인
-      const isEnabled = prefMap.get(user.id) !== false // 설정 없으면 true (기본값)
-      if (!isEnabled) continue
-
-      // 토큰 만료 확인 및 갱신 (만료 5분 전 이내면 갱신)
-      let accessToken = user.kakao_access_token
-      if (user.kakao_token_expires_at) {
-        const expiresAt = new Date(user.kakao_token_expires_at).getTime()
-        const now = Date.now()
-        if (expiresAt - now < 5 * 60 * 1000 && user.kakao_refresh_token) {
-          console.log(`토큰 만료 임박, 갱신 시도 (user: ${user.id})`)
-          const refreshed = await refreshKakaoToken(user.kakao_refresh_token)
-          if (refreshed?.access_token) {
-            accessToken = refreshed.access_token
-            const newExpiresAt = new Date(Date.now() + (refreshed.expires_in || 21600) * 1000).toISOString()
-            await supabase.from('users').update({
-              kakao_access_token: accessToken,
-              kakao_token_expires_at: newExpiresAt,
-              ...(refreshed.refresh_token ? { kakao_refresh_token: refreshed.refresh_token } : {}),
-            }).eq('id', user.id)
-            console.log(`토큰 갱신 완료 (user: ${user.id})`)
-          } else {
-            console.error(`토큰 갱신 실패 (user: ${user.id})`)
-          }
-        }
-      }
-
-      // 메시지 생성 헬퍼
-      const VACATION_LABEL: Record<string, string> = {
-        FULL: '휴가(일반)',
-        HALF_AM: '휴가(오전 반차)',
-        HALF_PM: '휴가(오후 반차)',
-        EARLY_LEAVE: '조퇴',
-      }
-      const getTypeLabel = (type: string, vacationType?: string) =>
-        type === 'VACATION' ? (VACATION_LABEL[vacationType || 'FULL'] || '휴가') : '업무'
-
-      const formatDate = (isoStr: string) => new Date(isoStr).toLocaleDateString('ko-KR')
-      const formatDateRange = (start: string, end: string) => {
-        const s = formatDate(start)
-        const e = formatDate(end)
-        return s === e ? s : `${s} ~ ${e}`
-      }
-
-      const newDateStr = formatDateRange(schedule.start_at, schedule.end_at)
-
-      let message = `[일정 ${actionLabel}]\n`
-      if (scheduleType !== 'VACATION') message += `작성자: ${actorName}\n`
-      message += `${schedule.title}\n`
-
-      if (actionType === 'UPDATED' && oldData) {
-        const oldTypeLabel = getTypeLabel(oldData.type, oldData.vacationType)
-        const newTypeLabel = getTypeLabel(schedule.type, schedule.vacation_type)
-        const oldDateStr = formatDateRange(oldData.startAt, oldData.endAt)
-
-        const changes: string[] = []
-        if (oldTypeLabel !== newTypeLabel) {
-          changes.push(`${oldTypeLabel} → ${newTypeLabel}`)
-        }
-        if (oldDateStr !== newDateStr) {
-          changes.push(`${oldDateStr} → ${newDateStr}`)
-        }
-
-        if (changes.length > 0) {
-          message += changes.join('\n')
-        } else {
-          message += newDateStr
-        }
-      } else {
-        message += newDateStr
-        if (schedule.vacation_type === 'EARLY_LEAVE' && schedule.end_at) {
-          const earlyTime = new Date(schedule.end_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
-          message += `\n조퇴 시간: ${earlyTime}`
-        } else if (!schedule.all_day) {
-          const startTime = new Date(schedule.start_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
-          const endTime = new Date(schedule.end_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
-          message += `\n${startTime} ~ ${endTime}`
-        }
-      }
-
-      // 카카오 나에게 보내기 API 호출
-      try {
-        // 일정 시작일 기준 월로 캘린더 이동 URL 생성
-        const scheduleMonth = new Date(schedule.start_at).toISOString().slice(0, 7) // YYYY-MM
-        const calendarUrl = `https://jsk-schedule-frontend.onrender.com/?month=${scheduleMonth}`
-
-        const templateObject = JSON.stringify({
-          object_type: 'text',
-          text: message,
-          link: { web_url: calendarUrl, mobile_web_url: calendarUrl },
-        })
-
-        const kakaoResponse = await fetch('https://kapi.kakao.com/v2/api/talk/memo/default/send', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: `template_object=${encodeURIComponent(templateObject)}`,
-        })
-
-        // 카카오 응답 파싱 (성공/실패 모두)
-        let kakaoResult: Record<string, unknown> = {}
-        try {
-          kakaoResult = await kakaoResponse.json()
-        } catch {
-          kakaoResult = {}
-        }
-
-        console.log(`카카오 API 응답 (user: ${user.id}):`, {
-          status: kakaoResponse.status,
-          ok: kakaoResponse.ok,
-          result: kakaoResult,
-        })
-
-        // result_code 0 = 성공, 나머지 = 실패
-        const isSuccess = kakaoResponse.ok && kakaoResult.result_code === 0
-
-        let notifMessage = message
-        if (!isSuccess) {
-          notifMessage = `[KAKAO_ERROR status:${kakaoResponse.status} result_code:${kakaoResult.result_code ?? 'N/A'} msg:${kakaoResult.msg ?? kakaoResult.error_description ?? 'unknown'}] | 원본: ${message}`
-          console.error(`카카오 발송 실패 (user: ${user.id}):`, notifMessage)
-        }
-
-        // 알림 기록 저장
-        await supabase.from('notifications').insert({
-          schedule_id: scheduleId,
-          user_id: user.id,
-          type: `SCHEDULE_${actionType}`,
-          channel: 'KAKAO',
-          status: isSuccess ? 'SUCCESS' : 'FAILED',
-          message: notifMessage,
-          sent_at: isSuccess ? new Date().toISOString() : null,
-        })
-
-        if (isSuccess) sentCount++
-        else failedCount++
-      } catch (err) {
-        console.error(`사용자 ${user.id} 알림 발송 실패:`, err)
-        failedCount++
-
-        const errorMessage = `[ERROR] ${err instanceof Error ? err.message : String(err)} | 원본: ${message}`
-
-        await supabase.from('notifications').insert({
-          schedule_id: scheduleId,
-          user_id: user.id,
-          type: `SCHEDULE_${actionType}`,
-          channel: 'KAKAO',
-          status: 'FAILED',
-          message: errorMessage,
-        })
-      }
-    }
-
-    // 6. 응답 반환
-    return new Response(
-      JSON.stringify({ sent: sentCount, failed: failedCount }),
-      { status: 200, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
+    const disabledUsers = new Set(
+      (prefs || []).filter((p) => p.enabled === false).map((p) => p.user_id),
     )
+
+    // 4. 발송
+    const payload = buildPayload(schedule, actionType, actor.name || '알 수 없음', oldData)
+    const payloadText = JSON.stringify(payload)
+
+    let sent = 0
+    let failed = 0
+    const expiredIds: number[] = []
+    const deliveredUsers = new Set<number>()
+    const failedUsers = new Map<number, string>()
+
+    const results = await Promise.all(
+      subscriptions
+        .filter((s) => !disabledUsers.has(s.user_id))
+        .map(async (row) => {
+          const subscription: PushSubscription = {
+            endpoint: row.endpoint,
+            p256dh: row.p256dh,
+            auth: row.auth,
+          }
+          const result = await sendWebPush(subscription, payloadText, vapidKeys)
+          return { row, result }
+        }),
+    )
+
+    for (const { row, result } of results) {
+      if (result.ok) {
+        sent++
+        deliveredUsers.add(row.user_id)
+        continue
+      }
+      failed++
+      failedUsers.set(row.user_id, `status:${result.status} ${result.error}`)
+      if (result.expired) {
+        expiredIds.push(row.id)
+      } else {
+        console.error(`푸시 발송 실패 (user: ${row.user_id}):`, result.status, result.error)
+      }
+    }
+
+    // 5. 만료된 구독 정리 — 방치하면 매번 실패 로그만 쌓인다
+    if (expiredIds.length > 0) {
+      const { error: cleanupError } = await supabase
+        .from('push_subscriptions')
+        .delete()
+        .in('id', expiredIds)
+      if (cleanupError) {
+        console.error('만료 구독 정리 실패:', cleanupError)
+      } else {
+        console.log(`만료 구독 ${expiredIds.length}건 삭제`)
+      }
+    }
+
+    // 6. 알림 기록 (사용자 단위 1건) — 실패해도 발송 결과에 영향을 주지 않는다
+    const records = targetUserIds
+      .filter((userId) => !disabledUsers.has(userId))
+      .map((userId) => {
+        const ok = deliveredUsers.has(userId)
+        return {
+          schedule_id: schedule.id,
+          user_id: userId,
+          type: `SCHEDULE_${actionType}`,
+          channel: 'WEB_PUSH',
+          status: ok ? 'SUCCESS' : 'FAILED',
+          message: ok
+            ? `${payload.title} | ${payload.body}`
+            : `[PUSH_ERROR ${failedUsers.get(userId) || 'unknown'}] | 원본: ${payload.body}`,
+          sent_at: ok ? new Date().toISOString() : null,
+        }
+      })
+
+    if (records.length > 0) {
+      const { error: logError } = await supabase.from('notifications').insert(records)
+      if (logError) {
+        console.error('알림 기록 저장 실패(발송은 완료됨):', logError)
+      }
+    }
+
+    console.log('푸시 발송 완료:', { scheduleId, actionType, sent, failed })
+    return json(req, { sent, failed, removed: expiredIds.length })
   } catch (error) {
     console.error('send-notification 에러:', error)
-    return new Response(
-      JSON.stringify({ error: '알림 처리 중 오류가 발생했습니다.' }),
-      { status: 500, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
-    )
+    return json(req, { error: '알림 처리 중 오류가 발생했습니다.' }, 500)
   }
 })

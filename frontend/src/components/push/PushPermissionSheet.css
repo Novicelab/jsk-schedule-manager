@@ -1,0 +1,246 @@
+/* ============================================================
+ * 웹 푸시 동의 바텀시트
+ * 기존 .date-popup 바텀시트 패턴(하단 정렬 + 데스크톱 중앙 모달)을 따른다.
+ * ============================================================ */
+
+.push-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 300; /* date-popup(200), modal-overlay보다 위 */
+  animation: pushSheetFade 0.2s ease-out;
+}
+
+.push-sheet {
+  background: #fff;
+  border-radius: 16px 16px 0 0;
+  width: 100%;
+  max-width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  animation: pushSheetUp 0.28s cubic-bezier(0.2, 0.9, 0.25, 1);
+}
+
+@media (min-width: 768px) {
+  .push-sheet-overlay {
+    align-items: center;
+  }
+
+  .push-sheet {
+    max-width: 400px;
+    border-radius: 16px;
+    margin: 16px;
+    animation: pushSheetFade 0.2s ease-out;
+  }
+}
+
+@keyframes pushSheetUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes pushSheetFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .push-sheet-overlay,
+  .push-sheet {
+    animation: none;
+  }
+}
+
+/* 모바일 시트 상단 그립 */
+.push-sheet-grip {
+  width: 38px;
+  height: 4px;
+  border-radius: 999px;
+  background: #e0e0e0;
+  margin: 10px auto 2px;
+  flex: none;
+}
+
+@media (min-width: 768px) {
+  .push-sheet-grip {
+    display: none;
+  }
+}
+
+.push-sheet-body {
+  padding: 18px 22px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+}
+
+.push-sheet-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #f5e9f7;
+  color: #7b1fa2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 6px;
+  flex: none;
+}
+
+.push-sheet-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.push-sheet-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: #2c2431;
+  line-height: 1.4;
+  word-break: keep-all;
+}
+
+.push-sheet-desc {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #6b6175;
+  word-break: keep-all;
+}
+
+.push-sheet-hint {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #9a8ea3;
+  word-break: keep-all;
+}
+
+.push-sheet-hint b {
+  color: #7b1fa2;
+  font-weight: 600;
+}
+
+.push-sheet-alert {
+  width: 100%;
+  background-color: #fdf2f2;
+  border: 1px solid #f5c6c6;
+  border-radius: 6px;
+  color: #c0392b;
+  padding: 10px 14px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  text-align: left;
+  word-break: keep-all;
+}
+
+/* iOS 홈 화면 추가 안내 단계 */
+.push-sheet-steps {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.push-sheet-steps li {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  text-align: left;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #4a4152;
+  background: #faf7fb;
+  border: 1px solid #efe7f2;
+  border-radius: 9px;
+  padding: 10px 13px;
+  word-break: keep-all;
+}
+
+.push-step-num {
+  flex: none;
+  width: 21px;
+  height: 21px;
+  border-radius: 50%;
+  background: #9c27b0;
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.push-sheet-steps b {
+  color: #7b1fa2;
+  font-weight: 600;
+}
+
+/* 하단 버튼 */
+.push-sheet-footer {
+  display: flex;
+  gap: 8px;
+  padding: 18px 22px 22px;
+}
+
+.push-btn {
+  flex: 1;
+  border-radius: 8px;
+  padding: 13px 16px;
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background-color 0.15s, opacity 0.15s;
+}
+
+.push-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.push-btn-primary {
+  background-color: #9c27b0;
+  color: #fff;
+}
+
+.push-btn-primary:hover:not(:disabled) {
+  background-color: #7b1fa2;
+}
+
+.push-btn-ghost {
+  background-color: #f4f1f6;
+  color: #6b6175;
+  border-color: #e4dee8;
+  flex: 0 0 34%;
+}
+
+.push-btn-ghost:hover:not(:disabled) {
+  background-color: #ebe6ee;
+}
+
+.push-btn:focus-visible {
+  outline: 2px solid #7b1fa2;
+  outline-offset: 2px;
+}

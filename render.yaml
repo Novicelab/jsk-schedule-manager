@@ -20,3 +20,8 @@ services:
         value: https://qphhpfolrbsyiyoevaoe.supabase.co
       - key: VITE_SUPABASE_ANON_KEY
         value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwaGhwZm9scmJzeWl5b2V2YW9lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0OTA4NTQsImV4cCI6MjA4NzA2Njg1NH0.8nMygPUObvGiPFJZE02mvl4J7_lqILF3bOkj69KLzqs"
+      # 웹 푸시 VAPID 공개키 (브라우저에 전달되는 공개 값이므로 노출 무방)
+      # 발송 권한은 Supabase Secrets의 VAPID_PRIVATE_KEY 가 가진다.
+      # 키 교체 시 frontend/public/sw.js 의 VAPID_PUBLIC_KEY 상수도 함께 수정할 것
+      - key: VITE_VAPID_PUBLIC_KEY
+        value: "BI2aB7WJtRI2yWSx9FbP4shaHynkx2K1NPloRF9bUXOBbw7JD1PceeBF_zlTx6eEIFOTU7hAX53wYaAtHviHOfY"

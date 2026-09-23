@@ -19,10 +19,10 @@ function Navbar() {
     <nav className="navbar">
       <div className="navbar-brand">간호부 일정 관리</div>
       <div className="navbar-actions">
-        {/* TODO: 설정 버튼 - 당분간 숨김 처리 */}
-        {/* <button className="btn btn-settings" onClick={() => navigate('/mypage')}>
+        {/* 알림 설정 진입점 — 웹 푸시 도입(2026-09-23)과 함께 노출 */}
+        <button className="btn btn-settings" onClick={() => navigate('/mypage')}>
           설정
-        </button> */}
+        </button>
         <button className="btn btn-logout" onClick={handleLogout}>
           로그아웃
         </button>

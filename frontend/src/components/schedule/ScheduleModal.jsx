@@ -3,6 +3,7 @@ import dayjs from 'dayjs'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 import { supabase } from '../../lib/supabase'
+import { notifyScheduleChange } from '../../lib/notify'
 import LoadingPopup from '../LoadingPopup'
 import './ScheduleModal.css'
 
@@ -203,6 +204,23 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
 
       if (error) throw error
       if (result?.error) throw new Error(result.error)
+
+      // 작성자를 제외한 나머지 사용자에게 웹 푸시 발송 (실패해도 저장은 유지)
+      const savedId = result?.data?.id ?? (isEdit ? schedule.id : null)
+      if (savedId) {
+        notifyScheduleChange({
+          scheduleId: savedId,
+          actionType: isEdit ? 'UPDATED' : 'CREATED',
+          oldData: isEdit
+            ? {
+                type: schedule.type,
+                vacationType: schedule.vacationType,
+                startAt: schedule.startAt,
+                endAt: schedule.endAt,
+              }
+            : undefined,
+        })
+      }
 
       onSaved()
     } catch (err) {

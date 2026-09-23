@@ -4,6 +4,98 @@
 
 ---
 
+## [2026-09-23] 웹 푸시 알림 도입 (카카오 알림톡 대체)
+
+### 배경
+
+일정 등록 시 **작성자를 제외한 모든 사용자**에게 알림을 보내기 위한 채널을 재검토했다.
+
+보존되어 있던 `send-notification`은 카카오 "나에게 보내기"(`/v2/api/talk/memo/default/send`) 방식이었다.
+서버가 각 사용자의 액세스 토큰을 보관하므로 타인에게 발송하는 구조 자체는 성립했으나,
+카카오 공식 답변상 **이 API는 푸시 알림(노티)을 제공하지 않고 수신 즉시 읽음 처리**되어
+"나와의 채팅"방을 직접 열어야만 확인 가능 — 알림으로서 동작하지 않는다.
+
+대안 비교 후 **웹 푸시(Web Push API + VAPID)** 를 채택했다.
+
+| | 웹 푸시 (채택) | 카카오 알림톡 |
+|---|---|---|
+| 발송 비용 | 0원 / 무제한 | 건당 7~13원 (수신자 수만큼 과금) |
+| 사업자등록증 | 불필요 | 필수 (비즈니스 채널 인증) |
+| 전화번호 수집 | 불필요 | 필수 |
+| 심사 대기 | 없음 | 영업일 5~7일 (채널 + 템플릿) |
+| 문구 자유도 | 자유 (기존 변경 내역 문구 그대로 사용) | 템플릿 고정, 변수만 치환 |
+| 전제 조건 | 사용자별 1회 권한 동의 / iOS는 홈 화면 추가 | 없음 |
+
+### 변경사항
+
+**[Feature] 웹 푸시 발송 파이프라인**
+- `supabase/functions/_shared/webpush.ts` 신규 — RFC 8291(aes128gcm 페이로드 암호화) + RFC 8292(VAPID ES256 JWT)를 Deno WebCrypto로 직접 구현 (외부 의존성 0)
+- `send-notification` 전면 재작성: 카카오 memo API → 웹 푸시 발송
+- `save-push-subscription` 신규 — 구독 저장/해제 (service_role로 RLS 우회)
+- 검증: 암복호화 왕복 14건 + 실제 모듈 종단 테스트 17건 통과 (모의 푸시 서비스로 헤더·복호화·410 처리 확인)
+
+**[Fix] 작성자 본인 제외 — 기존 코드에 누락되어 있던 동작**
+- 기존 `send-notification`은 토큰 보유자 전원에게 발송했고 작성자 제외 필터가 없었다
+- 발송 대상을 서버가 JWT에서 도출한 사용자로 확정하고 `.neq('user_id', actor.id)` 적용
+- 클라이언트가 보낸 `actorUserId`는 더 이상 신뢰하지 않는다 (제거)
+
+**[Feature] 만료 구독 자동 정리**
+- 푸시 서비스가 404/410 반환 시 해당 구독을 DB에서 삭제
+- 네트워크 실패(status 0)는 구독을 유지하여 일시 장애로 구독이 지워지지 않도록 구분
+
+**[Feature] 알림 동의 바텀시트**
+- `PushPermissionSheet.jsx` 신규 — 로그인 확인 직후 권한 상태에 따라 분기
+  - `default` → 동의 요청 시트 (캘린더 렌더 후 1.2초 지연 노출)
+  - `granted` → 조용히 구독 동기화 (구독 회전/사이트 데이터 삭제로 인한 끊김 복구)
+  - `denied` → 미노출 (앱에서 재요청 불가하므로 무의미)
+  - iOS Safari 일반 탭 → 홈 화면 추가 안내 시트 (권한 요청 자체가 불가)
+- "나중에" 선택 시 7일 스누즈
+- 권한 요청은 반드시 버튼 클릭 핸들러에서 출발 (iOS는 사용자 제스처 없는 요청을 무시)
+
+**[Feature] PWA 전환 (iOS 푸시 전제 조건)**
+- `manifest.webmanifest`, `sw.js`, 아이콘 4종(192/512/apple-touch/badge) 추가
+- 아이콘은 서비스 팔레트(`LoginPage.css` 핑크→퍼플) 기반으로 생성
+- Service Worker: `push` 수신, `notificationclick` 시 기존 탭 재사용, `pushsubscriptionchange` 재구독
+
+**[Feature] MyPage 알림 설정 + Navbar 설정 버튼 활성화**
+- `PushSettings.jsx` 신규 — 기기 단위 알림 on/off 토글
+- 알림 도입에 맞춰 보류 상태였던 Navbar 설정 버튼 노출 (2026-03-10 INSPECTION의 BUG-1 해소)
+
+**[DB] push_subscriptions 테이블 추가**
+- 권한·구독이 (사용자 x 기기 x 브라우저)마다 생성되므로 users 컬럼이 아닌 1:N 테이블로 설계
+- RLS 3종(본인 조회/본인 삭제/service_role 전체), `endpoint` UNIQUE
+- `notifications.channel`에 `'WEB_PUSH'` 허용 (기존 `varchar(10)`, CHECK 제약 없음 → `notifications_channel_check` 신규 생성)
+
+### 파일 변경
+
+**신규 (17개)**
+- `supabase/functions/_shared/webpush.ts` - 웹 푸시 암호화/서명
+- `supabase/functions/save-push-subscription/{index.ts,config.toml}` - 구독 저장/해제
+- `docs/migrations/add_push_subscriptions.sql` - 테이블 + RLS + channel 제약
+- `frontend/public/{sw.js,manifest.webmanifest,favicon.svg,icon-192.png,icon-512.png,apple-touch-icon.png,badge-96.png}`
+- `frontend/src/lib/push.js` - 권한·구독 관리
+- `frontend/src/lib/notify.js` - 알림 발송 호출 (실패해도 일정 저장에 영향 없음)
+- `frontend/src/components/push/{PushPermissionSheet.jsx,.css,PushSettings.jsx,.css}`
+
+**수정 (9개)**
+- `supabase/functions/send-notification/index.ts` - 카카오 → 웹 푸시 전면 재작성
+- `frontend/src/pages/CalendarPage.jsx` - 로그인 체크 후 푸시 권한 점검 흐름 추가
+- `frontend/src/pages/MyPage.jsx` - PushSettings 섹션 추가
+- `frontend/src/components/Navbar.jsx` - 설정 버튼 활성화
+- `frontend/src/components/schedule/ScheduleModal.jsx` - 생성/수정 시 알림 호출 복원
+- `frontend/src/components/schedule/ScheduleDetail.jsx` - 삭제 시 알림 호출 복원
+- `frontend/index.html` - manifest/apple-touch-icon/theme-color 추가
+- `frontend/.env.example`, `render.yaml` - `VITE_VAPID_PUBLIC_KEY` 추가
+
+### 비고
+
+- **도메인 고정 필요**: 웹 푸시 권한은 Origin(스킴+호스트+포트) 단위다. 배포 도메인을 바꾸면 전원의 권한·구독이 무효화되어 재동의가 필요하다. 현재 `jsk-schedule-frontend.onrender.com` 유지로 결정.
+- **VAPID 공개키 3중 관리**: `render.yaml` / `frontend/.env` / `frontend/public/sw.js` 상수. sw.js는 `public/`에 있어 Vite 환경변수 치환을 거치지 않는다.
+- 카카오 알림톡 관련 코드는 보존하지 않고 제거했다. `users.kakao_access_token` 등 토큰 컬럼은 남아 있으나 알림 용도로는 더 이상 사용하지 않는다.
+- `notification_preferences` 테이블은 채널 변경과 무관하게 기존 구조를 그대로 재사용한다.
+
+---
+
 ## [2026-03-10] Edge Function gateway JWT 통합 수정 및 QA
 
 ### 변경사항

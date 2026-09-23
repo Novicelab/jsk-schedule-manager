@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import Navbar from '../components/Navbar'
 import LoadingPopup from '../components/LoadingPopup'
+import PushSettings from '../components/push/PushSettings'
 
 function MyPage() {
   const navigate = useNavigate()
@@ -157,6 +158,8 @@ function MyPage() {
               </div>
             )}
           </div>
+
+          <PushSettings />
 
           <div className="mypage-withdraw-section">
             {deleteError && (

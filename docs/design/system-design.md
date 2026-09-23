@@ -2,7 +2,26 @@
 
 > 작성일: 2026-02-19
 > 작성자: designer 에이전트
-> 상태: 초안
+> 최종 수정: 2026-09-23
+> 상태: **부분 개정** — 데이터 모델(4장)은 현행, 아키텍처 다이어그램(1~3장)은 일부 미갱신
+
+---
+
+## ⚠️ 문서 현행화 안내
+
+이 설계서의 **1~3장 아키텍처 다이어그램은 Spring Boot 시절 초안**이며, 아래 두 차례 구조 전환이 반영되어 있지 않습니다.
+데이터 모델(4장)과 아래 표는 현행 기준입니다.
+
+| 영역 | 설계서 초안 (1~3장) | 현행 |
+|------|--------------------|------|
+| 백엔드 | Spring Boot + JPA + Spring Security | **제거됨** → Supabase BaaS (2026-02-23) |
+| 인증 | 자체 JWT + refresh_tokens 테이블 | Supabase Auth (카카오 OAuth는 Edge Function 경유) |
+| 알림 채널 | 카카오 알림톡 API (`POST /v2/api/talk/memo`) | **웹 푸시 (Web Push API + VAPID)** (2026-09-23) |
+| 알림 발송 주체 | Spring `NotificationService` | Edge Function `send-notification` + `_shared/webpush.ts` |
+| 알림 수신자 판단 | `users.kakao_access_token` 보유자 | `push_subscriptions` 행 (작성자 본인 제외) |
+| 팀 기능 | teams / team_members / team_invitations | **미채택** (공유 캘린더 방식 유지, 테이블 설계만 보존) |
+
+현행 아키텍처 요약은 [CLAUDE.md](../../CLAUDE.md)의 "아키텍처" 절을, 변경 이력은 [CHANGELOG.md](../../CHANGELOG.md)를 참조하세요.
 
 ---
 
@@ -362,11 +381,13 @@
 | email | VARCHAR(255) | NULL | 카카오에서 제공한 이메일 (선택 동의) |
 | name | VARCHAR(50) | NOT NULL | 카카오 닉네임 또는 사용자 설정 이름 |
 | profile_image_url | VARCHAR(512) | NULL | 카카오 프로필 이미지 URL |
-| kakao_access_token | VARCHAR(512) | NULL | 카카오 API 호출용 토큰 (알림톡 발송에 사용) |
+| kakao_access_token | VARCHAR(512) | NULL | 카카오 API 호출용 토큰 (~~알림톡 발송~~ → **현재 알림 용도 미사용**) |
 | created_at | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | 가입 일시 |
 | updated_at | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() (트리거로 자동 갱신) | 정보 수정 일시 |
 
-> **설계 결정**: 카카오 OAuth 전용 인증이므로 password 컬럼 불필요. `kakao_access_token`을 저장하여 알림톡 API 호출에 활용.
+> **설계 결정**: 카카오 OAuth 전용 인증이므로 password 컬럼 불필요.
+>
+> **2026-09-23 변경**: 알림 채널이 웹 푸시로 전환되어 `kakao_access_token` / `kakao_refresh_token` / `kakao_token_expires_at`은 알림 발송에 사용하지 않는다. 컬럼은 OAuth 로그인 흐름에서 계속 갱신되지만, 알림 수신자 판단은 `push_subscriptions`를 기준으로 한다.
 
 #### teams
 
@@ -435,11 +456,44 @@
 | schedule_id | BIGINT | NULL, FK(schedules.id) | 관련 일정 ID (팀 초대/추방 알림은 NULL) |
 | user_id | BIGINT | NOT NULL, FK(users.id) | 알림 수신자 |
 | type | ENUM('SCHEDULE_CREATED','SCHEDULE_UPDATED','SCHEDULE_DELETED','TEAM_INVITED','TEAM_EXPELLED') | NOT NULL | 알림 유형 |
-| channel | ENUM('KAKAO') | NOT NULL, DEFAULT 'KAKAO' | 알림 채널 |
+| channel | VARCHAR(10) | NOT NULL, CHECK IN ('KAKAO','WEB_PUSH') | 알림 채널 (현재는 항상 `WEB_PUSH`) |
 | status | ENUM('PENDING','SUCCESS','FAILED') | NOT NULL, DEFAULT 'PENDING' | 발송 상태 |
 | message | TEXT | NOT NULL | 알림 메시지 내용 |
 | sent_at | TIMESTAMPTZ | NULL | 실제 발송 일시 |
 | created_at | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | 생성 일시 |
+
+> 알림 기록은 **사용자 단위 1건**으로 남긴다. 한 사용자가 여러 기기를 구독 중이어도 기록은 하나이며, 한 기기라도 성공하면 `SUCCESS`로 본다.
+> 이 INSERT의 실패는 발송 결과에 영향을 주지 않는다 (로그 테이블이 발송을 막지 않도록 의도적으로 분리).
+
+#### push_subscriptions
+
+웹 푸시 구독 정보. 권한과 구독은 **(사용자 × 기기 × 브라우저)마다 별도로 생성**되므로 `users`의 컬럼이 아니라 1:N 테이블로 관리한다.
+
+| 컬럼명 | 타입 | 제약조건 | 설명 |
+|--------|------|----------|------|
+| id | BIGINT | PK, GENERATED ALWAYS AS IDENTITY | 고유 식별자 |
+| user_id | BIGINT | NOT NULL, FK(users.id) ON DELETE CASCADE | 구독 소유자 |
+| endpoint | TEXT | NOT NULL, UNIQUE | 푸시 서비스(FCM/Mozilla/APNs)가 발급한 구독 URL |
+| p256dh | TEXT | NOT NULL | RFC 8291 페이로드 암호화용 공개키 (base64url) |
+| auth | TEXT | NOT NULL | RFC 8291 인증 시크릿 (base64url) |
+| user_agent | TEXT | NULL | 기기 구분 표시용 라벨 (예: `iOS Safari`) |
+| created_at | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | 구독 생성 일시 |
+| last_used_at | TIMESTAMPTZ | NULL | 마지막 저장/갱신 일시 |
+
+**인덱스**: `idx_push_subscriptions_user_id (user_id)`
+
+**RLS 정책**
+| 정책명 | 동작 | 조건 |
+|--------|------|------|
+| `push_subs_read_own` | SELECT | `user_id = (SELECT id FROM users WHERE auth_id = auth.uid())` |
+| `push_subs_delete_own` | DELETE | 동일 |
+| `push_subs_service_role_all` | ALL | `auth.jwt() ->> 'role' = 'service_role'` |
+
+> **설계 결정**
+> - `endpoint`를 UNIQUE로 두어 동일 기기의 재구독 시 upsert로 소유자까지 갱신된다 (기기 공유·계정 전환 대응).
+> - INSERT/UPDATE는 `save-push-subscription` Edge Function(service_role)이 전담한다. 클라이언트가 보낸 `userId`를 신뢰하지 않고 JWT의 `auth_id`로 사용자를 확정한다.
+> - 푸시 서비스가 404/410을 반환하면 구독이 소멸한 것이므로 `send-notification`이 해당 행을 삭제한다. 네트워크 오류는 삭제하지 않는다.
+> - `ON DELETE CASCADE`로 회원 탈퇴 시 구독이 함께 제거된다.
 
 #### refresh_tokens
 

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import dayjs from 'dayjs'
 import { supabase } from '../../lib/supabase'
+import { notifyScheduleChange } from '../../lib/notify'
 import LoadingPopup from '../LoadingPopup'
 import './ScheduleDetail.css'
 
@@ -66,6 +67,9 @@ function ScheduleDetail({ schedule, onEdit, onDeleted, onClose }) {
       if (data?.error) {
         throw new Error(data.error)
       }
+
+      // soft delete라 행이 남아 있으므로 삭제 후에도 알림 문구를 만들 수 있다
+      notifyScheduleChange({ scheduleId: schedule.id, actionType: 'DELETED' })
 
       onDeleted()
     } catch (err) {

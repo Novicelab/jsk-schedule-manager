@@ -1,0 +1,139 @@
+/* ============================================================
+ * MyPage 알림 설정 섹션
+ * ============================================================ */
+
+.push-settings {
+  margin-bottom: 24px;
+}
+
+.push-settings-title {
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #2c2431;
+}
+
+.push-settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  background: #fff;
+  border: 1px solid #eaecee;
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+
+.push-settings-label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.push-settings-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #2c2431;
+}
+
+.push-settings-sub {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #8b8194;
+  word-break: keep-all;
+}
+
+.push-settings-foot {
+  margin: 9px 2px 0;
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: #9a8ea3;
+  word-break: keep-all;
+}
+
+/* 토글 스위치 */
+.push-switch {
+  flex: none;
+  width: 48px;
+  height: 28px;
+  border-radius: 999px;
+  background: #d8d2dd;
+  border: none;
+  padding: 0;
+  position: relative;
+  cursor: pointer;
+  transition: background-color 0.18s;
+}
+
+.push-switch.is-on {
+  background: #9c27b0;
+}
+
+.push-switch:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.push-switch-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22);
+  transition: transform 0.18s;
+}
+
+.push-switch.is-on .push-switch-knob {
+  transform: translateX(20px);
+}
+
+.push-switch:focus-visible {
+  outline: 2px solid #7b1fa2;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .push-switch,
+  .push-switch-knob {
+    transition: none;
+  }
+}
+
+/* 안내 박스 (iOS 설치 / 미지원 브라우저) */
+.push-settings-notice {
+  background: #faf7fb;
+  border: 1px solid #efe7f2;
+  border-radius: 8px;
+  padding: 14px 16px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #4a4152;
+  word-break: keep-all;
+}
+
+.push-settings-notice p {
+  margin: 0;
+}
+
+.push-settings-notice-head {
+  font-weight: 600;
+  color: #2c2431;
+  margin-bottom: 8px !important;
+}
+
+.push-settings-steps {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.push-settings-steps b {
+  color: #7b1fa2;
+  font-weight: 600;
+}

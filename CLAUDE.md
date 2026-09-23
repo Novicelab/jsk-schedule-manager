@@ -13,7 +13,7 @@
 |------|------|
 | 일정 CRUD | 일정 생성, 조회, 수정, 삭제 |
 | 팀원 초대/권한 관리 | 팀 구성원 관리 및 역할(관리자/일반) 분리 |
-| 알림/리마인더 | 일정 전 알림 (현재 비활성화, 알림톡 전환 예정) |
+| 알림/리마인더 | 일정 CRUD 발생 시 웹 푸시 발송 (작성자 본인 제외) |
 | 캘린더 뷰 | 월간/주간/일간 캘린더 형태의 시각화 |
 
 ---
@@ -33,9 +33,14 @@
 - 과거 일정은 삭제하지 않고 아카이브 처리한다.
 
 ### 알림 정책
-- 알림 기능은 현재 비활성화 상태 (카카오 알림톡 전환 예정)
-- 전환 완료 시: 일정 CRUD 발생 시 카카오 알림톡으로 발송
-- 알림 채널은 카카오톡 알림톡을 기준으로 한다.
+- 알림 채널은 **웹 푸시(Web Push API + VAPID)** 를 기준으로 한다. (카카오 알림톡은 미채택)
+- 일정 등록/수정/삭제 시 발송하며, **작성자 본인은 제외**한다. 제외 판단은 클라이언트 입력이 아니라 서버가 JWT에서 도출한 사용자로 확정한다.
+- 알림 권한은 **Origin 단위**로 부여된다. 스킴·호스트·포트가 하나라도 다르면 별개이며, 타 서비스와 공유되지 않는다.
+  - **배포 도메인을 변경하면 전원의 권한·구독이 무효화**되므로 도메인 변경은 신중히 결정한다.
+- 구독은 **(사용자 x 기기 x 브라우저)마다 별도**로 생성되므로 `push_subscriptions` 테이블에 1:N으로 저장한다.
+- 푸시 서비스가 404/410을 반환하면 만료된 구독이므로 DB에서 삭제한다.
+- iOS는 홈 화면에 추가한 PWA 상태에서만 수신 가능하다 (iOS 16.4+).
+- 사용자별 알림 on/off는 `notification_preferences`를 따르며, 행이 없으면 기본값 ON으로 간주한다.
 
 ### 데이터 정책
 - 모든 데이터는 데이터베이스(DB)에 영구 저장한다.
@@ -61,7 +66,9 @@
 | 배포 URL | Frontend: https://jsk-schedule-frontend.onrender.com | Live |
 | 소스관리/CI·CD | GitHub | 코드 버전관리 및 자동 배포 연동 |
 | 인증 | 카카오톡 OAuth 2.0 + Supabase Auth | 세션 자동 갱신 (Supabase Client 내장) |
-| 알림 | 카카오톡 알림톡 API (현재 비활성화, 전환 예정) | Supabase Edge Function 코드 보존 |
+| 알림 | 웹 푸시 (Web Push API + VAPID) | 발송 비용 0원, 사업자등록증·전화번호 불필요 |
+| 알림 암호화 | RFC 8291(aes128gcm) + RFC 8292(VAPID) | `_shared/webpush.ts`에 WebCrypto로 직접 구현 (무의존성) |
+| PWA | manifest + Service Worker | iOS 푸시 수신 전제 조건 (홈 화면 추가) |
 
 ---
 
@@ -73,17 +80,20 @@
                                 ├── Auth (세션 관리, 토큰 자동 갱신)
                                 └── Edge Functions
                                     ├── kakao-auth (카카오 OAuth 처리)
-                                    ├── send-notification (알림톡 발송, 현재 비활성화)
+                                    ├── send-notification (웹 푸시 발송, 작성자 제외 + 만료 구독 정리)
+                                    ├── save-push-subscription (푸시 구독 저장/해제, RLS 우회)
                                     ├── update-user-name (사용자 이름 저장, RLS 우회)
                                     ├── delete-user (회원 탈퇴, 민감정보 삭제)
                                     ├── soft-delete-schedule (일정 soft delete, RLS 우회)
                                     └── update-schedule (일정 생성/수정, 서버사이드 소유권 검증)
+
+[브라우저] Service Worker (/sw.js) ← 푸시 수신 → OS 알림 센터
 ```
 
 - **프론트엔드**: React SPA → Supabase JS Client로 DB 직접 접근
 - **인증**: Supabase Auth (카카오 OAuth는 Edge Function 경유)
 - **보안**: RLS(Row Level Security)로 행 수준 접근 제어
-- **알림**: 비활성화 (알림톡 전환 예정, send-notification Edge Function 코드 보존)
+- **알림**: 웹 푸시 — 프론트가 구독 발급 → `save-push-subscription`이 저장 → 일정 CRUD 시 `send-notification`이 VAPID 서명 + 페이로드 암호화 후 푸시 서비스로 발송 → Service Worker가 수신하여 OS 알림 표시
 - **DB 트리거**: VACATION 일정 제목 자동 생성 (`[이름] 부제목`)
 
 ---
@@ -124,6 +134,7 @@
 - [x] 무한 렌더링·MyPage·서비스명 (2026-03-08): 세션 감지 단일화, 사용자 정보 표시
 - [x] QA 종합 점검 (2026-03-09): 보안/버그 18건 (CORS, HMAC, signOut 등)
 - [x] Edge Function JWT 통합 수정 (2026-03-10): --no-verify-jwt 일괄 적용, 무한 리다이렉트 수정
+- [x] 웹 푸시 알림 도입 (2026-09-23): 알림톡 대신 Web Push 채택, PWA 전환, 동의 바텀시트, 작성자 제외
 
 ---
 
@@ -218,6 +229,7 @@ VITE_KAKAO_CLIENT_ID=240f33554023d9ab4957b2d638fb0d71
 VITE_KAKAO_REDIRECT_URI=http://localhost:5173/auth/callback
 VITE_SUPABASE_URL=https://qphhpfolrbsyiyoevaoe.supabase.co
 VITE_SUPABASE_ANON_KEY=[Supabase Anon Key]
+VITE_VAPID_PUBLIC_KEY=[VAPID 공개키 - 공개 가능]
 ```
 
 템플릿: `frontend/.env.example` 참고
@@ -229,7 +241,16 @@ KAKAO_CLIENT_SECRET=[카카오 시크릿]
 SUPABASE_URL=https://qphhpfolrbsyiyoevaoe.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=[Supabase Service Role Key]
 SUPABASE_ANON_KEY=[Supabase Anon Key]
+VAPID_PUBLIC_KEY=[VAPID 공개키]
+VAPID_PRIVATE_KEY=[VAPID 개인키 - 절대 노출 금지]
+VAPID_SUBJECT=https://jsk-schedule-frontend.onrender.com
 ```
+
+> **VAPID 키 관리 ⚠️**
+> - 공개키는 3곳에 동일한 값이 있어야 한다: `render.yaml`, `frontend/.env`, **`frontend/public/sw.js` 상수**
+>   (sw.js는 `public/`에 있어 Vite 환경변수 치환을 거치지 않으므로 하드코딩되어 있다)
+> - **키를 교체하면 기존 구독이 전부 무효화**되어 전원이 다시 동의해야 한다.
+> - 키 재생성: `node -e "const{generateKeyPairSync}=require('crypto');const{publicKey,privateKey}=generateKeyPairSync('ec',{namedCurve:'prime256v1'});const p=publicKey.export({format:'jwk'});const d=s=>Buffer.from(s,'base64url');console.log('public =',Buffer.concat([Buffer.from([4]),d(p.x),d(p.y)]).toString('base64url'));console.log('private=',privateKey.export({format:'jwk'}).d)"`
 
 ### 환경변수 관리 정책 ⚠️ 재발 방지
 
@@ -263,6 +284,7 @@ supabase login
 # Edge Functions 배포
 supabase functions deploy kakao-auth --project-ref qphhpfolrbsyiyoevaoe --no-verify-jwt
 supabase functions deploy send-notification --project-ref qphhpfolrbsyiyoevaoe --no-verify-jwt
+supabase functions deploy save-push-subscription --project-ref qphhpfolrbsyiyoevaoe --no-verify-jwt
 supabase functions deploy update-user-name --project-ref qphhpfolrbsyiyoevaoe --no-verify-jwt
 supabase functions deploy delete-user --project-ref qphhpfolrbsyiyoevaoe --no-verify-jwt
 supabase functions deploy soft-delete-schedule --project-ref qphhpfolrbsyiyoevaoe --no-verify-jwt

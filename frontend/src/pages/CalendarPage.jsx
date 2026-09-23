@@ -7,7 +7,17 @@ import dayjs from 'dayjs'
 import Navbar from '../components/Navbar'
 import ScheduleModal from '../components/schedule/ScheduleModal'
 import ScheduleDetail from '../components/schedule/ScheduleDetail'
+import PushPermissionSheet from '../components/push/PushPermissionSheet'
 import { supabase } from '../lib/supabase'
+import {
+  getPermission,
+  needsIOSInstall,
+  isPromptSnoozed,
+  syncSubscription,
+} from '../lib/push'
+
+// 캘린더가 먼저 그려진 뒤 알림 동의 시트를 띄우기까지의 지연
+const PUSH_PROMPT_DELAY_MS = 1200
 
 // 일정 유형별 색상
 const SCHEDULE_COLORS = {
@@ -40,6 +50,9 @@ function CalendarPage() {
   const [clickedDateEvents, setClickedDateEvents] = useState([])
 
   const [slideDirection, setSlideDirection] = useState(null) // 'left' | 'right' | null
+
+  // 웹 푸시 동의 시트: null | 'ask' | 'ios-install'
+  const [pushSheetMode, setPushSheetMode] = useState(null)
 
   const calendarRef = useRef(null)
   const calendarContainerRef = useRef(null)
@@ -149,6 +162,31 @@ function CalendarPage() {
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
     if (!currentUser.name || currentUser.name === '__PENDING__') {
       navigate('/login', { replace: true })
+      return
+    }
+
+    // --- 로그인 확인 통과 후: 웹 푸시 권한 점검 ---
+    // 권한 요청은 사용자 제스처에서 출발해야 하므로 여기서는 시트만 띄운다.
+    let timerId = null
+
+    if (needsIOSInstall()) {
+      // iOS Safari 일반 탭은 권한 요청 자체가 불가 → 홈 화면 추가 안내
+      if (!isPromptSnoozed()) {
+        timerId = setTimeout(() => setPushSheetMode('ios-install'), PUSH_PROMPT_DELAY_MS)
+      }
+    } else {
+      const permission = getPermission()
+      if (permission === 'granted') {
+        // 이미 허용된 기기: 구독이 서버에 남아있는지 조용히 확인/복구
+        syncSubscription()
+      } else if (permission === 'default' && !isPromptSnoozed()) {
+        timerId = setTimeout(() => setPushSheetMode('ask'), PUSH_PROMPT_DELAY_MS)
+      }
+      // 'denied'/'unsupported': 앱에서 재요청이 불가능하므로 노출하지 않는다
+    }
+
+    return () => {
+      if (timerId) clearTimeout(timerId)
     }
   }, [navigate])
 
@@ -461,6 +499,13 @@ function CalendarPage() {
           />
         </div>
       </main>
+
+      {pushSheetMode && (
+        <PushPermissionSheet
+          mode={pushSheetMode}
+          onClose={() => setPushSheetMode(null)}
+        />
+      )}
 
       {showScheduleModal && (
         <ScheduleModal
