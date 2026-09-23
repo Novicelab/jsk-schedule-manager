@@ -53,9 +53,18 @@
 - 권한 요청은 반드시 버튼 클릭 핸들러에서 출발 (iOS는 사용자 제스처 없는 요청을 무시)
 
 **[Feature] PWA 전환 (iOS 푸시 전제 조건)**
-- `manifest.webmanifest`, `sw.js`, 아이콘 4종(192/512/apple-touch/badge) 추가
+- `manifest.json`, `sw.js`, 아이콘 4종(192/512/apple-touch/badge) 추가
 - 아이콘은 서비스 팔레트(`LoginPage.css` 핑크→퍼플) 기반으로 생성
 - Service Worker: `push` 수신, `notificationclick` 시 기존 탭 재사용, `pushsubscriptionchange` 재구독
+- 매니페스트 확장자는 `.json` 사용 — 배포처(Render Static Site)의 MIME 테이블에 `.webmanifest`가 없어
+  `binary/octet-stream`으로 서빙되는 문제 회피
+
+**[UX] 브라우저 자체 '앱 설치' 배너 억제**
+- `main.jsx`에서 `beforeinstallprompt` 이벤트를 `preventDefault()`
+- Android/PC는 설치 없이도 웹 푸시를 받으므로 설치를 권할 이유가 없다.
+  알림 동의는 앱 내 바텀시트로만 안내한다
+- iOS는 이 이벤트를 지원하지 않으며, 홈 화면 추가가 푸시의 전제 조건이므로
+  `PushPermissionSheet`의 `ios-install` 모드로 별도 안내한다 (애플 정책상 우회 불가)
 
 **[Feature] MyPage 알림 설정 + Navbar 설정 버튼 활성화**
 - `PushSettings.jsx` 신규 — 기기 단위 알림 on/off 토글
