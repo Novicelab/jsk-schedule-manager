@@ -56,10 +56,28 @@ const formatDate = (ts: string) => {
   return `${w.year}. ${w.month}. ${w.day}.`
 }
 
+/**
+ * 기간에 걸친 일수(양끝 포함). Date.UTC 는 순수 산술이라 타임존 영향이 없다.
+ */
+const countDays = (start: string, end: string) => {
+  const a = parseWallClock(start)
+  const b = parseWallClock(end)
+  if (!a || !b) return 0
+  const from = Date.UTC(a.year, a.month - 1, a.day)
+  const to = Date.UTC(b.year, b.month - 1, b.day)
+  return Math.round((to - from) / 86400000) + 1
+}
+
+/**
+ * 하루면 날짜만, 여러 날이면 기간과 일수를 함께 표기한다.
+ * 예) 2026. 10. 5.   /   2026. 10. 5. ~ 2026. 10. 8. (4일)
+ */
 const formatDateRange = (start: string, end: string) => {
   const s = formatDate(start)
   const e = formatDate(end)
-  return s === e ? s : `${s} ~ ${e}`
+  if (s === e) return s
+  const days = countDays(start, end)
+  return days > 1 ? `${s} ~ ${e} (${days}일)` : `${s} ~ ${e}`
 }
 
 const formatTime = (ts: string) => {
@@ -113,13 +131,13 @@ export function buildPayload(
   } else if (actionType === 'DELETED') {
     lines.push(`${typeLabel} · ${newDateStr} 삭제됨`)
   } else {
+    // '하루 종일'은 붙이지 않는다. 반차/여러 날 일정에 붙으면 모순이고,
+    // 하루짜리 일정에도 날짜만으로 충분해 정보가 없다.
     let detail = `${typeLabel} · ${newDateStr}`
     if (schedule.vacation_type === 'EARLY_LEAVE' && schedule.end_at) {
       detail += ` ${formatTime(schedule.end_at)} 조퇴`
     } else if (!schedule.all_day) {
       detail += ` ${formatTime(schedule.start_at)} ~ ${formatTime(schedule.end_at)}`
-    } else {
-      detail += ' 하루 종일'
     }
     lines.push(detail)
   }
