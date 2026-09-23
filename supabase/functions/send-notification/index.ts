@@ -283,6 +283,11 @@ serve(async (req) => {
     }
 
     // 6. 알림 기록 (사용자 단위 1건) — 실패해도 발송 결과에 영향을 주지 않는다
+    //
+    // created_at 은 NOT NULL 인데 DB에 DEFAULT 가 없어 반드시 명시해야 한다.
+    // (users 테이블도 같은 구조라 kakao-auth 에서 동일하게 명시하고 있다)
+    const now = new Date().toISOString()
+
     const records = targetUserIds
       .filter((userId) => !disabledUsers.has(userId))
       .map((userId) => {
@@ -296,19 +301,23 @@ serve(async (req) => {
           message: ok
             ? `${payload.title} | ${payload.body}`
             : `[PUSH_ERROR ${failedUsers.get(userId) || 'unknown'}] | 원본: ${payload.body}`,
-          sent_at: ok ? new Date().toISOString() : null,
+          sent_at: ok ? now : null,
+          created_at: now,
         }
       })
 
+    let logged = true
     if (records.length > 0) {
       const { error: logError } = await supabase.from('notifications').insert(records)
       if (logError) {
+        logged = false
         console.error('알림 기록 저장 실패(발송은 완료됨):', logError)
       }
     }
 
-    console.log('푸시 발송 완료:', { scheduleId, actionType, sent, failed })
-    return json(req, { sent, failed, removed: expiredIds.length })
+    console.log('푸시 발송 완료:', { scheduleId, actionType, sent, failed, logged })
+    // logged 를 응답에 포함해 기록 실패가 조용히 묻히지 않게 한다
+    return json(req, { sent, failed, removed: expiredIds.length, logged })
   } catch (error) {
     console.error('send-notification 에러:', error)
     return json(req, { error: '알림 처리 중 오류가 발생했습니다.' }, 500)

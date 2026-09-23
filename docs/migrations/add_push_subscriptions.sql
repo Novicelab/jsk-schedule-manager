@@ -108,3 +108,18 @@ BEGIN
     CHECK (channel IN ('KAKAO', 'WEB_PUSH'));
   RAISE NOTICE 'notifications_channel_check 재생성 완료';
 END $$;
+
+-- ============================================================
+-- notifications.created_at 에 DEFAULT NOW() 추가 (2026-09-23 추가)
+-- ------------------------------------------------------------
+-- 이 컬럼은 NOT NULL 이지만 DEFAULT 가 없어, INSERT 시 값을 명시하지 않으면
+-- 23502(not-null violation)로 실패한다.
+-- 실제로 알림 기록이 한 건도 쌓이지 않고 있었다(카카오 구현 시절부터 동일).
+--
+-- send-notification 은 created_at 을 명시적으로 넣도록 수정했으나,
+-- 같은 실수가 반복되지 않도록 DB 차원에서도 기본값을 둔다.
+--
+-- 참고: users.created_at / users.updated_at 도 같은 구조다.
+--       (kakao-auth 에서 값을 명시해 우회 중)
+-- ============================================================
+ALTER TABLE notifications ALTER COLUMN created_at SET DEFAULT NOW();
