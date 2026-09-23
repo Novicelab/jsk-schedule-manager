@@ -40,8 +40,36 @@ const ACTION_LABEL: Record<string, string> = {
 const getTypeLabel = (type: string, vacationType?: string | null) =>
   type === 'VACATION' ? VACATION_LABEL[vacationType || 'FULL'] || '휴가' : '업무'
 
-const formatDate = (iso: string) =>
-  new Date(iso).toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul' })
+/**
+ * 날짜/시각 포맷.
+ *
+ * schedules.start_at/end_at 은 `timestamp without time zone` 이며
+ * 저장된 값 자체가 이미 한국 시간 기준 벽시계 값이다.
+ * 이를 `new Date()` 로 파싱하면 런타임 타임존(Edge Function 은 UTC)을 따라
+ * 해석되고, 거기에 다시 Asia/Seoul 로 포맷하면 +9시간 어긋난다.
+ * (실제로 10/1 14:00 조퇴가 "오후 11:00" 으로, 당일 일정이 이틀로 표시됐다)
+ *
+ * 그래서 Date 를 거치지 않고 문자열에서 직접 자리를 읽는다.
+ */
+const WALL_CLOCK_PATTERN = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/
+
+const parseWallClock = (ts: string) => {
+  const m = ts.match(WALL_CLOCK_PATTERN)
+  if (!m) return null
+  return {
+    year: Number(m[1]),
+    month: Number(m[2]),
+    day: Number(m[3]),
+    hour: Number(m[4]),
+    minute: Number(m[5]),
+  }
+}
+
+const formatDate = (ts: string) => {
+  const w = parseWallClock(ts)
+  if (!w) return ts
+  return `${w.year}. ${w.month}. ${w.day}.`
+}
 
 const formatDateRange = (start: string, end: string) => {
   const s = formatDate(start)
@@ -49,12 +77,13 @@ const formatDateRange = (start: string, end: string) => {
   return s === e ? s : `${s} ~ ${e}`
 }
 
-const formatTime = (iso: string) =>
-  new Date(iso).toLocaleTimeString('ko-KR', {
-    timeZone: 'Asia/Seoul',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+const formatTime = (ts: string) => {
+  const w = parseWallClock(ts)
+  if (!w) return ts
+  const meridiem = w.hour < 12 ? '오전' : '오후'
+  const hour12 = w.hour % 12 === 0 ? 12 : w.hour % 12
+  return `${meridiem} ${String(hour12).padStart(2, '0')}:${String(w.minute).padStart(2, '0')}`
+}
 
 interface ScheduleRow {
   id: number
@@ -110,8 +139,10 @@ function buildPayload(
     lines.push(detail)
   }
 
-  // 알림 클릭 시 해당 일정이 있는 달로 이동
-  const month = new Date(schedule.start_at).toISOString().slice(0, 7)
+  // 알림 클릭 시 해당 일정이 있는 달로 이동.
+  // 저장값이 이미 'YYYY-MM-DD...' 형식이라 Date 변환 없이 앞부분을 그대로 쓴다
+  // (Date 로 변환하면 타임존에 따라 월이 어긋날 수 있다)
+  const month = schedule.start_at.slice(0, 7)
 
   return {
     title: `일정 ${actionLabel} · ${actorName}`,
