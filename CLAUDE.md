@@ -247,9 +247,22 @@ VAPID_SUBJECT=https://jsk-schedule-frontend.onrender.com
 ```
 
 > **VAPID 키 관리 ⚠️**
-> - 공개키는 3곳에 동일한 값이 있어야 한다: `render.yaml`, `frontend/.env`, **`frontend/public/sw.js` 상수**
->   (sw.js는 `public/`에 있어 Vite 환경변수 치환을 거치지 않으므로 하드코딩되어 있다)
+> - 공개키 기본값은 **소스 2곳**에 하드코딩되어 있다. 교체 시 반드시 함께 수정할 것:
+>   - `frontend/src/lib/push.js` → `VAPID_PUBLIC_KEY_FALLBACK`
+>   - `frontend/public/sw.js` → `VAPID_PUBLIC_KEY` (`public/`은 Vite 치환 대상이 아님)
+> - `VITE_VAPID_PUBLIC_KEY` 환경변수가 있으면 그 값이 우선한다 (없으면 위 기본값 사용).
+> - 공개키를 소스에 두는 이유: 원래 브라우저로 전달되는 공개 값이며, **Render가 `render.yaml`을 읽지 않아**
+>   환경변수에만 의존하면 대시보드에 키를 넣기 전까지 알림이 동작하지 않는다. (아래 "배포 구성 주의" 참조)
+> - 개인키(`VAPID_PRIVATE_KEY`)는 Supabase Secrets에만 둔다. **절대 소스에 넣지 말 것.**
 > - **키를 교체하면 기존 구독이 전부 무효화**되어 전원이 다시 동의해야 한다.
+
+> **배포 구성 주의 ⚠️ (2026-09-23 확인)**
+> `render.yaml`은 **실제 배포에 적용되지 않는다.** 서비스는 Render 대시보드에서 관리되는 Static Site이며,
+> 환경변수·빌드 설정 모두 대시보드 값이 사용된다.
+> - 근거: `render.yaml`에 새 환경변수를 추가해도 빌드 번들에 주입되지 않음을 확인했다.
+>   (기존 `VITE_*` 4개는 번들에 존재 → 대시보드에 설정되어 있음)
+> - **`VITE_*` 환경변수를 추가/변경하려면 Render 대시보드 → Environment 에서 직접 수정해야 한다.**
+> - `render.yaml`은 현재 문서·참고용이다. 실제 구성과 어긋나지 않도록 유지하되, 변경해도 반영되지 않는다.
 > - 키 재생성: `node -e "const{generateKeyPairSync}=require('crypto');const{publicKey,privateKey}=generateKeyPairSync('ec',{namedCurve:'prime256v1'});const p=publicKey.export({format:'jwk'});const d=s=>Buffer.from(s,'base64url');console.log('public =',Buffer.concat([Buffer.from([4]),d(p.x),d(p.y)]).toString('base64url'));console.log('private=',privateKey.export({format:'jwk'}).d)"`
 
 ### 환경변수 관리 정책 ⚠️ 재발 방지

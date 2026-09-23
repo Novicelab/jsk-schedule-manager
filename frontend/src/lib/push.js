@@ -1,6 +1,24 @@
 import { supabase } from './supabase'
 
-const VAPID_PUBLIC_KEY = (import.meta.env.VITE_VAPID_PUBLIC_KEY || '').trim()
+/**
+ * VAPID 공개키.
+ *
+ * 환경변수가 있으면 그 값을, 없으면 아래 기본값을 쓴다.
+ * 기본값을 두는 이유:
+ *  - 이 값은 원래 브라우저에 전달되는 공개 값이라 노출돼도 무방하다.
+ *    (발송 권한은 Supabase Secrets의 VAPID_PRIVATE_KEY 가 가진다)
+ *  - public/sw.js 도 같은 이유로 이미 이 키를 상수로 갖고 있다.
+ *    (public/ 은 Vite 환경변수 치환 대상이 아님)
+ *  - 배포처(Render)가 render.yaml 을 읽지 않고 대시보드 설정만 사용하므로,
+ *    환경변수에만 의존하면 대시보드에 키를 넣기 전까지 알림이 동작하지 않는다.
+ *
+ * 키 교체 시 이 값과 public/sw.js 의 VAPID_PUBLIC_KEY 를 함께 수정할 것.
+ */
+const VAPID_PUBLIC_KEY_FALLBACK =
+  'BI2aB7WJtRI2yWSx9FbP4shaHynkx2K1NPloRF9bUXOBbw7JD1PceeBF_zlTx6eEIFOTU7hAX53wYaAtHviHOfY'
+
+const VAPID_PUBLIC_KEY =
+  (import.meta.env.VITE_VAPID_PUBLIC_KEY || '').trim() || VAPID_PUBLIC_KEY_FALLBACK
 
 const SNOOZE_KEY = 'push_prompt_snoozed_until'
 const SNOOZE_DAYS = 7
