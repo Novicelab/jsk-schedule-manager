@@ -6,7 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
     <!-- PWA: iOS는 홈 화면에 추가한 경우에만 웹 푸시를 받을 수 있다 -->
-    <link rel="manifest" href="/manifest.webmanifest" />
+    <!-- 확장자가 .json인 이유: 배포처(Render Static Site)의 MIME 테이블에
+         .webmanifest가 없어 binary/octet-stream 으로 서빙된다.
+         .json 은 application/json 으로 나가며 브라우저가 매니페스트로 정상 처리한다. -->
+    <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="theme-color" content="#7b1fa2" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
