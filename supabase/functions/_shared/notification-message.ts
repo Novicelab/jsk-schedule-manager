@@ -116,7 +116,16 @@ export function buildPayload(
   const typeLabel = getTypeLabel(schedule.type, schedule.vacation_type)
   const newDateStr = formatDateRange(schedule.start_at, schedule.end_at)
 
-  const lines: string[] = [schedule.title]
+  // VACATION 제목은 DB 트리거가 '{일정 소유자 이름} {유형}' 으로 자동 생성한다.
+  // 수행자와 소유자가 같으면 제목 줄이 1행(수행자)·상세줄(유형)과 완전히 겹치므로 생략한다.
+  //
+  // 단, 관리자가 타인의 일정을 수정/삭제한 경우에는 1행의 수행자와 소유자가 다르다.
+  // 이때 제목을 지우면 "누구의 휴가인지"가 사라지므로 그대로 남긴다.
+  // WORK 제목은 사용자가 직접 입력한 내용이라 항상 유지한다.
+  const isOwnVacationTitle =
+    schedule.type === 'VACATION' && schedule.title.startsWith(`${actorName} `)
+
+  const lines: string[] = isOwnVacationTitle ? [] : [schedule.title]
 
   if (actionType === 'UPDATED' && oldData) {
     const oldTypeLabel = getTypeLabel(oldData.type || schedule.type, oldData.vacationType)
