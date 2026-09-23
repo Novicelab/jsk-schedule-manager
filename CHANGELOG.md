@@ -81,7 +81,7 @@
 - `supabase/functions/_shared/webpush.ts` - 웹 푸시 암호화/서명
 - `supabase/functions/save-push-subscription/{index.ts,config.toml}` - 구독 저장/해제
 - `docs/migrations/add_push_subscriptions.sql` - 테이블 + RLS + channel 제약
-- `frontend/public/{sw.js,manifest.webmanifest,favicon.svg,icon-192.png,icon-512.png,apple-touch-icon.png,badge-96.png}`
+- `frontend/public/{sw.js,manifest.json,favicon.svg,icon-192.png,icon-512.png,apple-touch-icon.png,badge-96.png}`
 - `frontend/src/lib/push.js` - 권한·구독 관리
 - `frontend/src/lib/notify.js` - 알림 발송 호출 (실패해도 일정 저장에 영향 없음)
 - `frontend/src/components/push/{PushPermissionSheet.jsx,.css,PushSettings.jsx,.css}`
@@ -94,14 +94,71 @@
 - `frontend/src/components/schedule/ScheduleModal.jsx` - 생성/수정 시 알림 호출 복원
 - `frontend/src/components/schedule/ScheduleDetail.jsx` - 삭제 시 알림 호출 복원
 - `frontend/index.html` - manifest/apple-touch-icon/theme-color 추가
+- `frontend/src/main.jsx` - `beforeinstallprompt` 억제
 - `frontend/.env.example`, `render.yaml` - `VITE_VAPID_PUBLIC_KEY` 추가
+- `.gitignore`, `package.json`, `server.js` - node_modules 제외, pg 제거, 로컬용 MIME 헤더
+
+### 배포 후 발견·수정한 버그 (같은 날 후속)
+
+실제 배포본과 운영 DB를 확인하는 과정에서 4건을 발견해 수정했다.
+
+**[Critical] VAPID 공개키가 프로덕션 번들에 주입되지 않음**
+- 증상: '알림 받기'를 눌러도 `misconfigured`로 실패. 웹 푸시가 전혀 동작하지 않는 상태로 배포됨
+- 원인: **`render.yaml`이 실제 배포에 적용되지 않는다.** 번들 전수 확인 결과 기존 `VITE_*` 4개는
+  존재하나 `render.yaml`에만 추가한 `VITE_VAPID_PUBLIC_KEY`는 없었다 → 환경변수는 Render 대시보드가 단일 소스
+- 수정: `push.js`에 `VAPID_PUBLIC_KEY_FALLBACK` 추가 (환경변수 우선, 없으면 기본값).
+  공개키는 원래 브라우저로 전달되는 공개 값이고 `sw.js`도 같은 이유로 이미 상수를 갖고 있었다
+- 개인키는 Supabase Secrets에만 유지 (소스에 넣지 않음)
+
+**[Critical] 알림 기록이 한 건도 저장되지 않음 — 기존 버그**
+- 증상: 테스트 중 일정 CRUD 5건이 발생했으나 `notifications` 테이블 기록 0건
+- 원인: `notifications.created_at`이 `NOT NULL`인데 DEFAULT가 없어 INSERT가 `23502`로 실패.
+  설계서에는 `DEFAULT NOW()`로 적혀 있었으나 실제 DB와 어긋나 있었다
+- **카카오 구현 시절부터 동일하게 누락돼 있었다** (테이블 전체 기록 0건). 기록 INSERT를 비치명적으로
+  처리해둔 덕에 발송 자체는 정상 동작했고 기록만 조용히 빠졌다
+- 수정: `created_at` 명시 전달 + DB에 `DEFAULT NOW()` 추가 + 응답에 `logged` 필드 추가(재발 시 즉시 인지)
+
+**[High] 알림 문구의 날짜/시각이 +9시간 어긋남**
+- 증상: DB `10-01 14:00` 조퇴 → 알림 "오후 11:00 조퇴". 당일 일정이 `10. 1. ~ 10. 2.`로 이틀 표시
+- 원인: `schedules.start_at/end_at`은 `timestamp without time zone`으로 저장값 자체가 이미 한국 시간
+  벽시계 값이다. `new Date()`가 런타임 타임존(Edge Function은 UTC)으로 해석한 뒤
+  `toLocaleDateString(.., {timeZone:'Asia/Seoul'})`이 +9시간을 한 번 더 더했다
+- 로컬(KST)에서는 파싱과 포맷이 상쇄돼 정상으로 보이고 **UTC 서버에서만 틀어져** 배포 전에 드러나지 않았다
+- 수정: `Date`를 거치지 않고 문자열에서 연/월/일/시/분을 직접 읽도록 변경(`parseWallClock`).
+  알림 클릭 URL의 month도 문자열 slice로 추출
+
+**[Medium] 매니페스트가 `binary/octet-stream`으로 서빙됨**
+- 정적 호스팅의 MIME 테이블에 `.webmanifest`가 없다. iOS가 매니페스트를 무시하면 홈 화면 추가가
+  standalone으로 뜨지 않아 푸시 수신 조건이 깨진다
+- 수정: 파일명을 `manifest.json`으로 변경 → `application/json`으로 서빙. 대시보드 설정 없이 해결
+
+### 함께 정리한 것
+
+- **`render.yaml` 정정**: `type: web_service` + `startCommand` → 실제 구성인 Static Site 선언으로 수정.
+  단 대시보드가 우선이라 **반영되지는 않으며 문서 역할**이다
+- **`node_modules` 142개 추적 해제**: 루트 `node_modules`(pg + 의존성 15개)가 커밋돼 있어 전체 추적 파일
+  280개 중 절반을 차지했다. `pg`는 Supabase 전환 후 미사용이라 `package.json`에서도 제거.
+  `.gitignore`에 `node_modules/` 추가 (추적 파일 280 → 138)
+
+### 검증 결과 (운영 DB 기준)
+
+| 항목 | 결과 |
+|------|------|
+| 양방향 발송 (Android ↔ iOS) | 정상 |
+| 작성자 본인 제외 | 7건 전부 `self_sent = false` |
+| 발송 성공률 | 7/7 SUCCESS, 0 FAILED |
+| 날짜/시각 정확도 | DB 값과 일치 (`14:00` → `오후 02:00`) |
+| iOS 홈 화면 설치 흐름 | iOS Safari 구독 생성 확인 |
 
 ### 비고
 
 - **도메인 고정 필요**: 웹 푸시 권한은 Origin(스킴+호스트+포트) 단위다. 배포 도메인을 바꾸면 전원의 권한·구독이 무효화되어 재동의가 필요하다. 현재 `jsk-schedule-frontend.onrender.com` 유지로 결정.
-- **VAPID 공개키 3중 관리**: `render.yaml` / `frontend/.env` / `frontend/public/sw.js` 상수. sw.js는 `public/`에 있어 Vite 환경변수 치환을 거치지 않는다.
+- **VAPID 공개키는 소스 2곳에 기본값 보유**: `frontend/src/lib/push.js`의 `VAPID_PUBLIC_KEY_FALLBACK`,
+  `frontend/public/sw.js`의 상수. 키 교체 시 둘 다 수정해야 한다.
+- **환경변수 변경은 Render 대시보드에서**: `render.yaml`은 반영되지 않는다.
 - 카카오 알림톡 관련 코드는 보존하지 않고 제거했다. `users.kakao_access_token` 등 토큰 컬럼은 남아 있으나 알림 용도로는 더 이상 사용하지 않는다.
 - `notification_preferences` 테이블은 채널 변경과 무관하게 기존 구조를 그대로 재사용한다.
+- `users.created_at` / `users.updated_at`도 NOT NULL + DEFAULT 없음 구조다. `kakao-auth`에서 값을 명시해 우회 중.
 
 ---
 
