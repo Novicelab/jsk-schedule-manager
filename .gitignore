@@ -42,6 +42,8 @@ build/
 .playwright-mcp/
 
 # Node
+# 루트(server.js용 express/pg) 포함 모든 위치의 node_modules 제외
+node_modules/
 frontend/package-lock.json
 backend/node_modules/
 backend/package-lock.json
