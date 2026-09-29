@@ -4,6 +4,94 @@
 
 ---
 
+## [2026-09-29] 일정 유형 '업무' 추가 및 기존 업무 → 기타 전환
+
+### 기능 요약
+
+유형 선택을 **휴가 > 업무 > 기타** 3종으로 재구성했다.
+
+| DB 값 | UI 라벨 | 입력 항목 | 제목 |
+|-------|---------|-----------|------|
+| `VACATION` | 휴가 | 휴가 유형, 기간, (조퇴 시각) | 트리거 자동 생성 (`박소여니 휴가`) |
+| `WORK` | 업무 (신규) | 진료실, 업무 종류, 일정 날짜 | 트리거 자동 생성 (`1진료실 오전 근무`) |
+| `ETC` | 기타 (기존 업무) | 제목, 설명, 일정 날짜 | 사용자 직접 입력 |
+
+- **진료실**: 1진료실 / 2진료실 / 3진료실
+- **업무 종류**: 종일 근무, 종일 휴진, 오전 근무, 오전 휴진, 오후 근무, 오후 휴진
+  (선택 박스가 한 줄에 2개씩 배치되므로 왼쪽 열 근무 · 오른쪽 열 휴진으로 세로 그룹핑)
+- 기존 `WORK` 일정 13건(soft delete 4건 포함)을 `ETC`로 이관했다.
+
+### 알림 문구 조정
+
+기존 로직은 유형 라벨(`업무`)만 비교해 변경 내역을 만들었다. 그대로 두면
+진료실이나 업무 종류만 바꾼 수정이 **"변경 없음"으로 발송**되므로 5가지를 조정했다.
+
+1. **유형 라벨에 하위 구분 포함** — `업무` → `1진료실 오전 근무`.
+   라벨 비교로 변경 내역을 산출하는 구조라, 이 한 곳을 고치면
+   진료실만·업무 종류만·둘 다 바뀐 케이스가 모두 감지된다.
+2. **업무 제목 줄 생략** — 제목이 상세 줄과 같은 문자열이라 중복 제거 (휴가와 동일 규칙).
+3. **수정 알림에 식별 줄 추가** — 유형이 그대로고 날짜만 바뀌면 `10. 5. → 10. 8.` 한 줄뿐이라
+   어떤 일정인지 알 수 없었다. 휴가에도 함께 적용.
+4. **조퇴 시각 누출 차단** — `vacation_type`만 보던 조건에 `type === 'VACATION'` 추가.
+5. **`notification_preferences`에 `ETC` 추가** — 기타 알림 on/off가 업무와 분리된다.
+   기존 `WORK` 설정값을 `ETC`로 복사해 사용자 의사를 보존.
+
+발송 대상 규칙(작성자 제외, 설정 OFF 제외, 만료 구독 정리, tag 병합 등)은 유형과 무관하게 동일하다.
+
+### 하위 구분 필드 정합성
+
+유형을 바꿔 저장할 때 이전 유형의 값이 남아 엉뚱한 정보가 표시되던 경로를 3중으로 차단했다.
+(예: 휴가(조퇴) → 업무로 바꾸면 업무 일정에 "오후 02:00 조퇴"가 붙던 문제)
+
+| 계층 | 처리 |
+|------|------|
+| 프론트 | 해당 없는 하위 필드를 명시적으로 `null` 전송 (생략 시 DB에 잔존) |
+| Edge Function | 유형별 정규화 + 필수값 검증 (`update-schedule`) |
+| DB | `schedules_type_fields_check` 제약 |
+
+### DB 변경 (`docs/migrations/add_work_schedule_type.sql`)
+
+- `schedules`: `work_room` VARCHAR(10), `work_type` VARCHAR(20) 컬럼 추가
+- CHECK 제약 4종: `schedules_type_check`, `schedules_type_fields_check`,
+  `schedules_work_room_check`, `schedules_work_type_check`
+- 제목 트리거 `auto_work_title()` 추가 (기존 `auto_vacation_title()`은 손대지 않음)
+- **`schedules_with_user` 뷰 재생성** — 뷰는 `SELECT s.*`로 만들었어도 컬럼 목록이
+  생성 시점에 고정되어 컬럼 추가가 자동 반영되지 않는다. 프론트가 이 뷰로 조회하므로
+  갱신하지 않으면 진료실·업무 종류가 화면에 전달되지 않는다. (`CREATE OR REPLACE`로 권한 유지)
+- `notification_preferences`: `schedule_type` CHECK에 `'ETC'` 허용 + 기존 WORK 설정 복사
+
+### 파일 변경
+
+| 파일 | 내용 |
+|------|------|
+| `docs/migrations/add_work_schedule_type.sql` | 신규 — 컬럼·제약·트리거·뷰·데이터 전환 |
+| `frontend/src/lib/scheduleTypes.js` | 신규 — 유형 어휘 단일 소스, `getScheduleTypeLabel()` |
+| `frontend/src/components/schedule/ScheduleModal.jsx` / `.css` | 유형 3종, 업무 전용 폼, 3열 선택 박스 |
+| `frontend/src/components/schedule/ScheduleDetail.jsx` | 진료실·업무 종류 행, 등록자 표시 조건 |
+| `frontend/src/pages/CalendarPage.jsx` | 색상·범례·셀 렌더링·필드 매핑 |
+| `frontend/src/styles/global.css` | 업무(파랑 `#2563eb`) / 기타(그레이 `#bdbdbd`) 배지·셀 |
+| `supabase/functions/_shared/notification-message.ts` | 알림 문구 5건 조정 |
+| `supabase/functions/update-schedule/index.ts` | 유형·하위 구분 검증 및 정규화 |
+| `supabase/functions/send-notification/index.ts` | 조회 컬럼에 `work_room`, `work_type` 추가 |
+| `supabase/functions/kakao-auth/index.ts` | 신규 가입자 알림 설정 기본값에 `ETC` 포함 |
+
+### 검증
+
+| 항목 | 결과 |
+|------|------|
+| 제목 생성 18조합 (진료실 3 x 업무 종류 6) | 전부 정확 |
+| 제약 위반 6케이스 (진료실 누락·잘못된 값·유형 오염) | 전부 차단 |
+| 휴가 제목 트리거 회귀 4종 | 정상 (`박소여니 오전 반차` 등) |
+| 알림 문구 20케이스 (Deno 실행) | 정상 |
+| 프론트 빌드 / Edge Function 타입체크 / 콘솔 에러 | 통과 / 통과 / 0건 |
+
+### 알려진 이슈 (미조정)
+
+조퇴 알림이 `조퇴 · 2026. 10. 5. 오후 02:00 조퇴`로 "조퇴"를 두 번 출력한다.
+기존 동작이며 휴가 영역이라 이번 범위에서 제외했다.
+
+---
+
 ## [2026-09-23] 웹 푸시 알림 도입 (카카오 알림톡 대체)
 
 ### 배경

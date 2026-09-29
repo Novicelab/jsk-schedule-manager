@@ -3,7 +3,8 @@ import dayjs from 'dayjs'
 import { supabase } from '../../lib/supabase'
 import { notifyScheduleChange } from '../../lib/notify'
 import {
-  SCHEDULE_TYPE_LABEL,
+  getScheduleTypeLabel,
+  resolveScheduleType,
   VACATION_TYPE_LABEL,
   WORK_ROOM_LABEL,
   WORK_TYPE_LABEL,
@@ -116,8 +117,8 @@ function ScheduleDetail({ schedule, onEdit, onDeleted, onClose }) {
 
           <div className="detail-row">
             <span className="detail-label">유형</span>
-            <span className={`detail-value type-badge type-${schedule.type?.toLowerCase()}`}>
-              {SCHEDULE_TYPE_LABEL[schedule.type] || schedule.type}
+            <span className={`detail-value type-badge type-${resolveScheduleType(schedule.type).toLowerCase()}`}>
+              {getScheduleTypeLabel(schedule.type)}
               {schedule.type === 'VACATION' && schedule.vacationType && (
                 <> ({VACATION_TYPE_LABEL[schedule.vacationType] || schedule.vacationType})</>
               )}

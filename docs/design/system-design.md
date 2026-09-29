@@ -419,7 +419,10 @@
 | id | BIGINT | PK, GENERATED ALWAYS AS IDENTITY | 일정 고유 식별자 |
 | title | VARCHAR(100) | NOT NULL | 일정 제목 |
 | description | TEXT | NULL | 일정 상세 설명 |
-| type | ENUM('VACATION','TEAM') | NOT NULL | 일정 유형 |
+| type | VARCHAR(10) | NOT NULL, CHECK IN ('VACATION','WORK','ETC') | 일정 유형 (휴가 / 업무 / 기타) |
+| vacation_type | TEXT | NULL, CHECK IN ('FULL','HALF_AM','HALF_PM','EARLY_LEAVE') | 휴가 하위 구분 (type='VACATION'일 때만) |
+| work_room | VARCHAR(10) | NULL, CHECK IN ('ROOM_1','ROOM_2','ROOM_3') | 진료실 (type='WORK'일 때만) |
+| work_type | VARCHAR(20) | NULL, CHECK IN ('FULL_DAY','OFF_FULL_DAY','AM','OFF_AM','PM','OFF_PM') | 업무 종류 (type='WORK'일 때만) |
 | start_at | TIMESTAMPTZ | NOT NULL | 시작 일시 |
 | end_at | TIMESTAMPTZ | NOT NULL | 종료 일시 |
 | all_day | BOOLEAN | NOT NULL, DEFAULT FALSE | 종일 일정 여부 |
@@ -430,6 +433,13 @@
 | deleted_at | TIMESTAMPTZ | NULL | 소프트 딜리트 일시 |
 
 - CHECK 제약: `end_at > start_at`
+- CHECK 제약 `schedules_type_fields_check`: 유형별로 해당 없는 하위 구분 컬럼은 NULL이어야 한다.
+  유형을 바꿔 저장할 때 이전 유형의 값이 남아 알림 문구·상세 화면에 엉뚱한 정보가 섞이는 것을 막는다.
+  - `VACATION` → `work_room`, `work_type` NULL
+  - `WORK` → `vacation_type` NULL, `work_room`·`work_type` NOT NULL
+  - `ETC` → 세 컬럼 모두 NULL
+- 제목 자동 생성 트리거: `auto_vacation_title()`(VACATION), `auto_work_title()`(WORK). ETC는 사용자 입력 제목을 그대로 둔다.
+- 조회용 뷰 `schedules_with_user`는 컬럼 목록이 생성 시점에 고정되므로, 컬럼 추가 시 반드시 함께 재생성해야 한다.
 - INDEX: `(team_id, start_at, end_at)` — 팀별 기간 조회 최적화
 - INDEX: `(deleted_at)` — 소프트 딜리트 필터링
 

@@ -61,6 +61,18 @@ export const DEFAULT_WORK_ROOM = WORK_ROOMS[0].value
 export const DEFAULT_WORK_TYPE = WORK_TYPES[0].value
 
 /**
+ * 모르는 유형 값을 '기타'로 수렴시킨다.
+ *
+ * 라벨 맵을 직접 쓰면서 `|| schedule.type` 같은 폴백을 두면 'ETC' 같은 코드값이
+ * 그대로 화면에 노출된다 (실제로 유형 추가 배포 직전까지 상세 화면에 'ETC' 가 찍혔다).
+ * 기타는 분류가 애매한 일정을 담는 유형이라 미지의 값을 받아 두기에도 맞다.
+ */
+export const resolveScheduleType = (type) => (SCHEDULE_TYPE_LABEL[type] ? type : 'ETC')
+
+/** 화면에 표시할 유형 라벨. 코드값이 그대로 나가는 경우가 없다. */
+export const getScheduleTypeLabel = (type) => SCHEDULE_TYPE_LABEL[resolveScheduleType(type)]
+
+/**
  * 업무 일정 제목. DB 트리거 auto_work_title() 이 저장 시 같은 규칙으로 덮어쓰므로
  * 트리거가 최종 권한이며, 이 함수는 마이그레이션 적용 전에도 제목이 비지 않게 하는 보조값이다.
  */
