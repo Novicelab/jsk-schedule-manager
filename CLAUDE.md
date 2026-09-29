@@ -37,6 +37,7 @@
 ### 알림 정책
 - 알림 채널은 **웹 푸시(Web Push API + VAPID)** 를 기준으로 한다. (카카오 알림톡은 미채택)
 - 일정 등록/수정/삭제 시 발송하며, **작성자 본인은 제외**한다. 제외 판단은 클라이언트 입력이 아니라 서버가 JWT에서 도출한 사용자로 확정한다.
+- 실제 발송은 **운영 도메인 Origin 요청만** 허용한다. 로컬·preview·LAN 등 비운영 Origin은 발송 없이 문구만 반환하는 **dry-run**으로 처리하며, 결과는 브라우저 콘솔에 페이로드로 출력된다. 로컬에서 실제 수신까지 확인할 때만 `VITE_PUSH_FORCE_SEND=true` 를 사용한다.
 - 알림 권한은 **Origin 단위**로 부여된다. 스킴·호스트·포트가 하나라도 다르면 별개이며, 타 서비스와 공유되지 않는다.
   - **배포 도메인을 변경하면 전원의 권한·구독이 무효화**되므로 도메인 변경은 신중히 결정한다.
 - 구독은 **(사용자 x 기기 x 브라우저)마다 별도**로 생성되므로 `push_subscriptions` 테이블에 1:N으로 저장한다.
@@ -233,6 +234,8 @@ VITE_KAKAO_REDIRECT_URI=http://localhost:5173/auth/callback
 VITE_SUPABASE_URL=https://qphhpfolrbsyiyoevaoe.supabase.co
 VITE_SUPABASE_ANON_KEY=[Supabase Anon Key]
 VITE_VAPID_PUBLIC_KEY=[VAPID 공개키 - 공개 가능]
+# 로컬에서 실제 푸시 발송까지 확인할 때만 (기본: 미설정 = dry-run)
+# VITE_PUSH_FORCE_SEND=true
 ```
 
 템플릿: `frontend/.env.example` 참고

@@ -10,6 +10,19 @@ import {
 
 const ALLOWED_ORIGINS = [APP_URL, 'http://localhost:5173']
 
+/**
+ * 실제 푸시를 내보낼 수 있는 유일한 출처인지 판별한다.
+ *
+ * 로컬 개발 서버도 같은 Supabase 프로젝트를 보기 때문에, 막지 않으면 localhost 에서
+ * 만든 테스트 일정이 실사용자 기기로 그대로 발송된다. 그래서 "운영 도메인에서 온
+ * 요청만 발송" 으로 좁히고 나머지는 전부 dry-run 으로 돌린다.
+ * (localhost, 127.0.0.1, LAN IP, preview 빌드, curl 이 한꺼번에 걸린다)
+ *
+ * Origin 은 브라우저가 채우는 값이라 페이지 스크립트가 바꿀 수 없다.
+ * 프론트는 함수와 도메인이 달라 항상 cross-origin 이므로 이 헤더는 언제나 존재한다.
+ */
+const isProductionOrigin = (req: Request) => req.headers.get('origin') === APP_URL
+
 const getCorsHeaders = (req: Request) => {
   const origin = req.headers.get('origin') || ''
   const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]
@@ -39,7 +52,7 @@ serve(async (req) => {
       return json(req, { error: '인증 토큰이 필요합니다.' }, 401)
     }
 
-    const { scheduleId, actionType, oldData } = await req.json()
+    const { scheduleId, actionType, oldData, forceSend } = await req.json()
 
     if (!scheduleId || !actionType) {
       return json(req, { error: '필수 필드가 누락되었습니다.' }, 400)
@@ -106,7 +119,34 @@ serve(async (req) => {
       return json(req, { error: '일정을 찾을 수 없습니다.' }, 404)
     }
 
-    // 2. 발송 대상 구독 조회 — 작성자 본인은 제외
+    // 2. 알림 문구 생성 — 발송 대상 조회보다 먼저 만든다.
+    //    dry-run 일 때 대상이 없더라도 문구는 확인할 수 있어야 하기 때문이다.
+    const payload = buildPayload(schedule, actionType, actor.name || '알 수 없음', oldData)
+
+    // 운영 도메인이 아니면 발송하지 않는다. forceSend 는 비운영 요청에서만 인정하므로
+    // 운영 동작에는 영향을 줄 수 없다 (로컬에서 실제 수신까지 확인할 때만 사용).
+    const dryRun = !isProductionOrigin(req) && forceSend !== true
+
+    const dryRunResponse = (wouldSend: number) => {
+      console.log('[DRY-RUN] 비운영 요청이라 발송하지 않음:', {
+        origin: req.headers.get('origin'),
+        scheduleId,
+        actionType,
+        wouldSend,
+        payload,
+      })
+      return json(req, {
+        dryRun: true,
+        payload,
+        wouldSend,
+        sent: 0,
+        failed: 0,
+        removed: 0,
+        logged: false,
+      })
+    }
+
+    // 3. 발송 대상 구독 조회 — 작성자 본인은 제외
     const { data: subscriptions, error: subError } = await supabase
       .from('push_subscriptions')
       .select('id, user_id, endpoint, p256dh, auth')
@@ -118,10 +158,11 @@ serve(async (req) => {
     }
 
     if (!subscriptions || subscriptions.length === 0) {
+      if (dryRun) return dryRunResponse(0)
       return json(req, { sent: 0, failed: 0, removed: 0, message: '알림 대상이 없습니다.' })
     }
 
-    // 3. 알림 설정 일괄 조회 (행이 없으면 기본값 ON)
+    // 4. 알림 설정 일괄 조회 (행이 없으면 기본값 ON)
     const targetUserIds = [...new Set(subscriptions.map((s) => s.user_id))]
     const { data: prefs } = await supabase
       .from('notification_preferences')
@@ -134,8 +175,12 @@ serve(async (req) => {
       (prefs || []).filter((p) => p.enabled === false).map((p) => p.user_id),
     )
 
-    // 4. 발송
-    const payload = buildPayload(schedule, actionType, actor.name || '알 수 없음', oldData)
+    const targets = subscriptions.filter((s) => !disabledUsers.has(s.user_id))
+
+    // 5. 여기서부터가 실제 발송이다. 비운영 요청은 문구와 대상 수만 돌려주고 끝낸다.
+    if (dryRun) return dryRunResponse(targets.length)
+
+    // 6. 발송
     const payloadText = JSON.stringify(payload)
 
     let sent = 0
@@ -145,17 +190,15 @@ serve(async (req) => {
     const failedUsers = new Map<number, string>()
 
     const results = await Promise.all(
-      subscriptions
-        .filter((s) => !disabledUsers.has(s.user_id))
-        .map(async (row) => {
-          const subscription: PushSubscription = {
-            endpoint: row.endpoint,
-            p256dh: row.p256dh,
-            auth: row.auth,
-          }
-          const result = await sendWebPush(subscription, payloadText, vapidKeys)
-          return { row, result }
-        }),
+      targets.map(async (row) => {
+        const subscription: PushSubscription = {
+          endpoint: row.endpoint,
+          p256dh: row.p256dh,
+          auth: row.auth,
+        }
+        const result = await sendWebPush(subscription, payloadText, vapidKeys)
+        return { row, result }
+      }),
     )
 
     for (const { row, result } of results) {
@@ -173,7 +216,7 @@ serve(async (req) => {
       }
     }
 
-    // 5. 만료된 구독 정리 — 방치하면 매번 실패 로그만 쌓인다
+    // 7. 만료된 구독 정리 — 방치하면 매번 실패 로그만 쌓인다
     if (expiredIds.length > 0) {
       const { error: cleanupError } = await supabase
         .from('push_subscriptions')
@@ -186,7 +229,7 @@ serve(async (req) => {
       }
     }
 
-    // 6. 알림 기록 (사용자 단위 1건) — 실패해도 발송 결과에 영향을 주지 않는다
+    // 8. 알림 기록 (사용자 단위 1건) — 실패해도 발송 결과에 영향을 주지 않는다
     //
     // created_at 은 NOT NULL 인데 DB에 DEFAULT 가 없어 반드시 명시해야 한다.
     // (users 테이블도 같은 구조라 kakao-auth 에서 동일하게 명시하고 있다)
