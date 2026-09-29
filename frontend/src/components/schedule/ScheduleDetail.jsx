@@ -2,20 +2,14 @@ import { useState } from 'react'
 import dayjs from 'dayjs'
 import { supabase } from '../../lib/supabase'
 import { notifyScheduleChange } from '../../lib/notify'
+import {
+  SCHEDULE_TYPE_LABEL,
+  VACATION_TYPE_LABEL,
+  WORK_ROOM_LABEL,
+  WORK_TYPE_LABEL,
+} from '../../lib/scheduleTypes'
 import LoadingPopup from '../LoadingPopup'
 import './ScheduleDetail.css'
-
-const TYPE_LABEL = {
-  VACATION: '휴가',
-  WORK: '업무',
-}
-
-const VACATION_TYPE_LABEL = {
-  FULL: '일반',
-  HALF_AM: '오전 반차',
-  HALF_PM: '오후 반차',
-  EARLY_LEAVE: '조퇴',
-}
 
 function ScheduleDetail({ schedule, onEdit, onDeleted, onClose }) {
   const [deleting, setDeleting] = useState(false)
@@ -123,12 +117,29 @@ function ScheduleDetail({ schedule, onEdit, onDeleted, onClose }) {
           <div className="detail-row">
             <span className="detail-label">유형</span>
             <span className={`detail-value type-badge type-${schedule.type?.toLowerCase()}`}>
-              {TYPE_LABEL[schedule.type] || schedule.type}
+              {SCHEDULE_TYPE_LABEL[schedule.type] || schedule.type}
               {schedule.type === 'VACATION' && schedule.vacationType && (
                 <> ({VACATION_TYPE_LABEL[schedule.vacationType] || schedule.vacationType})</>
               )}
             </span>
           </div>
+
+          {schedule.type === 'WORK' && (
+            <>
+              <div className="detail-row">
+                <span className="detail-label">진료실</span>
+                <span className="detail-value">
+                  {WORK_ROOM_LABEL[schedule.workRoom] || '-'}
+                </span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-label">업무 종류</span>
+                <span className="detail-value">
+                  {WORK_TYPE_LABEL[schedule.workType] || '-'}
+                </span>
+              </div>
+            </>
+          )}
 
           <div className="detail-row">
             <span className="detail-label">기간</span>
@@ -142,7 +153,7 @@ function ScheduleDetail({ schedule, onEdit, onDeleted, onClose }) {
             </span>
           </div>
 
-          {schedule.vacationType === 'EARLY_LEAVE' && schedule.endAt && (
+          {schedule.type === 'VACATION' && schedule.vacationType === 'EARLY_LEAVE' && schedule.endAt && (
             <div className="detail-row">
               <span className="detail-label">조퇴 시간</span>
               <span className="detail-value">
@@ -158,7 +169,8 @@ function ScheduleDetail({ schedule, onEdit, onDeleted, onClose }) {
             </div>
           )}
 
-          {schedule.type === 'WORK' && schedule.createdByName && (
+          {/* 휴가는 제목에 이미 소유자 이름이 들어가므로 등록자 줄을 생략한다 */}
+          {schedule.type !== 'VACATION' && schedule.createdByName && (
             <div className="detail-row">
               <span className="detail-label">등록자</span>
               <span className="detail-value">{schedule.createdByName}</span>

@@ -10,6 +10,11 @@ import ScheduleDetail from '../components/schedule/ScheduleDetail'
 import PushPermissionSheet from '../components/push/PushPermissionSheet'
 import { supabase } from '../lib/supabase'
 import {
+  VACATION_TYPE_LABEL,
+  WORK_ROOM_LABEL,
+  WORK_TYPE_LABEL,
+} from '../lib/scheduleTypes'
+import {
   getPermission,
   needsIOSInstall,
   isPromptSnoozed,
@@ -25,7 +30,8 @@ const SCHEDULE_COLORS = {
   VACATION_HALF_AM: '#82d9a5',      // 연한 연두 (오전 반차)
   VACATION_HALF_PM: '#82d9a5',      // 연한 연두 (오후 반차)
   VACATION_EARLY_LEAVE: '#f59e0b',  // amber (조퇴)
-  WORK: '#bdbdbd',                  // 연한 그레이 (업무)
+  WORK: '#2563eb',                  // 파랑 (업무 - 진료실)
+  ETC: '#bdbdbd',                   // 연한 그레이 (기타)
 }
 
 function CalendarPage() {
@@ -66,23 +72,16 @@ function CalendarPage() {
       const key = `VACATION_${schedule.vacation_type || 'FULL'}`
       return SCHEDULE_COLORS[key] || SCHEDULE_COLORS.VACATION_FULL
     }
-    return SCHEDULE_COLORS[schedule.type] || '#7f8c8d'
-  }
-
-  // 휴가 타입 라벨
-  const VACATION_TYPE_LABEL = {
-    FULL: '휴가',
-    HALF_AM: '오전 반차',
-    HALF_PM: '오후 반차',
-    EARLY_LEAVE: '조퇴',
+    return SCHEDULE_COLORS[schedule.type] || SCHEDULE_COLORS.ETC
   }
 
   // 이벤트 콘텐츠 렌더링 (모바일 최적화)
   const renderEventContent = (info) => {
-    const { type, vacationType, createdByName } = info.event.extendedProps
+    const { type, vacationType, workRoom, workType, createdByName } = info.event.extendedProps
 
     if (type === 'VACATION') {
-      const vacLabel = VACATION_TYPE_LABEL[vacationType] || '휴가'
+      // 캘린더 셀은 좁아 '일반'보다 '휴가'가 알아보기 쉽다
+      const vacLabel = vacationType === 'FULL' ? '휴가' : VACATION_TYPE_LABEL[vacationType] || '휴가'
       const vacationTypeClass = `vacation-${vacationType || 'FULL'}`
       return (
         <div className={`mobile-event-content vacation-event ${vacationTypeClass}`}>
@@ -92,9 +91,26 @@ function CalendarPage() {
       )
     }
 
-    // WORK 타입
+    if (type === 'WORK') {
+      // 하위 구분이 없는 업무 일정(마이그레이션 적용 전 데이터)은 제목을 그대로 보여준다
+      if (!WORK_ROOM_LABEL[workRoom] || !WORK_TYPE_LABEL[workType]) {
+        return (
+          <div className="mobile-event-content work-event">
+            <div className="event-title">{info.event.title}</div>
+          </div>
+        )
+      }
+      return (
+        <div className="mobile-event-content work-event">
+          <div className="event-name">{WORK_ROOM_LABEL[workRoom]}</div>
+          <div className="event-type">{WORK_TYPE_LABEL[workType]}</div>
+        </div>
+      )
+    }
+
+    // ETC (기타) - 사용자가 입력한 제목 그대로
     return (
-      <div className="mobile-event-content work-event">
+      <div className="mobile-event-content etc-event">
         <div className="event-title">{info.event.title}</div>
       </div>
     )
@@ -247,6 +263,8 @@ function CalendarPage() {
           extendedProps: {
             type: s.type,
             vacationType: s.vacation_type,
+            workRoom: s.work_room,
+            workType: s.work_type,
             description: s.description,
             createdBy: s.created_by,
             createdByName: s.created_by_name,
@@ -343,6 +361,8 @@ function CalendarPage() {
         allDay: data.all_day,
         type: data.type,
         vacationType: data.vacation_type,
+        workRoom: data.work_room,
+        workType: data.work_type,
         description: data.description,
         createdBy: data.created_by,
         createdByName: data.created_by_name,
@@ -414,7 +434,7 @@ function CalendarPage() {
   // 바텀시트 이벤트 기간 라벨 생성
   const getEventPeriodLabel = (event) => {
     const props = event.extendedProps || {}
-    if (props.vacationType === 'EARLY_LEAVE' && props.rawEndAt) {
+    if (props.type === 'VACATION' && props.vacationType === 'EARLY_LEAVE' && props.rawEndAt) {
       return dayjs(props.rawEndAt).format('HH:mm') + ' 조퇴'
     }
     const startStr = dayjs(event.start).format('M/D')
@@ -457,6 +477,13 @@ function CalendarPage() {
                 style={{ backgroundColor: SCHEDULE_COLORS.WORK }}
               />
               업무
+            </span>
+            <span className="legend-item">
+              <span
+                className="legend-dot"
+                style={{ backgroundColor: SCHEDULE_COLORS.ETC }}
+              />
+              기타
             </span>
           </div>
         </div>

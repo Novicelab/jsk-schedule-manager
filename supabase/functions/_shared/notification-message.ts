@@ -16,14 +16,51 @@ const VACATION_LABEL: Record<string, string> = {
   EARLY_LEAVE: '조퇴',
 }
 
+/* 프론트 frontend/src/lib/scheduleTypes.js 와 같은 어휘를 유지해야 한다 (Deno 라 import 불가) */
+const WORK_ROOM_LABEL: Record<string, string> = {
+  ROOM_1: '1진료실',
+  ROOM_2: '2진료실',
+  ROOM_3: '3진료실',
+}
+
+const WORK_TYPE_LABEL: Record<string, string> = {
+  FULL_DAY: '종일 근무',
+  OFF_FULL_DAY: '종일 휴진',
+  AM: '오전 근무',
+  OFF_AM: '오전 휴진',
+  PM: '오후 근무',
+  OFF_PM: '오후 휴진',
+}
+
 export const ACTION_LABEL: Record<string, string> = {
   CREATED: '등록',
   UPDATED: '수정',
   DELETED: '삭제',
 }
 
-const getTypeLabel = (type: string, vacationType?: string | null) =>
-  type === 'VACATION' ? VACATION_LABEL[vacationType || 'FULL'] || '휴가' : '업무'
+interface TypeParts {
+  type?: string | null
+  vacationType?: string | null
+  workRoom?: string | null
+  workType?: string | null
+}
+
+/**
+ * 알림에 표시할 유형 라벨. 하위 구분까지 라벨에 포함한다.
+ *
+ * 수정 알림의 변경 내역을 이 라벨끼리 비교해서 산출하므로,
+ * 하위 구분을 빼면 '진료실만 변경' / '업무 종류만 변경' 이
+ * "변경 없음" 으로 표시된다.
+ */
+const getTypeLabel = (p: TypeParts): string => {
+  if (p.type === 'VACATION') return VACATION_LABEL[p.vacationType || 'FULL'] || '휴가'
+  if (p.type === 'WORK') {
+    const room = WORK_ROOM_LABEL[p.workRoom || '']
+    const kind = WORK_TYPE_LABEL[p.workType || '']
+    return room && kind ? `${room} ${kind}` : '업무'
+  }
+  return '기타'
+}
 
 /**
  * 날짜/시각 포맷.
@@ -93,6 +130,8 @@ export interface ScheduleRow {
   title: string
   type: string
   vacation_type: string | null
+  work_room: string | null
+  work_type: string | null
   start_at: string
   end_at: string
   all_day: boolean
@@ -101,6 +140,8 @@ export interface ScheduleRow {
 export interface OldData {
   type?: string
   vacationType?: string | null
+  workRoom?: string | null
+  workType?: string | null
   startAt?: string
   endAt?: string
 }
@@ -113,22 +154,35 @@ export function buildPayload(
   oldData?: OldData,
 ) {
   const actionLabel = ACTION_LABEL[actionType] || '변경'
-  const typeLabel = getTypeLabel(schedule.type, schedule.vacation_type)
+  const typeLabel = getTypeLabel({
+    type: schedule.type,
+    vacationType: schedule.vacation_type,
+    workRoom: schedule.work_room,
+    workType: schedule.work_type,
+  })
   const newDateStr = formatDateRange(schedule.start_at, schedule.end_at)
 
-  // VACATION 제목은 DB 트리거가 '{일정 소유자 이름} {유형}' 으로 자동 생성한다.
-  // 수행자와 소유자가 같으면 제목 줄이 1행(수행자)·상세줄(유형)과 완전히 겹치므로 생략한다.
+  // 제목 줄은 상세 줄이 담지 못하는 정보가 있을 때만 넣는다.
   //
-  // 단, 관리자가 타인의 일정을 수정/삭제한 경우에는 1행의 수행자와 소유자가 다르다.
-  // 이때 제목을 지우면 "누구의 휴가인지"가 사라지므로 그대로 남긴다.
-  // WORK 제목은 사용자가 직접 입력한 내용이라 항상 유지한다.
-  const isOwnVacationTitle =
-    schedule.type === 'VACATION' && schedule.title.startsWith(`${actorName} `)
+  // - VACATION: 제목이 '{소유자 이름} {유형}' 이라 수행자와 소유자가 같으면
+  //   1행(수행자)·상세줄(유형)과 완전히 겹친다. 반면 관리자가 타인의 일정을
+  //   바꾼 경우에는 "누구의 휴가인지"가 제목에만 있으므로 남긴다.
+  // - WORK: 제목이 '{진료실} {업무종류}' 이고 상세 줄의 유형 라벨과 같은 문자열이다.
+  //   (트리거 적용 전 만들어진 옛 제목이면 달라지므로 그때는 남는다)
+  // - ETC: 제목이 사용자 입력이라 항상 유지한다.
+  const isRedundantTitle =
+    (schedule.type === 'VACATION' && schedule.title.startsWith(`${actorName} `)) ||
+    (schedule.type === 'WORK' && schedule.title === typeLabel)
 
-  const lines: string[] = isOwnVacationTitle ? [] : [schedule.title]
+  const lines: string[] = isRedundantTitle ? [] : [schedule.title]
 
   if (actionType === 'UPDATED' && oldData) {
-    const oldTypeLabel = getTypeLabel(oldData.type || schedule.type, oldData.vacationType)
+    const oldTypeLabel = getTypeLabel({
+      type: oldData.type || schedule.type,
+      vacationType: oldData.vacationType,
+      workRoom: oldData.workRoom,
+      workType: oldData.workType,
+    })
     const oldDateStr =
       oldData.startAt && oldData.endAt ? formatDateRange(oldData.startAt, oldData.endAt) : null
 
@@ -136,14 +190,21 @@ export function buildPayload(
     if (oldTypeLabel !== typeLabel) changes.push(`${oldTypeLabel} → ${typeLabel}`)
     if (oldDateStr && oldDateStr !== newDateStr) changes.push(`${oldDateStr} → ${newDateStr}`)
 
-    lines.push(changes.length > 0 ? changes.join('\n') : `${typeLabel} · ${newDateStr}`)
+    if (changes.length === 0) {
+      lines.push(`${typeLabel} · ${newDateStr}`)
+    } else {
+      // 유형·하위구분이 그대로면 변경 줄(날짜 → 날짜)만으로는 어떤 일정인지 알 수 없다.
+      // 제목 줄이 이미 있으면(ETC) 그 줄이 식별자 역할을 하므로 덧붙이지 않는다.
+      if (oldTypeLabel === typeLabel && lines.length === 0) lines.push(typeLabel)
+      lines.push(...changes)
+    }
   } else if (actionType === 'DELETED') {
     lines.push(`${typeLabel} · ${newDateStr} 삭제됨`)
   } else {
     // '하루 종일'은 붙이지 않는다. 반차/여러 날 일정에 붙으면 모순이고,
     // 하루짜리 일정에도 날짜만으로 충분해 정보가 없다.
     let detail = `${typeLabel} · ${newDateStr}`
-    if (schedule.vacation_type === 'EARLY_LEAVE' && schedule.end_at) {
+    if (schedule.type === 'VACATION' && schedule.vacation_type === 'EARLY_LEAVE' && schedule.end_at) {
       detail += ` ${formatTime(schedule.end_at)} 조퇴`
     } else if (!schedule.all_day) {
       detail += ` ${formatTime(schedule.start_at)} ~ ${formatTime(schedule.end_at)}`

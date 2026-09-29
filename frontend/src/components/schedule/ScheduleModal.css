@@ -175,6 +175,13 @@
   user-select: none;
 }
 
+/* 3개짜리 선택 그룹(유형 선택 / 진료실)은 한 줄에 3개로 배치 */
+.type-box-group-3 .type-box {
+  flex: 1 1 calc(33.333% - 7px);
+  max-width: calc(33.333% - 7px);
+  padding: 14px 8px;
+}
+
 .type-box:hover {
   border-color: #9c27b0;
   background-color: #f9f0fc;

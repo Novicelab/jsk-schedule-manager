@@ -4,20 +4,17 @@ import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 import { supabase } from '../../lib/supabase'
 import { notifyScheduleChange } from '../../lib/notify'
+import {
+  SCHEDULE_TYPES,
+  VACATION_TYPES,
+  WORK_ROOMS,
+  WORK_TYPES,
+  DEFAULT_WORK_ROOM,
+  DEFAULT_WORK_TYPE,
+  buildWorkTitle,
+} from '../../lib/scheduleTypes'
 import LoadingPopup from '../LoadingPopup'
 import './ScheduleModal.css'
-
-const SCHEDULE_TYPES = [
-  { value: 'VACATION', label: '휴가' },
-  { value: 'WORK', label: '업무' },
-]
-
-const VACATION_TYPES = [
-  { value: 'FULL', label: '일반' },
-  { value: 'HALF_AM', label: '오전 반차' },
-  { value: 'HALF_PM', label: '오후 반차' },
-  { value: 'EARLY_LEAVE', label: '조퇴' },
-]
 
 function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
   const isEdit = !!schedule
@@ -34,6 +31,8 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
     vacationType: 'FULL',
     earlyLeaveHour: 14,
     earlyLeaveMinute: 0,
+    workRoom: DEFAULT_WORK_ROOM,
+    workType: DEFAULT_WORK_TYPE,
   })
   const [errors, setErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
@@ -55,14 +54,17 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
       }
 
       setForm({
-        type: schedule.type || 'WORK',
-        title: schedule.type === 'WORK' ? (schedule.title || '') : '',
+        type: schedule.type || 'ETC',
+        // 제목을 직접 입력하는 유형은 '기타'뿐이다 (휴가/업무 제목은 자동 생성)
+        title: schedule.type === 'ETC' ? (schedule.title || '') : '',
         description: schedule.description || '',
         startDate: startAtDayjs.toDate(),
         endDate: endAtDayjs.toDate(),
         vacationType: schedule.vacationType || 'FULL',
         earlyLeaveHour,
         earlyLeaveMinute,
+        workRoom: schedule.workRoom || DEFAULT_WORK_ROOM,
+        workType: schedule.workType || DEFAULT_WORK_TYPE,
       })
     }
   }, [isEdit, schedule])
@@ -123,11 +125,20 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
       newErrors.endDate = '종료 날짜는 시작 날짜 이후여야 합니다.'
     }
 
-    if (form.type === 'WORK') {
+    if (form.type === 'ETC') {
       if (!form.title.trim()) {
         newErrors.title = '제목은 필수입니다.'
       } else if (form.title.trim().length > 100) {
         newErrors.title = '제목은 100자 이내로 입력해주세요.'
+      }
+    }
+
+    if (form.type === 'WORK') {
+      if (!form.workRoom) {
+        newErrors.workRoom = '진료실은 필수입니다.'
+      }
+      if (!form.workType) {
+        newErrors.workType = '업무 종류는 필수입니다.'
       }
     }
 
@@ -146,30 +157,31 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
     setApiError(null)
 
     try {
-      let start_at, end_at, all_day, title, vacation_type
+      const startDay = dayjs(form.startDate).format('YYYY-MM-DD')
+      const endDay = dayjs(form.endDate).format('YYYY-MM-DD')
 
-      if (form.type === 'WORK') {
-        start_at = dayjs(form.startDate).format('YYYY-MM-DD') + 'T00:00:00'
-        end_at = dayjs(form.endDate).format('YYYY-MM-DD') + 'T23:59:59'
-        all_day = true
-        title = form.title.trim()
-        vacation_type = null
-      } else {
-        start_at = dayjs(form.startDate).format('YYYY-MM-DD') + 'T00:00:00'
+      let end_at, title
+
+      if (form.type === 'VACATION') {
         if (form.vacationType === 'EARLY_LEAVE') {
           // 조퇴: end_at에 조퇴 시간 저장
           const hh = String(form.earlyLeaveHour).padStart(2, '0')
           const mm = String(form.earlyLeaveMinute).padStart(2, '0')
-          end_at = dayjs(form.startDate).format('YYYY-MM-DD') + `T${hh}:${mm}:00`
+          end_at = `${startDay}T${hh}:${mm}:00`
         } else if (form.vacationType === 'FULL') {
-          end_at = dayjs(form.endDate).format('YYYY-MM-DD') + 'T23:59:59'
+          end_at = `${endDay}T23:59:59`
         } else {
           // 반차: startDate와 endDate가 같음
-          end_at = dayjs(form.startDate).format('YYYY-MM-DD') + 'T23:59:59'
+          end_at = `${startDay}T23:59:59`
         }
-        all_day = true
         title = '' // DB 트리거가 vacation_type 기반으로 자동 생성
-        vacation_type = form.vacationType
+      } else {
+        end_at = `${endDay}T23:59:59`
+        // 업무 제목은 DB 트리거 auto_work_title() 이 확정하지만,
+        // 트리거 미적용 환경에서도 제목이 비지 않도록 같은 규칙으로 함께 보낸다
+        title = form.type === 'WORK'
+          ? buildWorkTitle(form.workRoom, form.workType)
+          : form.title.trim()
       }
 
       // 세션 취득: Authorization 헤더 명시적 전달 (Edge Function 토큰 검증용)
@@ -179,16 +191,20 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
       }
 
       // Edge Function을 통한 서버사이드 검증 (created_by는 서버에서 auth_id 기반으로 설정)
+      //
+      // 하위 구분 필드는 해당 없는 유형이면 명시적으로 null 을 보낸다.
+      // 생략하면 유형을 바꿔 저장할 때 이전 유형의 값이 DB에 남아
+      // 알림 문구와 상세 화면에 엉뚱한 정보가 섞인다.
       const schedulePayload = {
         title,
-        description: form.type === 'WORK' ? (form.description.trim() || null) : null,
+        description: form.type === 'ETC' ? (form.description.trim() || null) : null,
         type: form.type,
-        start_at,
+        start_at: `${startDay}T00:00:00`,
         end_at,
-        all_day,
-      }
-      if (form.type === 'VACATION') {
-        schedulePayload.vacation_type = vacation_type
+        all_day: true,
+        vacation_type: form.type === 'VACATION' ? form.vacationType : null,
+        work_room: form.type === 'WORK' ? form.workRoom : null,
+        work_type: form.type === 'WORK' ? form.workType : null,
       }
 
       const { data: result, error } = await supabase.functions.invoke('update-schedule', {
@@ -215,6 +231,8 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
             ? {
                 type: schedule.type,
                 vacationType: schedule.vacationType,
+                workRoom: schedule.workRoom,
+                workType: schedule.workType,
                 startAt: schedule.startAt,
                 endAt: schedule.endAt,
               }
@@ -264,7 +282,7 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
             <label className="form-label">
               유형 선택 <span className="required">*</span>
             </label>
-            <div className="type-box-group">
+            <div className="type-box-group type-box-group-3">
               {SCHEDULE_TYPES.map((t) => (
                 <label
                   key={t.value}
@@ -389,8 +407,96 @@ function ScheduleModal({ defaultDate, schedule, onSaved, onClose }) {
             </>
           )}
 
-          {/* Step 3: WORK */}
+          {/* Step 3: WORK (업무) */}
           {form.type === 'WORK' && (
+            <>
+              <p className="form-section-hint">
+                진료실과 업무 종류를 선택해주세요. 저장 시 제목은 자동으로 생성됩니다.
+              </p>
+
+              <div className="form-group">
+                <label className="form-label">
+                  진료실 <span className="required">*</span>
+                </label>
+                <div className="type-box-group type-box-group-3">
+                  {WORK_ROOMS.map((r) => (
+                    <label
+                      key={r.value}
+                      className={`type-box ${form.workRoom === r.value ? 'type-box-selected' : ''}`}
+                    >
+                      <input
+                        type="radio"
+                        name="workRoom"
+                        value={r.value}
+                        checked={form.workRoom === r.value}
+                        onChange={handleInputChange}
+                        className="type-radio"
+                      />
+                      <span className="type-box-label">{r.label}</span>
+                    </label>
+                  ))}
+                </div>
+                {errors.workRoom && <span className="field-error">{errors.workRoom}</span>}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">
+                  업무 종류 <span className="required">*</span>
+                </label>
+                <div className="type-box-group">
+                  {WORK_TYPES.map((w) => (
+                    <label
+                      key={w.value}
+                      className={`type-box ${form.workType === w.value ? 'type-box-selected' : ''}`}
+                    >
+                      <input
+                        type="radio"
+                        name="workType"
+                        value={w.value}
+                        checked={form.workType === w.value}
+                        onChange={handleInputChange}
+                        className="type-radio"
+                      />
+                      <span className="type-box-label">{w.label}</span>
+                    </label>
+                  ))}
+                </div>
+                {errors.workType && <span className="field-error">{errors.workType}</span>}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">
+                  일정 날짜 <span className="required">*</span>
+                </label>
+                <div className="date-range-container">
+                  <div className="date-picker-wrapper">
+                    <label className="date-label">시작</label>
+                    <DatePicker
+                      selected={form.startDate}
+                      onChange={handleStartDateChange}
+                      dateFormat="yyyy-MM-dd"
+                      className={`form-input date-picker ${errors.startDate ? 'input-error' : ''}`}
+                    />
+                  </div>
+                  <span className="date-separator">→</span>
+                  <div className="date-picker-wrapper">
+                    <label className="date-label">종료</label>
+                    <DatePicker
+                      selected={form.endDate}
+                      onChange={handleEndDateChange}
+                      dateFormat="yyyy-MM-dd"
+                      className={`form-input date-picker ${errors.endDate ? 'input-error' : ''}`}
+                    />
+                  </div>
+                </div>
+                {errors.startDate && <span className="field-error">{errors.startDate}</span>}
+                {errors.endDate && <span className="field-error">{errors.endDate}</span>}
+              </div>
+            </>
+          )}
+
+          {/* Step 4: ETC (기타) */}
+          {form.type === 'ETC' && (
             <>
               <div className="form-group">
                 <label htmlFor="title" className="form-label">

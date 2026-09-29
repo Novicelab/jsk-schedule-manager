@@ -747,6 +747,11 @@ select {
 }
 
 .type-work {
+  background-color: #e8f0fe;
+  color: #1a4fbd;
+}
+
+.type-etc {
   background-color: #f5f5f5;
   color: #616161;
 }
@@ -1166,6 +1171,11 @@ select {
 }
 
 .mobile-event-content.work-event {
+  color: #fff;
+  background-color: #2563eb;
+}
+
+.mobile-event-content.etc-event {
   color: #555;
   background-color: #bdbdbd;
 }

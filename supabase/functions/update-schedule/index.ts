@@ -96,27 +96,69 @@ serve(async (req) => {
 
     // payload에서 허용된 필드만 추출 (인젝션 방지)
     const sanitizedPayload: Record<string, unknown> = {}
-    const allowedFields = ['title', 'description', 'type', 'start_at', 'end_at', 'all_day', 'vacation_type']
+    const allowedFields = [
+      'title',
+      'description',
+      'type',
+      'start_at',
+      'end_at',
+      'all_day',
+      'vacation_type',
+      'work_room',
+      'work_type',
+    ]
     for (const field of allowedFields) {
       if (field in payload) {
         sanitizedPayload[field] = payload[field]
       }
     }
 
-    // type 값 검증
-    if (sanitizedPayload.type && !['VACATION', 'WORK'].includes(sanitizedPayload.type as string)) {
-      return new Response(
-        JSON.stringify({ error: '유효하지 않은 일정 유형입니다.' }),
+    const badRequest = (message: string) =>
+      new Response(
+        JSON.stringify({ error: message }),
         { status: 400, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
       )
+
+    // type 값 검증 (VACATION=휴가, WORK=업무, ETC=기타)
+    if (sanitizedPayload.type && !['VACATION', 'WORK', 'ETC'].includes(sanitizedPayload.type as string)) {
+      return badRequest('유효하지 않은 일정 유형입니다.')
     }
 
     // vacation_type 값 검증
     if (sanitizedPayload.vacation_type && !['FULL', 'HALF_AM', 'HALF_PM', 'EARLY_LEAVE'].includes(sanitizedPayload.vacation_type as string)) {
-      return new Response(
-        JSON.stringify({ error: '유효하지 않은 휴가 유형입니다.' }),
-        { status: 400, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
-      )
+      return badRequest('유효하지 않은 휴가 유형입니다.')
+    }
+
+    // 업무 하위 구분 값 검증
+    if (sanitizedPayload.work_room && !['ROOM_1', 'ROOM_2', 'ROOM_3'].includes(sanitizedPayload.work_room as string)) {
+      return badRequest('유효하지 않은 진료실입니다.')
+    }
+    if (
+      sanitizedPayload.work_type &&
+      !['FULL_DAY', 'AM', 'PM', 'OFF_FULL_DAY', 'OFF_AM', 'OFF_PM'].includes(sanitizedPayload.work_type as string)
+    ) {
+      return badRequest('유효하지 않은 업무 종류입니다.')
+    }
+
+    // 유형별 하위 구분 필드 정리 및 필수값 확인.
+    // 해당 없는 필드를 null로 덮어써 유형을 바꿔 저장할 때 이전 유형의 값이 남지 않게 한다
+    // (DB의 schedules_type_fields_check 제약과 같은 규칙).
+    if (sanitizedPayload.type) {
+      const scheduleType = sanitizedPayload.type as string
+
+      if (scheduleType === 'VACATION') {
+        if (!sanitizedPayload.vacation_type) return badRequest('휴가 유형은 필수입니다.')
+        sanitizedPayload.work_room = null
+        sanitizedPayload.work_type = null
+      } else if (scheduleType === 'WORK') {
+        if (!sanitizedPayload.work_room) return badRequest('진료실은 필수입니다.')
+        if (!sanitizedPayload.work_type) return badRequest('업무 종류는 필수입니다.')
+        sanitizedPayload.vacation_type = null
+      } else {
+        sanitizedPayload.vacation_type = null
+        sanitizedPayload.work_room = null
+        sanitizedPayload.work_type = null
+      }
     }
 
     if (action === 'create') {

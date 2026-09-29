@@ -97,7 +97,7 @@ serve(async (req) => {
     // 1. 일정 조회
     const { data: schedule, error: scheduleError } = await supabase
       .from('schedules')
-      .select('id, title, type, vacation_type, start_at, end_at, all_day')
+      .select('id, title, type, vacation_type, work_room, work_type, start_at, end_at, all_day')
       .eq('id', scheduleId)
       .single<ScheduleRow>()
 

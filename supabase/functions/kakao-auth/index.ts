@@ -314,14 +314,18 @@ serve(async (req) => {
         }
 
         // 알림 설정 기본값 생성 (실패해도 로그인 진행)
-        const defaultPreferences = [
-          { user_id: user.id, schedule_type: 'VACATION', action_type: 'CREATED', enabled: true },
-          { user_id: user.id, schedule_type: 'VACATION', action_type: 'UPDATED', enabled: true },
-          { user_id: user.id, schedule_type: 'VACATION', action_type: 'DELETED', enabled: true },
-          { user_id: user.id, schedule_type: 'WORK', action_type: 'CREATED', enabled: true },
-          { user_id: user.id, schedule_type: 'WORK', action_type: 'UPDATED', enabled: true },
-          { user_id: user.id, schedule_type: 'WORK', action_type: 'DELETED', enabled: true },
-        ]
+        // 유형 x 액션 전 조합을 ON 으로 깔아둔다 (VACATION=휴가, WORK=업무, ETC=기타)
+        // user 는 상위 분기에서 채워지는 변수라 콜로저 안에서 타입이 좁혀지지 않는다.
+        // 먼저 id 를 꺼내 두고 조합을 만든다.
+        const newUserId = user.id
+        const defaultPreferences = ['VACATION', 'WORK', 'ETC'].flatMap((schedule_type) =>
+          ['CREATED', 'UPDATED', 'DELETED'].map((action_type) => ({
+            user_id: newUserId,
+            schedule_type,
+            action_type,
+            enabled: true,
+          })),
+        )
 
         try {
           await supabaseAdmin.from('notification_preferences').insert(defaultPreferences)
